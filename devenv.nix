@@ -270,7 +270,7 @@ in
     vitest = {
       enable = true;
       entry = "./node_modules/.bin/vitest run";
-      files = "(^src/|^maps/|^mappack\\.schema\\.json$|^package\\.json$|^vite\\.config\\.ts$)";
+      files = "(^src/|^maps/|^mappack\\.schema\\.json$|^manifest\\.webmanifest$|^package\\.json$|^tools/share-target\\.js$|^vite\\.config\\.ts$)";
       pass_filenames = false;
     };
 
@@ -281,7 +281,7 @@ in
     build = {
       enable = true;
       entry = "./tools/build.sh";
-      files = "(^src/|^package\\.json$|^pnpm-lock\\.yaml$|^vite\\.config\\.ts$|^tsconfig.*\\.json$|^maps/pack\\.showcase\\.json$)";
+      files = "(^src/|^package\\.json$|^pnpm-lock\\.yaml$|^vite\\.config\\.ts$|^tsconfig.*\\.json$|^tools/share-target\\.js$|^maps/pack\\.showcase\\.json$)";
       pass_filenames = false;
     };
 
@@ -306,7 +306,7 @@ in
           exec ./node_modules/.bin/playwright test
         ''
       );
-      files = "(^src/|^e2e/|^playwright\\.config\\.ts$|^maps/pack\\.showcase\\.json$)";
+      files = "(^src/|^e2e/|^playwright\\.config\\.ts$|^tools/share-target\\.js$|^maps/pack\\.showcase\\.json$)";
       pass_filenames = false;
     };
 

@@ -383,6 +383,18 @@ const FEATURES: Feature[] = [
         exports: "PackLink",
     },
     {
+        what: "reading a region or a crag out of a message that was shared to the app",
+        was: "nothing: a shared link could only be opened in a browser",
+        now: "src/core/sharedLink.ts",
+        exports: "routeFromShared",
+    },
+    {
+        what: "the app in the share sheet, so a link can be sent to it",
+        was: "nothing: the app was not a share target",
+        now: "src/features/shell/ShareTarget.tsx",
+        exports: "ShareTarget",
+    },
+    {
         what: "saying that a region loaded in the browser is in the installed app too",
         was: "nothing: the browser tab and the installed app looked like two separate atlases",
         now: "src/features/packs/useInstalledApp.ts",
