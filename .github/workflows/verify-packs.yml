@@ -7,14 +7,28 @@ name: Verify the published regions
 #
 # It needs nothing but a shell, so it answers within a minute of a publish.
 #
-# `page_build`, not `push: branches: [gh-pages]`. That is what this said for as long as it existed
-# and it never ran once, because a `push` event takes its workflows from the ref that was pushed --
-# and gh-pages carries the built site and no .github/ at all. `page_build` fires when Pages builds
-# that branch, which is every publish and every deploy, and it is read from the default branch,
-# where this file actually is. The job still checks gh-pages out explicitly, as it always did.
+# Three triggers, because this one has already been inert once and that must not be possible again.
+#
+# `page_build` is the fast one: it fires when Pages builds the branch, and -- unlike a `push` event
+# -- it is read from the default branch, where this file is. What it replaced was
+# `push: branches: [gh-pages]`, which never ran a single time in its whole existence, because a push
+# event takes its workflows from the ref that was pushed and gh-pages carries the built site and no
+# .github/ at all. Note that a push made with GITHUB_TOKEN starts no workflow, so a deploy of the
+# app does not reach this; a publication from the maps repository is made with an App token and
+# does.
+#
+# The schedule is the one that cannot be argued with. A check on what is published is worth nothing
+# if it depends on a trigger being right, and the whole point of the file is that nobody is looking
+# at these bytes by hand any more.
+#
+# The job checks gh-pages out explicitly under all three, which is what makes them interchangeable.
 
 on:
   page_build:
+  schedule:
+    # Every morning. A region that went up wrong is then wrong for hours at most, not until somebody
+    # happens to look.
+    - cron: '23 5 * * *'
   workflow_dispatch:
 
 permissions:
