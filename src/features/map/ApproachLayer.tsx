@@ -26,6 +26,7 @@ import type { Park } from "@domain/mappack";
 import type { Crag } from "@domain/model";
 
 import { GAP_M, ROUTE_ATTRIBUTION, ROUTE_COLOUR, approachLine } from "./approachGeometry";
+import { holdCards } from "./holdCards";
 import { parkIcon } from "./icons";
 import { Z_PARK } from "./stacking";
 
@@ -68,6 +69,7 @@ export const ApproachLayer = ({ crag, parks, parkName, onParkClick }: ApproachLa
                 zIndexOffset: Z_PARK,
                 alt: parkName(key),
             })
+                .on("preclick", holdCards)
                 .on("click", (e) => {
                     L.DomEvent.stopPropagation(e);
                     onParkClickRef.current(key);

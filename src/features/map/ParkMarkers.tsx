@@ -11,6 +11,7 @@ import { useMap } from "react-leaflet";
 
 import type { Park } from "@domain/mappack";
 
+import { holdCards } from "./holdCards";
 import { parkIcon } from "./icons";
 
 const FROM_ZOOM = 12.5;
@@ -59,6 +60,7 @@ export const ParkMarkers = ({
                 icon: parkIcon(park.est === true),
                 alt: parkName(key),
             })
+                .on("preclick", holdCards)
                 .on("click", (e) => {
                     L.DomEvent.stopPropagation(e);
                     onParkClickRef.current(key);
