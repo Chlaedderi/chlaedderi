@@ -116,6 +116,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                     prefsActions.setPacks([...installed.filter((p) => p.id !== note.id), note]),
                 );
                 dispatch(prefsActions.setRegion(load.pack.id));
+                // The region is on the device now, which is the best reason there is to put the
+                // app on the home screen as well.
+                dispatch(uiActions.installMoment("pack"));
                 return load;
             } finally {
                 setBusy(false);

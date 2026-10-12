@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { favouritesActions } from "./favouritesSlice";
+import { logbookActions } from "./logbookSlice";
 import reducer, { initialUiState, uiActions } from "./uiSlice";
 
 /**
@@ -35,5 +37,29 @@ describe("the ui slice", () => {
         const hidden = reducer(initialUiState, uiActions.hideCallout());
         expect(reducer(hidden, uiActions.select("c1")).calloutOpen).toBe(true);
         expect(reducer(hidden, uiActions.reveal("c1")).calloutOpen).toBe(true);
+    });
+});
+
+describe("the install hint's moments", () => {
+    it("takes saving a favourite or a logbook entry as one", () => {
+        expect(reducer(initialUiState, favouritesActions.toggleCrag("c1")).installMoment).toBe(
+            "fav",
+        );
+        expect(reducer(initialUiState, favouritesActions.toggleRoute("c1~r")).installMoment).toBe(
+            "fav",
+        );
+        const entry = { id: "e1" } as Parameters<typeof logbookActions.upsert>[0];
+        expect(reducer(initialUiState, logbookActions.upsert(entry)).installMoment).toBe("log");
+    });
+
+    it("does not take what was read back from storage as one", () => {
+        const back = favouritesActions.restore({ crags: ["c1"], routes: [] });
+        expect(reducer(initialUiState, back).installMoment).toBeNull();
+        expect(reducer(initialUiState, logbookActions.restore([])).installMoment).toBeNull();
+    });
+
+    it("keeps the first moment until the hint has used it", () => {
+        const pack = reducer(initialUiState, uiActions.installMoment("pack"));
+        expect(reducer(pack, favouritesActions.toggleCrag("c1")).installMoment).toBe("pack");
     });
 });

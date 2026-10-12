@@ -34,6 +34,7 @@ import { FiltersDrawer } from "./features/list/FiltersDrawer";
 import { MapPane } from "./features/map/MapPane";
 import { RevealRoute } from "./features/map/RevealRoute";
 import { AppBarTop } from "./features/shell/AppBarTop";
+import { InstallHint } from "./features/shell/InstallHint";
 import { LegacyLink } from "./features/shell/LegacyLink";
 import { PackLink } from "./features/shell/PackLink";
 import { ShareTarget } from "./features/shell/ShareTarget";
@@ -438,5 +439,6 @@ export const App = () => (
         </Suspense>
         <Toasts />
         <UpdateBanner />
+        <InstallHint />
     </Box>
 );

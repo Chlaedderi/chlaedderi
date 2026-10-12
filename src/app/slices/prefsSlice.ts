@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { countVisit, dismissInstallHint } from "@core/installHint";
 import type { Lang } from "@core/lang";
 import type { LogStyle } from "@core/logbook";
 import { type InstalledPack, type Prefs, defaultPrefs, readPrefsSync } from "@core/prefs";
@@ -43,6 +44,18 @@ const prefsSlice = createSlice({
         },
         setPacks: (state, action: PayloadAction<InstalledPack[]>) => {
             state.packs = action.payload;
+        },
+        /** The page was opened; `payload` is the time. */
+        countVisit: (state, action: PayloadAction<number>) => {
+            state.install = countVisit(state.install, action.payload);
+        },
+        /** «Not now» on the install hint; `payload` is the time. */
+        dismissInstallHint: (state, action: PayloadAction<number>) => {
+            state.install = dismissInstallHint(state.install, action.payload);
+        },
+        /** Installed: the hint has nothing left to say. */
+        installDone: (state) => {
+            state.install = { ...state.install, done: true };
         },
         restore: (_state, action: PayloadAction<Prefs>) => action.payload,
         reset: () => defaultPrefs(),
