@@ -17,8 +17,8 @@ export interface DataContextValue extends MountedData {
     readonly onlyShowcase: boolean;
     /** A pack is being installed or removed. */
     readonly busy: boolean;
-    readonly installFromUrl: (url: string) => Promise<PackLoad>;
-    readonly installFromFile: (file: File) => Promise<PackLoad>;
+    readonly installFromUrl: (url: string, key?: string) => Promise<PackLoad>;
+    readonly installFromFile: (file: File, key?: string) => Promise<PackLoad>;
     /**
      * Install a pack that has already been fetched and checked.
      *
@@ -29,7 +29,7 @@ export interface DataContextValue extends MountedData {
      */
     readonly installLoaded: (
         load: PackLoad & { readonly text: string },
-        source: { type: "url"; url: string },
+        source: { type: "url"; url: string; key?: string },
     ) => Promise<PackLoad>;
     readonly uninstall: (id: string) => Promise<void>;
 }

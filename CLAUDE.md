@@ -56,6 +56,21 @@ English as the second language. Deployed to GitHub Pages at <https://chlaedderi.
   cannot express its `prefixItems` tuples) and `src/types/mappack.coverage.test.ts` fails if the
   two drift apart. `src/core/packs/validate.ts` compiles the same schema with Ajv at runtime.
 
+- **A region may be published encrypted, and that is an addition, never a requirement.** A
+  `.chlpack` is gzipped JSON sealed with AES-256-GCM: magic `CHLP`, a version, flags, a 96-bit
+  nonce, then the ciphertext, with the first six bytes as the additional authenticated data so a
+  changed header fails as a forgery. `src/core/packs/chlpack.ts` reads it; the writing half is in
+  the private `Chlaedderi/maps` repository and is never here. The magic is the **only** gate --
+  anything without it goes down the plain-JSON path it always went down, a key offered for a plain
+  pack is ignored, and a link to one is byte for byte the link it always was. `maps/pack.testing.*`
+  and the committed key beside them are fixtures and are meant to be public.
+
+  **What it is not is access control.** The key is in every link it was ever sent in, the
+  ciphertext is world-readable on `gh-pages`, and a new publication under a new key takes nothing
+  back: the old file is still there under its old key, on purpose, so a link somebody was sent
+  keeps working. Pruning that file is the only revocation there is. Do not reason about it as if
+  it were anything else.
+
 - **The schema is open on purpose** (`additionalProperties: true`): an older app has to be able to
   ignore fields it does not know. Ajv therefore does not run in strict mode.
 

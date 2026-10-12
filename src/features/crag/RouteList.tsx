@@ -33,7 +33,13 @@ import { useAppSelector } from "@app/hooks";
 import { useAppDispatch } from "@app/hooks";
 import { selectFilters } from "@app/selectors";
 import { favouritesActions } from "@app/slices/favouritesSlice";
-import { useFilterContext, useLang, useLogIndex, usePackUrlOf } from "@app/useAppData";
+import {
+    useFilterContext,
+    useLang,
+    useLogIndex,
+    usePackKeyOf,
+    usePackUrlOf,
+} from "@app/useAppData";
 import { longText } from "@core/dataText";
 import { routeFilterOn, routeOk } from "@core/filters";
 import { bestEntry, isSend } from "@core/logbook";
@@ -50,6 +56,7 @@ const RouteRow = ({
     dim,
     number,
     packUrl,
+    packKey,
 }: {
     crag: Crag;
     route: Route;
@@ -58,6 +65,7 @@ const RouteRow = ({
     number: number | null;
     /** Looked up once by the list, not once per row: a big crag has a hundred of these. */
     packUrl: string | null;
+    packKey: string | null;
 }) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -135,7 +143,9 @@ const RouteRow = ({
             <IconButton
                 size="small"
                 aria-label={t("r.share.t")}
-                onClick={() => void share(route.key, `${route.name}, ${crag.name}`, packUrl)}
+                onClick={() =>
+                    void share(route.key, `${route.name}, ${crag.name}`, packUrl, packKey)
+                }
             >
                 <ShareIcon sx={{ fontSize: 16 }} />
             </IconButton>
@@ -167,6 +177,7 @@ export const RouteList = ({ crag, onLog }: { crag: Crag; onLog: (route: Route) =
     const { t } = useTranslation();
     const lang = useLang();
     const packUrl = usePackUrlOf(crag);
+    const packKey = usePackKeyOf(crag);
     const filters = useAppSelector(selectFilters);
     const ctx = useFilterContext();
     const [sort, setSort] = useState<SortKey>("list");
@@ -313,6 +324,7 @@ export const RouteList = ({ crag, onLog }: { crag: Crag; onLog: (route: Route) =
                                 number={number}
                                 dim={filtered && !useMatch && !matching.includes(route)}
                                 packUrl={packUrl}
+                                packKey={packKey}
                             />
                         </Box>
                     );

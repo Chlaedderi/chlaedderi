@@ -54,11 +54,14 @@ export const LegacyLink = () => {
         // the showcase shares both its id and six of its crags with the real Finale pack, so the
         // likeliest first contact of all is somebody being shown a partial page of a region
         // nobody offered them. The schema says as much of `partial`: keep asking for a full pack.
-        const offered = new URLSearchParams(search).get("pack");
+        const params = new URLSearchParams(search);
+        const offered = params.get("pack");
+        // A locked region travels with its key in the fragment, never in a request.
+        const offeredKey = params.get("k") ?? undefined;
         const theirs = crag ? regions.find((r) => r.key === crag.packId) : null;
         const haveIt = offered ? installed.some((p) => p.src?.url === offered) : true;
         if (offered && !haveIt && (!crag || theirs?.partial === true)) {
-            dispatch(uiActions.offerPack({ url: offered, then: token }));
+            dispatch(uiActions.offerPack({ url: offered, key: offeredKey, then: token }));
             if (!crag) {
                 void navigate("/", { replace: true });
                 return;

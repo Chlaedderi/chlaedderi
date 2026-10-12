@@ -1,3 +1,5 @@
+import { webcrypto } from "node:crypto";
+
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
@@ -41,6 +43,13 @@ beforeEach(() => {
 afterEach(() => {
     vi.restoreAllMocks();
 });
+
+// jsdom has a `crypto` with getRandomValues and no `subtle` at all, so every WebCrypto call in
+// src/core/packs/chlpack.ts would be a TypeError here. Node's own implementation is the same one
+// the browser runs, so lending it to the tests tests the real thing rather than a mock of it.
+if (!globalThis.crypto?.subtle) {
+    Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
+}
 
 // jsdom has no matchMedia, which MUI's useMediaQuery and the app's own phone check both use.
 if (!window.matchMedia) {

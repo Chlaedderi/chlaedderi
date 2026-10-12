@@ -30,7 +30,13 @@ import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { favouritesActions } from "@app/slices/favouritesSlice";
 import { uiActions } from "@app/slices/uiSlice";
-import { useFilterContext, useLang, usePackUrlOf, useRegionOf } from "@app/useAppData";
+import {
+    useFilterContext,
+    useLang,
+    usePackKeyOf,
+    usePackUrlOf,
+    useRegionOf,
+} from "@app/useAppData";
 import { useWeather } from "@app/weatherContext";
 import { longText, orientLabel, shortText } from "@core/dataText";
 import { formatDistance } from "@core/geo";
@@ -143,6 +149,7 @@ export const CragPage = () => {
     const crag = id ? byId[id] : undefined;
     const region = useRegionOf(crag);
     const packUrl = usePackUrlOf(crag);
+    const packKey = usePackKeyOf(crag);
     const isFav = useAppSelector((s) => s.favourites.crags.includes(crag?.id ?? ""));
     const [logRoute, setLogRoute] = useState<Route | null>(null);
     const [logEntry, setLogEntry] = useState<LogEntry | null>(null);
@@ -233,7 +240,7 @@ export const CragPage = () => {
                         </Box>
                         <IconButton
                             color="inherit"
-                            onClick={() => void share(crag.id, crag.name, packUrl)}
+                            onClick={() => void share(crag.id, crag.name, packUrl, packKey)}
                             aria-label={t("d.share")}
                         >
                             <ShareIcon />

@@ -59,6 +59,19 @@ export const usePackUrlOf = (crag: Crag | null | undefined): string | null => {
     }, [packs, crag]);
 };
 
+/**
+ * The key a region was opened with, for the link that carries it on. Null for a plain region,
+ * which is most of them -- see src/core/packs/chlpack.ts for why a locked one needs it.
+ */
+export const usePackKeyOf = (crag: Crag | null | undefined): string | null => {
+    const packs = useAppSelector((s) => s.prefs.packs);
+    return useMemo(() => {
+        if (!crag) return null;
+        const note = packs.find((p) => p.id === crag.packId);
+        return note?.src?.type === "url" ? (note.src.key ?? null) : null;
+    }, [packs, crag]);
+};
+
 /** The crags of the region shown. Filters apply inside one region, as they always have. */
 export const useRegionCrags = (): readonly Crag[] => {
     const { crags } = useData();
