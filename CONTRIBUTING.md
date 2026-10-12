@@ -36,7 +36,7 @@ every screen beside it shortly after. Open it, and link the screenshots that sho
 from your description.
 
 A preview keeps its own favourites, logbook and settings – it never touches the data of the app at
-<https://chlädderi.ch/>, even though both live on the same host. It disappears when
+[chlädderi.ch](https://xn--chldderi-2za.ch/), even though both live on the same host. It disappears when
 the pull request closes.
 
 A pull request from a fork gets no preview. It runs the branch's own code, so it is not allowed to

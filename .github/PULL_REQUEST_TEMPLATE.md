@@ -19,7 +19,7 @@ browser suite and the pack checks. Telling us again would only be noise.
 
 <!--
 A few minutes after the first push a comment appears below with this branch running live at
-https://chlaedderi.github.io/pr-<number>/, and shortly after it the screenshots of every screen
+https://chlädderi.ch/pr-<number>/, and shortly after it the screenshots of every screen
 under pr-<number>/screens/. Link the two or three that show what changed — a reviewer can act on a
 picture in a way they cannot act on a description. If nothing on the screen is different, say so
 instead.

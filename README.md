@@ -1,11 +1,11 @@
 # Chlädderi
 
-[![Try it now](https://img.shields.io/badge/Try%20it%20now-Chl%C3%A4dderi-28157a?style=for-the-badge&logo=googlemaps&logoColor=white)](https://chlädderi.ch/)
+[![Try it now](https://img.shields.io/badge/Try%20it%20now-Chl%C3%A4dderi-28157a?style=for-the-badge&logo=googlemaps&logoColor=white)](https://xn--chldderi-2za.ch/)
 [![Deploy to GitHub Pages](https://github.com/Chlaedderi/chlaedderi/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/Chlaedderi/chlaedderi/actions/workflows/pages.yml)
 
 A map and list of sport-climbing crags – an app for your homescreen, in German and English, with car parks, approach paths, navigation to the car park, route lengths, weather, rain and drying information, a logbook and favourites that really do stay saved. The crags themselves arrive as a **mappack**: one file per region, which you load into the app and unload again.
 
-**To the app: <https://chlädderi.ch/>**
+**To the app: [chlädderi.ch](https://xn--chldderi-2za.ch/)**
 
 Freshly installed, the app brings a **showcase** with it: a handful of crags to try it out on. Everything else comes through *mappacks*. The bar at the top switches between the loaded regions; every filter applies within the region you have chosen. This repository holds the app and the format – the crag data itself is not part of it.
 
@@ -81,7 +81,7 @@ The name under an icon already sitting on the homescreen does not change by itse
 
 ## Publishing (GitHub Pages)
 
-Every push to `main` starts the [`.github/workflows/pages.yml`](.github/workflows/pages.yml) workflow. It builds the app and publishes it – `index.html`, `sw.js`, `assets/`, the manifest, the icons and `mappack.schema.json` – at <https://chlädderi.ch/>. The status badge above shows whether the last run worked; start one by hand through **Actions → Deploy to GitHub Pages → Run workflow**.
+Every push to `main` starts the [`.github/workflows/pages.yml`](.github/workflows/pages.yml) workflow. It builds the app and publishes it – `index.html`, `sw.js`, `assets/`, the manifest, the icons and `mappack.schema.json` – at [chlädderi.ch](https://xn--chldderi-2za.ch/). The status badge above shows whether the last run worked; start one by hand through **Actions → Deploy to GitHub Pages → Run workflow**.
 
 The published files are written to the `gh-pages` branch, which is what Pages serves. That branch carries the app at its root and the preview of every open pull request in a folder of its own, because Pages serves exactly one site per repository. Each publication force-pushes a single commit with no parent onto it – so nothing is ever committed to `gh-pages` by hand, and the screenshots of a pull request do not stay in the repository for ever.
 

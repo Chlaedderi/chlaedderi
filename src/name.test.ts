@@ -128,3 +128,34 @@ describe("nothing in here is named after anything else", () => {
         expect([...new Set(wrong)]).toStrictEqual([]);
     });
 });
+
+describe("every link to the site is one a machine can follow", () => {
+    /*
+     * A person reads «chlädderi.ch»; DNS and certificates read its punycode. So a link shows the
+     * umlaut in its label and points at the punycode in its target. The ASCII spelling of the name
+     * is a domain too, but it redirects to the bare host and drops the path on the way: the testing
+     * region's link to the schema landed on the start page instead, and nothing noticed.
+     *
+     * This looks only at link targets -- a markdown `](…)`, an autolink `<…>`, an `href` -- because
+     * prose and inline code are for people and may spell the address the way people do. The packs
+     * are read too: their texts are mini-markdown, and their links are rendered.
+     */
+    const PUNYCODE_HOST = "xn--chldderi-2za.ch";
+    const target = /(?:\]\(|<|href=["'])https?:\/\/([^/)>"'\s]+)/g;
+
+    it("points at the punycode host", () => {
+        // Not `git grep -I`: git calls a minified pack binary for the length of its one line.
+        const files = execFileSync("git", ["grep", "-lz", "dderi"], { encoding: "utf8" })
+            .split("\0")
+            .filter(Boolean)
+            .map((f) => [f, readFileSync(f, "utf8")] as const)
+            .filter(([, text]) => !text.includes("\0"));
+        const wrong = files.flatMap(([f, text]) =>
+            [...text.matchAll(target)]
+                .map((m) => m[1] ?? "")
+                .filter((host) => /dderi/i.test(host) && host.toLowerCase() !== PUNYCODE_HOST)
+                .map((host) => `${f}: ${host}`),
+        );
+        expect([...new Set(wrong)]).toStrictEqual([]);
+    });
+});
