@@ -383,6 +383,12 @@ const FEATURES: Feature[] = [
         exports: "PackLink",
     },
     {
+        what: "saying that a region loaded in the browser is in the installed app too",
+        was: "nothing: the browser tab and the installed app looked like two separate atlases",
+        now: "src/features/packs/useInstalledApp.ts",
+        exports: "useInstalledApp",
+    },
+    {
         what: "a pack's own pages",
         was: "pageHTML",
         now: "src/features/more/PackPage.tsx",
