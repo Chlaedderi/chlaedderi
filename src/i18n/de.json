@@ -533,6 +533,8 @@
     "pk.none": "Keine Region geladen.",
     "pk.notkept": "Dieser Browser sagt nicht zu, das Pack zu behalten: Er kann es löschen, wenn der Platz auf dem Gerät knapp wird, und Safari löscht es nach etwa einer Woche ohne Besuch.",
     "pk.own": "Aus Datei oder von einer Adresse",
+    "pk.paste": "Link einfügen",
+    "pk.paste.none": "In der Zwischenablage ist kein Link zu einer Region.",
     "pk.removed": "{0} entladen.",
     "pk.replaced": "{0} erneuert: {1} Gebiete.",
     "pk.share": "Dieses Gebiet teilen",

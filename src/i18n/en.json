@@ -533,6 +533,8 @@
     "pk.none": "No region loaded.",
     "pk.notkept": "This browser has not promised to keep the pack: it may delete it when the device runs short of space, and Safari clears it after about a week without a visit.",
     "pk.own": "From a file or an address",
+    "pk.paste": "Paste a link",
+    "pk.paste.none": "No link to a region in the clipboard.",
     "pk.removed": "{0} unloaded.",
     "pk.replaced": "{0} renewed: {1} crags.",
     "pk.share": "Share this region",

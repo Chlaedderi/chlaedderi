@@ -1,4 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
+import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ShareIcon from "@mui/icons-material/Share";
@@ -32,6 +33,7 @@ import { packLinkTo, useShareLink } from "../shell/useShare";
 
 import { PackProblems } from "./PackProblems";
 import { useInstalledApp } from "./useInstalledApp";
+import { usePasteLink } from "./usePasteLink";
 
 export const PacksDialog = () => {
     const { t } = useTranslation();
@@ -54,6 +56,9 @@ export const PacksDialog = () => {
     }, [installed]);
     // A tab on a device that also has the app: the two share this store, which is worth saying.
     const alsoInApp = useInstalledApp();
+    // On iOS this is the only way a region gets in at all -- see usePasteLink. Null where the
+    // browser hands no clipboard to a page, and then the button is not there to be tapped.
+    const paste = usePasteLink();
     const [url, setUrl] = useState("");
     const [problems, setProblems] = useState<readonly PackProblem[] | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
@@ -273,18 +278,31 @@ export const PacksDialog = () => {
                     {t("pk.fromUrl.h")}
                 </Typography>
 
-                <Button
-                    startIcon={<UploadFileIcon />}
-                    disabled={busy}
-                    onClick={() => fileInput.current?.click()}
-                    sx={{ mt: 1 }}
-                >
-                    {t("pk.fromFile")}
-                </Button>
+                <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {paste && (
+                        <Button startIcon={<ContentPasteIcon />} disabled={busy} onClick={paste}>
+                            {t("pk.paste")}
+                        </Button>
+                    )}
+                    <Button
+                        startIcon={<UploadFileIcon />}
+                        disabled={busy}
+                        onClick={() => fileInput.current?.click()}
+                    >
+                        {t("pk.fromFile")}
+                    </Button>
+                </Box>
                 <input
                     ref={fileInput}
                     type="file"
-                    accept=".json,application/json"
+                    // `readPackFile` reads a `.chlpack` as well as a `.json`, and has since there
+                    // were any. Leaving the extension out of this list greyed the file out in the
+                    // picker on every platform that honours the attribute -- a file the app can
+                    // read, refused before it was offered, with nothing said. Now it is choosable,
+                    // and a sealed one answers «this region is locked», which at least names what
+                    // is missing. `application/octet-stream` is beside it because that is the type
+                    // a download of an unknown extension arrives with.
+                    accept=".json,application/json,.chlpack,application/octet-stream"
                     hidden
                     onChange={(e) => {
                         const file = e.target.files?.[0];
