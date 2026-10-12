@@ -278,6 +278,24 @@ export const MapPane = () => {
     const onSelect = useCallback((crag: Crag) => choose(crag.id), [choose]);
 
     /**
+     * A car park was tapped: put the crag's card away, then open the car park's.
+     *
+     * Leaflet keeps one popup open, so opening the car park's card used to close the crag's -- and
+     * closing the crag's card is the viewer letting the crag go. The crag was deselected, its
+     * approach was taken off the map, and the car park that had just been tapped went with it,
+     * leaving its card pointing at nothing. Hiding the crag's card first keeps the crag chosen, the
+     * way a tap on open country does with a crag's page open: the marker stays picked out, the
+     * approach and the car park stay drawn, and a tap on the crag brings its card back.
+     */
+    const openParkCard = useCallback(
+        (key: string) => {
+            dispatch(uiActions.hideCallout());
+            setOpenPark(key);
+        },
+        [dispatch],
+    );
+
+    /**
      * The viewer is done with the card: a tap on open country, or Escape.
      *
      * With the crag's page open beside the map this only puts the card away. Letting the crag go
@@ -539,7 +557,7 @@ export const MapPane = () => {
                         parks={parks}
                         parkName={parkName}
                         enabled={prefs.allParks}
-                        onParkClick={setOpenPark}
+                        onParkClick={openParkCard}
                     />
 
                     <CragMarkers
@@ -556,7 +574,7 @@ export const MapPane = () => {
                         crag={target}
                         parks={parks}
                         parkName={parkName}
-                        onParkClick={setOpenPark}
+                        onParkClick={openParkCard}
                     />
 
                     {me && (
