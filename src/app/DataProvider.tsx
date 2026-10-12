@@ -22,6 +22,7 @@ import {
     readPackFile,
     storePack,
 } from "@core/packs/storage";
+import { openStore } from "@core/store";
 import type { Mappack } from "@domain/mappack";
 import showcaseJson from "@maps/pack.showcase.json";
 
@@ -100,6 +101,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                         ],
                     };
                 }
+                // A region is now really on the device, so this is the moment to ask the browser
+                // to keep it. Nothing asked before, and `persisted()` answers false until
+                // something does -- so the packs dialog warned every installed viewer that their
+                // region could be evicted, whatever the device would actually have done.
+                // Not awaited: Firefox puts a permission prompt in front of this, and the
+                // `finally` below would hold the progress bar up for as long as it stands there.
+                // The answer lands in the store's status either way, which is what the favourites
+                // page reads.
+                void openStore().persist();
                 setPacks((current) => [...current.filter((p) => p.id !== load.pack.id), load.pack]);
                 const note = packNote(load.pack, source, load.bytes);
                 dispatch(

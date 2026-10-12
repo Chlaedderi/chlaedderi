@@ -530,7 +530,7 @@
     "pk.manage": "Load and manage regions",
     "pk.manage.h": "{0} loaded · {1} crags",
     "pk.none": "No region loaded.",
-    "pk.notkept": "This device would not keep the pack: it is gone again after a restart.",
+    "pk.notkept": "This browser has not promised to keep the pack: it may delete it when the device runs short of space, and Safari clears it after about a week without a visit.",
     "pk.own": "From a file or an address",
     "pk.removed": "{0} unloaded.",
     "pk.replaced": "{0} renewed: {1} crags.",
