@@ -47,6 +47,12 @@ cp manifest.webmanifest mappack.schema.json "${out}/"
 cp ./*.png ./*.svg ./*.ico "${out}/"
 # Pages serves the folder as it is, without a Jekyll pass over it.
 touch "${out}/.nojekyll"
+# The custom domain, in punycode: chlädderi.ch is xn--chldderi-2za.ch, and DNS, certificates and
+# this file all speak the ASCII form. GitHub writes a CNAME here itself when the domain is set in
+# Settings -- which would last exactly until the next deploy, because tools/publish-pages.sh force
+# pushes a fresh tree and keeps nothing at the top level but pr-*/ and packs/. GitHub's own
+# troubleshooting page warns about precisely that. So the site brings its own.
+printf '%s\n' "${CNAME:-xn--chldderi-2za.ch}" >"${out}/CNAME"
 
 if [[ -n ${version} ]]; then
   built="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

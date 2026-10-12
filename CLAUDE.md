@@ -1,7 +1,10 @@
 # Chlädderi
 
 A climbing-crag atlas as an offline-first PWA. German interface (Swiss spelling: **ss**, never **ß**),
-English as the second language. Deployed to GitHub Pages at <https://chlaedderi.github.io/>.
+English as the second language. Deployed to GitHub Pages at <https://chlädderi.ch/> — which
+is `xn--chldderi-2za.ch` wherever a machine does the reading: DNS, the certificate, the
+`CNAME` file, the schema's `$id`, and `location.hostname` in the browser. `chlaedderi.ch`
+redirects there.
 
 ## The things that will bite you
 
@@ -81,10 +84,19 @@ English as the second language. Deployed to GitHub Pages at <https://chlaedderi.
   warning. It has been done once. Do not do it again, and do not move the `$id` or the storage
   names either.
 
-- **The `$id` is a `github.io` address on purpose.** It moved once, when the project became an
-  organisation, and that is the last time. If a custom domain is ever put in front of this site,
-  GitHub redirects `chlaedderi.github.io/...` to it, path and all, so the `$id` keeps resolving and
-  nothing anybody else published has to change. Do not "tidy" it to the prettier domain.
+- **The `$id` is the domain in punycode, and that is the last address it gets.** The site is
+  «chlädderi.ch»; DNS, certificates, the `CNAME` file and a URI all speak the ASCII form,
+  `xn--chldderi-2za.ch`. A `$id` has to resolve for a machine, so it is written the way a machine reads
+  it. The domain is also the one part of this that does not belong to GitHub, which is why other
+  people's packs are pointed at it rather than at a `github.io` address. Moving it again breaks
+  every pack anybody else published; the pack format string and the storage names are in the same
+  boat.
+
+- **The custom domain lives in `tools/make-site.sh`, not in Settings.** Setting it in Settings makes
+  GitHub commit a `CNAME` file to the publishing branch, and the next deploy throws it away:
+  `publish-pages.sh` force-pushes a fresh tree and keeps nothing at the top level but `pr-*/` and
+  `packs/`. GitHub's own troubleshooting page warns about exactly this. So the site brings its own,
+  and the domain survives every publish.
 
 - **Version numbers are not in the bundle.** The deploy writes `version.json`; the app reads it.
   That keeps the build reproducible: two deploys of the same commit produce the same bundle, which
@@ -183,7 +195,7 @@ dies with a missing config; `direnv allow` in the checkout you are in writes it 
 Then **just commit** (above), `git push -u origin claude/<topic>`, and `gh pr create`.
 
 **Look at the preview.** A few minutes after the push the pull request carries a comment with
-`https://chlaedderi.github.io/pr-<N>/` — this branch, live, with storage of its own — and a
+`https://chlädderi.ch/pr-<N>/` — this branch, live, with storage of its own — and a
 few minutes later the screenshots of every screen beside it under `pr-<N>/screens/`. Open it. Then
 put the two or three screenshots that show what changed into the pull request description, linked
 from there: that is what a description is for, and it is the same habit as «look at the result»,

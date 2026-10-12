@@ -29,7 +29,7 @@ concurrency:
 
 env:
   PR: ${{ github.event.pull_request.number }}
-  PREVIEW: https://chlaedderi.github.io/pr-${{ github.event.pull_request.number }}/
+  PREVIEW: https://xn--chldderi-2za.ch/pr-${{ github.event.pull_request.number }}/
 
 jobs:
   preview:
@@ -66,7 +66,7 @@ jobs:
             echo "${PREVIEW}"
             echo
             echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
-            echo "data of the app at <https://chlaedderi.github.io/>."
+            echo "data of the app at <https://xn--chldderi-2za.ch/>."
             echo
             echo "The screenshots follow in a few minutes."
           } >"${RUNNER_TEMP}/comment.md"
@@ -101,7 +101,7 @@ jobs:
             echo "${PREVIEW}"
             echo
             echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
-            echo "data of the app at <https://chlaedderi.github.io/>."
+            echo "data of the app at <https://xn--chldderi-2za.ch/>."
             echo
             echo "<details><summary>Every screen</summary>"
             echo
