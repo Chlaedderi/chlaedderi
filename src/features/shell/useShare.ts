@@ -47,6 +47,32 @@ export const packLinkTo = (packUrl: string, packKey?: string | null): string | n
 };
 
 /**
+ * The list as it is filtered right now: `#/pack?url=…&f=…`, or `#/?f=…` for a region with no
+ * address to give.
+ *
+ * It goes through the region route rather than straight to the map, because filters without the
+ * region they filter are an empty screen -- so the view link offers the region first and carries
+ * the code across, which `PackLink` does on the way to `/`. The region link in the packs dialog is
+ * a different thing and stays as it is: it says «here is my region», and nothing about a view.
+ */
+export const viewLinkTo = (
+    code: string | null,
+    packUrl?: string | null,
+    packKey?: string | null,
+): string => {
+    const here = `${location.origin}${location.pathname}#/`;
+    const address = packUrl ? packAddress(packUrl) : null;
+    const params = new URLSearchParams();
+    if (address) params.set("url", address.url.split("#")[0] ?? address.url);
+    // Only a region that arrived locked has a key; the fragment is never sent to a server.
+    if (address && packKey) params.set("k", packKey);
+    if (code) params.set("f", code);
+    const query = params.toString();
+    if (!query) return here;
+    return address ? `${here}pack?${query}` : `${here}?${query}`;
+};
+
+/**
  * The words that go above the link in the message.
  *
  * A shared link cannot carry a card of its own: the crag, the region's address and the key of a

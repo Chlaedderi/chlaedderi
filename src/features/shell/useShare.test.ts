@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { APP_NAME } from "@core/name";
 
-import { linkTo, packLinkTo, shareText } from "./useShare";
+import { linkTo, packLinkTo, shareText, viewLinkTo } from "./useShare";
 
 /**
  * What a shared link actually says.
@@ -70,6 +70,39 @@ describe("packLinkTo", () => {
     it("has no link to give for an address nobody else could fetch", () => {
         expect(packLinkTo("/maps/pack.ow.json")).toBeNull();
         expect(packLinkTo("data:application/json,%7B%7D")).toBeNull();
+    });
+});
+
+describe("viewLinkTo", () => {
+    it("offers the region first, because filters without it are an empty screen", () => {
+        const link = viewLinkTo("F1.abc", "https://example.org/pack.ow.json");
+        expect(link).toBe(
+            `${here()}#/pack?url=${encodeURIComponent("https://example.org/pack.ow.json")}&f=F1.abc`,
+        );
+    });
+
+    it("carries the key of a region that arrived locked", () => {
+        const link = viewLinkTo("F1.abc", "https://example.org/pack.ow.chlpack", "k3y-_");
+        expect(link).toContain("&k=k3y-_");
+        expect(link).toContain("&f=F1.abc");
+    });
+
+    it("is a plain link to the map for a region with no address to give", () => {
+        // The built-in showcase, and anything installed from a file: there is nothing to offer,
+        // but the filters still mean something to somebody who has the same region already.
+        expect(viewLinkTo("F1.abc")).toBe(`${here()}#/?f=F1.abc`);
+        expect(viewLinkTo("F1.abc", "/maps/pack.ow.json")).toBe(`${here()}#/?f=F1.abc`);
+    });
+
+    it("says nothing about a view nobody has narrowed", () => {
+        // `encodeFilterCode` answers null for a list at rest, and then there is no view to share.
+        expect(viewLinkTo(null)).toBe(`${here()}#/`);
+    });
+
+    it("drops a fragment out of the address, which would cut the link in half", () => {
+        expect(viewLinkTo("F1.abc", "https://example.org/pack.ow.json#section")).toBe(
+            `${here()}#/pack?url=${encodeURIComponent("https://example.org/pack.ow.json")}&f=F1.abc`,
+        );
     });
 });
 

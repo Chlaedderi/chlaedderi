@@ -45,6 +45,9 @@ export type FilterFlag = (typeof FILTER_FLAGS)[number];
 /** How many matching routes a crag needs before it is shown. */
 export const MIN_IN_CHOICES = [1, 3, 5, 10] as const;
 
+/** As much search text as a link may carry. A crag name is far shorter; the cap is for the link. */
+export const MAX_QUERY = 100;
+
 export interface Filters {
     fav: ValueOf<"fav">;
     star: ValueOf<"star">;
@@ -377,6 +380,12 @@ export interface StoredFilters {
     F?: Record<string, unknown>;
     sort?: string;
     dir?: number;
+    /**
+     * The search text. Written only into a link (see filterCode.ts), never into localStorage:
+     * `toStored` does not produce it, because a search one typed yesterday should not be waiting
+     * at the next start. `fromStored` reads it, so that a link can carry one.
+     */
+    q?: string;
 }
 
 /** What goes into localStorage: grades as their names, so the ladder may grow without breaking it. */
@@ -430,45 +439,52 @@ export const fromStored = (
     let sort: SortKey = "area";
     let dir: 1 | -1 = 1;
 
-    const x = stored?.F;
-    if (!x) return { filters, sort, dir };
+    if (!stored) return { filters, sort, dir };
 
-    for (const key of Object.keys(FILTER_VALUES) as FilterKey[]) {
-        const allowed: readonly string[] = FILTER_VALUES[key];
-        const value = x[key];
-        if (typeof value === "string" && allowed.includes(value)) {
-            // Safe: `value` was just checked against this key's own list.
-            (filters as unknown as Record<string, unknown>)[key] = value;
+    // `F` may legitimately be absent: a link carries only what was set, and «sorted by name» or
+    // «searching for Platte» alone is a view worth sharing. Everything below it is a default.
+    const x = stored.F;
+    if (x) {
+        for (const key of Object.keys(FILTER_VALUES) as FilterKey[]) {
+            const allowed: readonly string[] = FILTER_VALUES[key];
+            const value = x[key];
+            if (typeof value === "string" && allowed.includes(value)) {
+                // Safe: `value` was just checked against this key's own list.
+                (filters as unknown as Record<string, unknown>)[key] = value;
+            }
+        }
+        for (const key of FILTER_FLAGS) {
+            if (typeof x[key] === "boolean") filters[key] = x[key];
+        }
+
+        const a = GRADES.indexOf(x.gmin as Grade);
+        const b = GRADES.indexOf(x.gmax as Grade);
+        if (a >= GRADE_LO && b <= GRADE_HI && a >= 0 && b >= 0 && a <= b) {
+            filters.gmin = a;
+            filters.gmax = b;
+        }
+        if (MIN_IN_CHOICES.includes(x.minIn as (typeof MIN_IN_CHOICES)[number])) {
+            filters.minIn = x.minIn as number;
+        }
+        if (Array.isArray(x.orient)) {
+            filters.orient = new Set(
+                (x.orient as unknown[]).filter(
+                    (o): o is string =>
+                        typeof o === "string" &&
+                        (ORIENTS.includes(o as Orientation) || o === "mixed" || o === "unknown"),
+                ),
+            );
+        }
+        if (typeof x.area === "string" && ctx.areas.has(x.area)) filters.area = x.area;
+        if (x.muni === "?" || (typeof x.muni === "string" && ctx.municipalities.has(x.muni))) {
+            filters.muni = x.muni;
         }
     }
-    for (const key of FILTER_FLAGS) {
-        if (typeof x[key] === "boolean") filters[key] = x[key];
-    }
 
-    const a = GRADES.indexOf(x.gmin as Grade);
-    const b = GRADES.indexOf(x.gmax as Grade);
-    if (a >= GRADE_LO && b <= GRADE_HI && a >= 0 && b >= 0 && a <= b) {
-        filters.gmin = a;
-        filters.gmax = b;
-    }
-    if (MIN_IN_CHOICES.includes(x.minIn as (typeof MIN_IN_CHOICES)[number])) {
-        filters.minIn = x.minIn as number;
-    }
-    if (Array.isArray(x.orient)) {
-        filters.orient = new Set(
-            (x.orient as unknown[]).filter(
-                (o): o is string =>
-                    typeof o === "string" &&
-                    (ORIENTS.includes(o as Orientation) || o === "mixed" || o === "unknown"),
-            ),
-        );
-    }
     // The reliability filter was dropped; a stored one is ignored rather than restored.
     filters.conf = new Set();
-    if (typeof x.area === "string" && ctx.areas.has(x.area)) filters.area = x.area;
-    if (x.muni === "?" || (typeof x.muni === "string" && ctx.municipalities.has(x.muni))) {
-        filters.muni = x.muni;
-    }
+    // Only a link ever carries one, and only as much of it as a search field can hold.
+    if (typeof stored.q === "string") filters.q = stored.q.slice(0, MAX_QUERY);
     // «nearest to me» needs a fresh location, so it is never restored.
     if (SORTS.includes(stored.sort as SortKey) && stored.sort !== "me") {
         sort = stored.sort as SortKey;

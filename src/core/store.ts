@@ -17,6 +17,7 @@
  * Note for the service worker: a cleanup that drops old caches must leave `<ns>-user` alone.
  */
 
+import { jsonFromB64url, jsonToB64url } from "./b64url";
 import { APP_SLUG } from "./name";
 import { PREVIEW_SUFFIX } from "./preview";
 
@@ -496,10 +497,7 @@ export const openStore = (ns: string = DEFAULT_NAMESPACE): Store =>
 export const encodeTransfer = (obj: unknown): string => {
     try {
         if (!obj || typeof obj !== "object") return "";
-        const bytes = new TextEncoder().encode(JSON.stringify(obj));
-        let bin = "";
-        for (const byte of bytes) bin += String.fromCharCode(byte);
-        return `FA1.${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+        return `FA1.${jsonToB64url(obj)}`;
     } catch {
         return "";
     }
@@ -507,14 +505,6 @@ export const encodeTransfer = (obj: unknown): string => {
 
 /** The object, or null for anything invalid or incomplete. */
 export const decodeTransfer = (code: string): unknown => {
-    try {
-        const m = /^FA1\.([A-Za-z0-9_-]+)$/.exec(String(code).replace(/\s+/g, ""));
-        if (!m?.[1]) return null;
-        const bin = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
-        const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
-        const obj: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-        return obj && typeof obj === "object" ? obj : null;
-    } catch {
-        return null;
-    }
+    const m = /^FA1\.([A-Za-z0-9_-]+)$/.exec(String(code).replace(/\s+/g, ""));
+    return m?.[1] ? jsonFromB64url(m[1]) : null;
 };

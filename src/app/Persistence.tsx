@@ -4,12 +4,19 @@
  * Reads favourites, logbook and settings back at start, writes them on every change (debounced),
  * and listens for what another tab wrote. Filters are kept in plain localStorage, as before: they
  * are a convenience, not data worth the triple store.
+ *
+ * A link may carry filters of its own (filterCode.ts). Those win over what is stored -- somebody
+ * followed a link to see *that* view -- but they are not written to the device until the viewer
+ * makes them their own by changing something. Opening somebody's link should not quietly replace
+ * the setup they had.
  */
 
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 
 import { cleanFavourites, toStoredFavourites } from "@core/favourites";
+import { FILTER_PARAM, decodeFilterCode } from "@core/filterCode";
 import { FILTER_KEY, type StoredFilters, fromStored, toStored } from "@core/filters";
 import { activeCount } from "@core/filters";
 import { cleanLog } from "@core/logbook";
@@ -24,23 +31,9 @@ import { filtersActions, fromFilters } from "./slices/filtersSlice";
 import { logbookActions } from "./slices/logbookSlice";
 import { initialPrefsState, prefsActions } from "./slices/prefsSlice";
 import { uiActions } from "./slices/uiSlice";
+import { useDebouncedWrite } from "./useDebouncedWrite";
 
 const store = openStore();
-
-/** Wait a moment before writing, so dragging a slider does not write once per pixel. */
-const useDebouncedWrite = <T,>(value: T, write: (value: T) => void, ms = 350): void => {
-    const first = useRef(true);
-    useEffect(() => {
-        if (first.current) {
-            first.current = false;
-            return;
-        }
-        const timer = setTimeout(() => write(value), ms);
-        return () => clearTimeout(timer);
-        // `write` is stable by construction at every call site.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value, ms]);
-};
 
 export const Persistence = () => {
     const { t } = useTranslation();
@@ -52,6 +45,7 @@ export const Persistence = () => {
     const sort = useAppSelector((s) => s.filters.sort);
     const dir = useAppSelector((s) => s.filters.dir);
     const { crags, regions } = useData();
+    const { search } = useLocation();
 
     // The settings as they are *now*, for the asynchronous read-back below: a closure over `prefs`
     // would hold whatever they were when the effect ran, which is the stale value we are guarding
@@ -105,21 +99,40 @@ export const Persistence = () => {
         });
     }, [dispatch]);
 
-    // ---- the filters, out of plain localStorage, once the data is there to check them against
+    // ---- the filters, out of the link or out of plain localStorage, once the data is there to
+    // check them against
     const restoredFilters = useRef(false);
+    // What the link asked for, as it would be stored, so that merely looking at it is not written
+    // to the device below.
+    const fromLink = useRef<string | null>(null);
     useEffect(() => {
         if (restoredFilters.current || !crags.length) return;
         restoredFilters.current = true;
         try {
-            const raw = localStorage.getItem(FILTER_KEY);
-            const stored = raw ? (JSON.parse(raw) as StoredFilters) : null;
-            if (!stored) return;
-            const back = fromStored(stored, {
+            const where = {
                 areas: new Set(regions.flatMap((r) => r.areas.map((a) => a.name))),
                 municipalities: new Set(
                     crags.map((c) => c.municipality).filter((m): m is string => !!m),
                 ),
-            });
+            };
+
+            // The link first: somebody followed it to see that view, not the one they left here.
+            const code = new URLSearchParams(search).get(FILTER_PARAM);
+            const linked = code ? decodeFilterCode(code, where) : null;
+            if (linked) {
+                const restored = fromFilters(linked.filters, linked.sort, linked.dir);
+                fromLink.current = JSON.stringify(
+                    toStored(linked.filters, linked.sort, linked.dir),
+                );
+                dispatch(filtersActions.restore(restored));
+                dispatch(uiActions.toast({ message: t("f.fromlink") }));
+                return;
+            }
+
+            const raw = localStorage.getItem(FILTER_KEY);
+            const stored = raw ? (JSON.parse(raw) as StoredFilters) : null;
+            if (!stored) return;
+            const back = fromStored(stored, where);
             const restored = fromFilters(back.filters, back.sort, back.dir);
             dispatch(filtersActions.restore(restored));
             // Filters that survive a reload are easy to forget about and then puzzling. The
@@ -130,8 +143,12 @@ export const Persistence = () => {
             }
         } catch {
             /* a filter state is a convenience; never let it stop the app */
+        } finally {
+            // Every way out of here has to say so, including the two early returns and the catch:
+            // the URL mirror stays silent until it knows this state is the viewer's own.
+            dispatch(filtersActions.hydrated());
         }
-    }, [crags, regions, prefs.region, dispatch, t]);
+    }, [crags, regions, prefs.region, search, dispatch, t]);
 
     // ---- write on change
     useDebouncedWrite(favourites, (value) => {
@@ -174,7 +191,13 @@ export const Persistence = () => {
 
     useDebouncedWrite({ filters, sort, dir }, ({ filters: f, sort: s, dir: d }) => {
         try {
-            localStorage.setItem(FILTER_KEY, JSON.stringify(toStored(f, s, d)));
+            const text = JSON.stringify(toStored(f, s, d));
+            // Still exactly what the link asked for: the viewer has looked at somebody else's view
+            // and changed nothing, so their own stored filters stay as they left them. The moment
+            // they touch anything this stops matching and writing resumes for good.
+            if (fromLink.current !== null && fromLink.current === text) return;
+            fromLink.current = null;
+            localStorage.setItem(FILTER_KEY, text);
         } catch {
             /* a full or blocked localStorage must not break anything */
         }
