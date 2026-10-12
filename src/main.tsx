@@ -25,6 +25,7 @@ import { HashRouter } from "react-router-dom";
 
 import { App } from "./App";
 import { DataProvider } from "./app/DataProvider";
+import { watchInstallPrompt } from "./app/installPrompt";
 import { store } from "./app/store";
 import { watchViewport } from "./app/viewport";
 import { WeatherProvider } from "./app/WeatherProvider";
@@ -42,6 +43,7 @@ const i18n = createI18n(prefs.lang ?? detectLang());
 document.documentElement.lang = i18n.language;
 
 watchViewport();
+watchInstallPrompt();
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>

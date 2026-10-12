@@ -7,6 +7,12 @@
  * every save.
  */
 
+import {
+    type InstallHintState,
+    cleanInstallHint,
+    defaultInstallHint,
+    mergeInstallHint,
+} from "./installHint";
 import { type Lang, isLang } from "./lang";
 import { LOG_STYLES, type LogStyle, isLogStyle } from "./logbook";
 import { APP_SLUG } from "./name";
@@ -62,6 +68,8 @@ export interface Prefs {
     legend: boolean;
     logStyle: LogStyle;
     packs: InstalledPack[];
+    /** When the app last said it can be installed, and what came of it: see installHint.ts. */
+    install: InstallHintState;
 }
 
 export const PREFS_KEY = "prefs";
@@ -86,6 +94,7 @@ export const defaultPrefs = (): Prefs => ({
     legend: false,
     logStyle: "rp",
     packs: [],
+    install: defaultInstallHint(),
 });
 
 const ONE_OF = {
@@ -123,6 +132,7 @@ export const cleanPrefs = (v: unknown): Prefs => {
                 Boolean(p) && typeof p === "object" && typeof (p as InstalledPack).id === "string",
         );
     }
+    prefs.install = cleanInstallHint(x.install);
     return prefs;
 };
 
@@ -142,6 +152,8 @@ export const keepTouched = (stored: Prefs, current: Prefs, start: Prefs): Prefs 
     for (const key of Object.keys(now)) {
         if (now[key] !== then[key]) merged[key] = now[key];
     }
+    // The install hint's history is counted, not chosen: neither side simply wins.
+    merged.install = mergeInstallHint(stored.install, current.install);
     return merged as unknown as Prefs;
 };
 

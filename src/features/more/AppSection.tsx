@@ -14,13 +14,14 @@ import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppSelector } from "@app/hooks";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { useInstallPrompt } from "@app/installPrompt";
+import { prefsActions } from "@app/slices/prefsSlice";
 import { useLang } from "@app/useAppData";
+import { isIOSDevice } from "@core/installHint";
 import { formatDate } from "@i18n/index";
 
 import { isStandalone, loadVersion, refreshApp, useAppVersion } from "../../version";
-
-import { isIOS, useInstallPrompt } from "./useInstallPrompt";
 
 const timeOf = (iso: string): string => {
     const d = new Date(iso);
@@ -31,12 +32,13 @@ const timeOf = (iso: string): string => {
 
 export const AppSection = () => {
     const { t } = useTranslation();
+    const dispatch = useAppDispatch();
     const lang = useLang();
     const version = useAppVersion();
     // The same flag the banner sets, which the service worker drives -- the original kept one
     // `updateWaiting` and re-rendered «More» from it.
     const updateReady = useAppSelector((s) => s.ui.updateReady);
-    const { canInstall, install } = useInstallPrompt();
+    const { canInstall, installed: justInstalled, install } = useInstallPrompt();
     const [online, setOnline] = useState(navigator.onLine !== false);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -51,7 +53,7 @@ export const AppSection = () => {
         };
     }, []);
 
-    const installed = isStandalone();
+    const installed = isStandalone() || justInstalled;
     const swOn = "serviceWorker" in navigator && navigator.serviceWorker.controller !== null;
 
     return (
@@ -92,14 +94,27 @@ export const AppSection = () => {
                 <Button
                     variant="contained"
                     startIcon={<DownloadIcon />}
-                    onClick={install}
+                    onClick={() =>
+                        void install().then((outcome) => {
+                            // Nothing left for the install hint to say, on this device or after.
+                            if (outcome === "accepted") dispatch(prefsActions.installDone());
+                        })
+                    }
                     sx={{ mb: 1.5 }}
                 >
                     {t("m.install")}
                 </Button>
             ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {t(isIOS() ? "m.install.ios" : "m.install.and")}
+                    {t(
+                        isIOSDevice(
+                            navigator.userAgent,
+                            navigator.platform,
+                            navigator.maxTouchPoints,
+                        )
+                            ? "m.install.ios"
+                            : "m.install.and",
+                    )}
                 </Typography>
             )}
 

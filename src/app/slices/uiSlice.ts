@@ -1,5 +1,9 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import type { InstallMoment } from "@core/installHint";
+
+import { favouritesActions } from "./favouritesSlice";
+import { logbookActions } from "./logbookSlice";
 import { prefsActions } from "./prefsSlice";
 
 /** A short message at the bottom of the screen. */
@@ -67,6 +71,12 @@ export interface UiState {
      */
     /** `key` is the one a share link carried; a plain pack has none and needs none. */
     packOffer: { url: string; key?: string; then?: string; fetchNow?: boolean } | null;
+    /**
+     * Something just happened that installing would help with: a region came onto the device, a
+     * favourite or a logbook entry was saved, the app went on working without a network. The
+     * install hint reads it and gives that as its reason. First one wins until it is used.
+     */
+    installMoment: Exclude<InstallMoment, "time"> | null;
 }
 
 export const initialUiState: UiState = {
@@ -85,6 +95,7 @@ export const initialUiState: UiState = {
     radarDown: false,
     radarDpcDown: false,
     packOffer: null,
+    installMoment: null,
 };
 
 let nextToastId = 1;
@@ -159,14 +170,30 @@ const uiSlice = createSlice({
         clearOffer: (state) => {
             state.packOffer = null;
         },
+        installMoment: (state, action: PayloadAction<Exclude<InstallMoment, "time">>) => {
+            state.installMoment ??= action.payload;
+        },
     },
     // Picking a radar by hand is the viewer saying «try again»: forget what failed last time, so
     // the Italian radar is attempted afresh and the bar stops claiming to be broken.
+    //
+    // Saving a favourite or a logbook entry is a moment for the install hint. Only the viewer's own
+    // hand counts: a `restore` from storage or from another tab is not something they just did.
     extraReducers: (builder) =>
-        builder.addCase(prefsActions.setRadar, (state) => {
-            state.radarDown = false;
-            state.radarDpcDown = false;
-        }),
+        builder
+            .addCase(prefsActions.setRadar, (state) => {
+                state.radarDown = false;
+                state.radarDpcDown = false;
+            })
+            .addCase(favouritesActions.toggleCrag, (state) => {
+                state.installMoment ??= "fav";
+            })
+            .addCase(favouritesActions.toggleRoute, (state) => {
+                state.installMoment ??= "fav";
+            })
+            .addCase(logbookActions.upsert, (state) => {
+                state.installMoment ??= "log";
+            }),
 });
 
 export const uiActions = uiSlice.actions;

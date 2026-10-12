@@ -443,6 +443,12 @@ const FEATURES: Feature[] = [
         exports: "AppSection",
     },
     {
+        what: "saying once, at a good moment, that the app can be installed",
+        was: "nothing: the install button waited on the «More» page for somebody to find it",
+        now: "src/features/shell/InstallHint.tsx",
+        exports: "InstallHint",
+    },
+    {
         what: "fetching the newest version",
         was: "refreshApp",
         now: "src/version.ts",
