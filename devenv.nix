@@ -149,6 +149,14 @@ in
     check-shebang-scripts-are-executable.enable = true;
     check-symlinks.enable = true;
 
+    # Nothing is committed on main (see CLAUDE.md). GitHub refuses a direct push to it already --
+    # a ruleset on the default branch requires a pull request -- but that only speaks up once the
+    # push is rejected, with the commit already made and a branch to disentangle. This says so at
+    # the moment it happens. `git commit --no-verify` is the way out when main really does have to
+    # be written, which is rarer here than in the maps repository, where this hook is the only
+    # thing standing in the way at all.
+    no-commit-to-branch.enable = true;
+
     # The largest mappack is ~650 KB. The limit is here to catch a stray second copy of one, or a
     # build artefact landing in git by accident.
     check-added-large-files = {
@@ -347,7 +355,14 @@ in
         set -euo pipefail
         ${cdRepo}
 
-        prek run "''${@:---all-files}"
+        # Every hook but the one that refuses a commit on main. That hook is about the *act* of
+        # committing, and `lint` is not one: it reads the files that are there and says whether
+        # they are right. `prek run` would run it anyway -- it is always_run -- and it asks which
+        # branch is checked out, so it fails wherever the answer is main. Which is CI: the checks
+        # run on a push to main as well as on a pull request, and actions/checkout leaves the
+        # checkout on the branch that was pushed. Without this, `Checks` is red on main after every
+        # merge.
+        prek run --skip no-commit-to-branch "''${@:---all-files}"
       )
     '';
   };

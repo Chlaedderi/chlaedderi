@@ -179,6 +179,11 @@ hooks to do it. Where a hook rewrites a file (prettier, `eslint --fix`) the comm
 into the tree — it fails when the bundle does not come out, and leaves `dist/` fresh for the `e2e`
 hook, which runs after it because prek goes in alphabetical order.
 
+The one hook `lint` leaves out is `no-commit-to-branch`, which refuses a commit made on `main`. It
+is about the act of committing rather than about the files, it is `always_run`, and it asks which
+branch is checked out — so under `prek run --all-files` it would fail wherever the answer is `main`,
+which includes CI on a push to `main`. It still runs where it means something, which is `git commit`.
+
 **And CI runs them again.** `.github/workflows/ci.yml` runs `devenv shell -- lint`, which is the
 same set over every file, plus the browser suite in a real Chromium — so nothing can pass on a
 laptop and fail in Actions, and a pull request says so on its own. `lint` exists for running the
@@ -190,9 +195,10 @@ and fails on any that no language has, including both arms of a ternary.
 
 ## Branches, worktrees, pull requests
 
-**Nothing is committed on `main`, and GitHub now refuses it.** A ruleset on the default branch
+**Nothing is committed on `main`, and two things refuse it.** A ruleset on the default branch
 requires a pull request, allows **squash** as the only merge method, and blocks force-pushes and
-deletion — for everybody, with no bypass. So every task starts in its own worktree — the
+deletion — for everybody, with no bypass. And the `no-commit-to-branch` hook says so at commit
+time, before there is a commit on the wrong branch to disentangle. So every task starts in its own worktree — the
 `EnterWorktree` tool, or `git worktree add .claude/worktrees/<name> -b claude/<topic> origin/main`
 — and ends as a pull request. The branch is `claude/<topic>`; `.claude/worktrees/` is ignored by git, by eslint and
 by the hooks.
