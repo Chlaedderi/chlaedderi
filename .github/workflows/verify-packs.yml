@@ -6,10 +6,15 @@ name: Verify the published regions
 # under packs/ is exactly that. It matters more now that no person looks at the bytes in between.
 #
 # It needs nothing but a shell, so it answers within a minute of a publish.
+#
+# `page_build`, not `push: branches: [gh-pages]`. That is what this said for as long as it existed
+# and it never ran once, because a `push` event takes its workflows from the ref that was pushed --
+# and gh-pages carries the built site and no .github/ at all. `page_build` fires when Pages builds
+# that branch, which is every publish and every deploy, and it is read from the default branch,
+# where this file actually is. The job still checks gh-pages out explicitly, as it always did.
 
 on:
-  push:
-    branches: [gh-pages]
+  page_build:
   workflow_dispatch:
 
 permissions:
