@@ -39,18 +39,30 @@ export interface CameraRequest {
 /**
  * Beyond this many screens of travel, cut.
  *
- * Leaflet's `flyTo` arcs out towards world scale on a long flight, and the cluster group swallows
- * the very marker the viewer is trying to follow (`CragMarkers` stops clustering only at zoom 15).
- * A flight nobody can follow is worse than a jump, so far travel is simply a jump.
+ * A flight widens until both ends are on the screen and then closes again, so the question is how
+ * far out «both ends» is. Working through Leaflet's own path maths in `Map.flyTo`, from zoom 17 on
+ * a map column 656px wide: 3 screens of travel dips to zoom 15.6, 31 screens -- 17km, the median
+ * distance between two crags in a spread-out region -- dips to 12.3, which is about the region's
+ * own overview, and 163km dips to 9. That is the picture that makes a move followable, not one
+ * that destroys it.
+ *
+ * This used to be 3, on the stated grounds that a long flight «arcs out towards world scale and
+ * the cluster group swallows the marker». The numbers above say otherwise, and the cost was real:
+ * travel is measured in *current* screens, and after a reveal the map sits at zoom 16-17 where a
+ * screen is a few hundred metres, so 96% of crag-to-crag switches in a region the size of
+ * Oberwallis were jumps -- the very thing `cameraPlan` exists to stop.
+ *
+ * What is left at 50 screens is the jump between two separately installed regions, where the dip
+ * does reach country scale and the duration cap below would turn the path into a blur.
  */
-const TOO_FAR = 3;
+const TOO_FAR = 50;
 
 /** A crag with no approach at all is a point; dividing the view by it would give infinity. */
 const FLAT = 1e-5;
 
 /** Seconds: long enough to read as movement, short enough not to be in the way. */
 const SHORTEST = 0.5;
-const LONGEST = 1.6;
+const LONGEST = 2;
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
@@ -88,5 +100,12 @@ export const cameraPlan = ({
     );
     const levels = clamp(Math.abs(Math.log2(ratio)), 0, 8);
 
-    return { kind: "fly", seconds: clamp(0.45 + 0.3 * travel + 0.1 * levels, SHORTEST, LONGEST) };
+    // Logarithmic in the travel, not linear: a hop to the next crag along stays brisk, and a flight
+    // across a region grows towards the cap instead of hitting it the moment it is more than a
+    // screen or two. Leaflet's own length for the longest of these would be four and a half
+    // seconds, which is longer than anyone wants to wait to be able to act.
+    return {
+        kind: "fly",
+        seconds: clamp(0.45 + 0.3 * Math.log2(1 + travel) + 0.1 * levels, SHORTEST, LONGEST),
+    };
 };
