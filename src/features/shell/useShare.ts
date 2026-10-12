@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
 import { uiActions } from "@app/slices/uiSlice";
+import { APP_NAME } from "@core/name";
 import { packAddress } from "@core/packs/url";
 
 /**
@@ -46,6 +47,18 @@ export const packLinkTo = (packUrl: string, packKey?: string | null): string | n
 };
 
 /**
+ * The words that go above the link in the message.
+ *
+ * A shared link cannot carry a card of its own: the crag, the region's address and the key of a
+ * sealed region all ride after the `#`, which no server is ever sent, so every crag link looks to
+ * WhatsApp's crawler like a request for the front page and shows the app's own card. What can say
+ * which crag it is, is the message -- and most share targets drop `title` and show `text`, so the
+ * label goes there too. The label already names the route and the crag; this adds whose atlas it is.
+ */
+export const shareText = (label: string): string =>
+    label === APP_NAME ? APP_NAME : `${label} – ${APP_NAME}`;
+
+/**
  * Hand a link to the share sheet, the clipboard, or -- failing both -- to the viewer's own eyes.
  * Shared by the crag and route links and by the link to a whole region.
  */
@@ -57,9 +70,11 @@ export const useShareLink = (): ((url: string, label: string) => Promise<void>) 
         async (url: string, label: string) => {
             try {
                 if (navigator.share) {
-                    await navigator.share({ title: label, url });
+                    await navigator.share({ title: label, text: shareText(label), url });
                     return;
                 }
+                // The bare link, and no words: on a desktop a copied link is as likely to go into
+                // an address bar as into a chat, and two lines are wrong there.
                 await navigator.clipboard.writeText(url);
                 dispatch(
                     uiActions.toast({

@@ -40,6 +40,8 @@ describe("the app is called the same thing everywhere", () => {
         expect({
             title: grab(INDEX, /<title>([^<]*)<\/title>/),
             apple: grab(INDEX, /name="apple-mobile-web-app-title"\s+content="([^"]*)"/),
+            ogTitle: grab(INDEX, /property="og:title"\s+content="([^"]*)"/),
+            ogSite: grab(INDEX, /property="og:site_name"\s+content="([^"]*)"/),
             manifestName: MANIFEST.name,
             manifestShort: MANIFEST.short_name,
             favicon: grab(FAVICON, /<title id="title">([^<]*)<\/title>/),
@@ -48,6 +50,8 @@ describe("the app is called the same thing everywhere", () => {
         }).toStrictEqual({
             title: APP_NAME,
             apple: APP_NAME,
+            ogTitle: APP_NAME,
+            ogSite: APP_NAME,
             manifestName: APP_NAME,
             manifestShort: APP_NAME,
             favicon: APP_NAME,

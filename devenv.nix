@@ -39,6 +39,8 @@ let
     "^src/data/conv\\.json$"
     # The page description, in German, the same text as in manifest.webmanifest.
     "^src/index\\.html$"
+    # The words on the share card, in German, because the card is part of the product.
+    "^tools/og-card\\.html$"
   ];
 
   # Branches are worked on in git worktrees here, and .git/hooks is shared by every one of them:

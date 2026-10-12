@@ -26,6 +26,20 @@ const useClipboardFallback = async (page: import("@playwright/test").Page): Prom
     });
 };
 
+/** A share sheet that hands back what it was given, the way a phone's would be used. */
+const useShareSheet = async (page: import("@playwright/test").Page): Promise<void> => {
+    await page.addInitScript(() => {
+        const w = window as unknown as { __shared?: ShareData };
+        Object.defineProperty(navigator, "share", {
+            configurable: true,
+            value: (data: ShareData) => {
+                w.__shared = data;
+                return Promise.resolve();
+            },
+        });
+    });
+};
+
 const openFirstCrag = async (page: import("@playwright/test").Page): Promise<string> => {
     await page.goto("/");
     await waitForApp(page);
@@ -66,6 +80,25 @@ test.describe("sharing", () => {
         const copied = await page.evaluate(() => (window as { __copied?: string }).__copied);
         // A route link is `#<cragId>~<routeKey>`, which is what `route.key` already holds.
         expect(copied).toMatch(/#[^~]+~.+$/);
+    });
+});
+
+test.describe("what the message says", () => {
+    test.beforeEach(async ({ page }) => useShareSheet(page));
+
+    test("a shared crag names the crag, because the link's own card cannot", async ({ page }) => {
+        // The crag is in the fragment, which no crawler is ever sent, so every crag link shows the
+        // app's own card. The words around the link are the only thing that can say which crag it
+        // is -- and a share sheet shows `text`, where most of them drop `title`.
+        const id = await openFirstCrag(page);
+        // The crag page's own heading is the crag's name, which is what the share button labels with.
+        const name = await page.getByRole("heading", { level: 2 }).innerText();
+
+        await page.getByRole("button", { name: /share/i }).first().click();
+
+        const shared = await page.evaluate(() => (window as { __shared?: ShareData }).__shared);
+        expect(shared?.text).toBe(`${name} – Chlädderi`);
+        expect(shared?.url).toBe(`${new URL(page.url()).origin}/#${id}`);
     });
 });
 

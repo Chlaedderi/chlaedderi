@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { linkTo, packLinkTo } from "./useShare";
+import { APP_NAME } from "@core/name";
+
+import { linkTo, packLinkTo, shareText } from "./useShare";
 
 /**
  * What a shared link actually says.
@@ -68,5 +70,18 @@ describe("packLinkTo", () => {
     it("has no link to give for an address nobody else could fetch", () => {
         expect(packLinkTo("/maps/pack.ow.json")).toBeNull();
         expect(packLinkTo("data:application/json,%7B%7D")).toBeNull();
+    });
+});
+
+describe("shareText", () => {
+    it("names the crag, because the link itself cannot", () => {
+        // The card a chat window draws is the app's own -- what the crag is called has to be in
+        // the message. The label is what the crag page and the route list already show.
+        expect(shareText("Gelbe Wand, Chli Aubrig")).toBe(`Gelbe Wand, Chli Aubrig – ${APP_NAME}`);
+    });
+
+    it("does not say the app's name twice", () => {
+        // A share with nothing to name -- the region dialog's own link -- is labelled with the app.
+        expect(shareText(APP_NAME)).toBe(APP_NAME);
     });
 });

@@ -277,6 +277,17 @@ const FEATURES: Feature[] = [
         now: "src/features/shell/useShare.ts",
         exports: "useShare",
     },
+    {
+        what: "a shared link says which crag it is",
+        was: "nothing: the message was the bare address",
+        now: "src/features/shell/useShare.ts",
+        exports: "shareText",
+    },
+    {
+        what: "a shared link shows a card, not a bare blue line",
+        was: "nothing: the page carried no Open Graph tags",
+        now: "src/index.html",
+    },
 
     // ---- favourites and logbook
     {
