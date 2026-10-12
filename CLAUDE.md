@@ -1,7 +1,7 @@
 # Chlädderi
 
 A climbing-crag atlas as an offline-first PWA. German interface (Swiss spelling: **ss**, never **ß**),
-English as the second language. Deployed to GitHub Pages at <https://chlädderi.ch/> — which
+English as the second language. Deployed to GitHub Pages at [chlädderi.ch](https://xn--chldderi-2za.ch/) — which
 is `xn--chldderi-2za.ch` wherever a machine does the reading: DNS, the certificate, the
 `CNAME` file, the schema's `$id`, and `location.hostname` in the browser. `chlaedderi.ch`
 redirects there.
@@ -108,7 +108,9 @@ redirects there.
 - **The share card is addressed absolutely, and stays pointed at the deployed site.** The Open Graph
   tags in `src/index.html` name `https://xn--chldderi-2za.ch/og.png` in full, because a crawler has
   no page to resolve a relative address against, and `chlaedderi.ch` answers 301 to that host so the
-  ASCII domain needs no tags of its own. They do *not* follow a preview: `/pr-12/` advertises the
+  ASCII domain needs no tags of its own. That redirect goes to the bare host and **drops the path**,
+  so never link `chlaedderi.ch/<anything>`: a link to the site shows «chlädderi.ch» as its label and
+  targets the punycode host, and `src/name.test.ts` fails on any link target that does not. They do *not* follow a preview: `/pr-12/` advertises the
   deployed card, which is what keeps a preview out of a search index — and which means a change to
   the picture is invisible in its own preview. Look at `og.png`, and at the card once it is live.
   `og.png` is deliberately not in the workbox precache: it is for crawlers, and an install should
@@ -146,7 +148,7 @@ redirects there.
   on `PATH` by name, and `lint` runs the `e2e` hook, so the Playwright browsers are needed even by
   the job that only lints.
 
-- **A preview shares the host with the app.** `chlaedderi.github.io` is one origin, so a page at
+- **A preview shares the host with the app.** `xn--chldderi-2za.ch` is one origin, so a page at
   `/pr-12/` reaches the same localStorage and the same caches as `/`. Every
   storage name therefore carries `PREVIEW_SUFFIX` (`src/core/preview.ts`), which is empty on every
   page but a preview. `src/core/preview.test.ts` holds each of those names to its historical
