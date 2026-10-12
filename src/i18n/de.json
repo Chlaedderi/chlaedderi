@@ -521,6 +521,7 @@
     "pk.fromUrl": "Adresse eines Mappacks",
     "pk.fromUrl.h": "Die Adresse muss das Pack als JSON liefern und den Zugriff von hier erlauben (CORS).",
     "pk.hint": "Geladen ist im Moment nur die Kostprobe, die mit der App kommt: eine Handvoll Gebiete zum Ausprobieren. Lade unten eine Region, dann ist der Atlas deiner.",
+    "pk.inApp": "Auf diesem Gerät ist auch die App installiert, und sie teilt diesen Speicher: Ein hier geladenes Gebiet ist dort bereits geladen.",
     "pk.installed": "Geladen",
     "pk.intro": "Jede Region ist eine Datei – ein Mappack. Es bleibt auf diesem Gerät und funktioniert ohne Netz; beim Entladen wird der Platz wieder frei.",
     "pk.keepsFav": "Favoriten und Logbuch bleiben, auch für nicht geladene Regionen: Sie kommen mit dem Pack zurück.",

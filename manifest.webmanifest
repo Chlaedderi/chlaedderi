@@ -8,6 +8,7 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "background_color": "#28157a",
   "theme_color": "#28157a",
   "categories": ["sports", "travel", "navigation"],
@@ -20,5 +21,6 @@
   "shortcuts": [
     { "name": "Favoriten", "short_name": "Favoriten", "url": "./#/fav", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "Logbuch", "short_name": "Logbuch", "url": "./#/log", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
-  ]
+  ],
+  "related_applications": [{ "platform": "webapp", "url": "manifest.webmanifest" }]
 }

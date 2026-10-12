@@ -31,6 +31,7 @@ import { i18 } from "@core/text";
 import { packLinkTo, useShareLink } from "../shell/useShare";
 
 import { PackProblems } from "./PackProblems";
+import { useInstalledApp } from "./useInstalledApp";
 
 export const PacksDialog = () => {
     const { t } = useTranslation();
@@ -51,6 +52,8 @@ export const PacksDialog = () => {
         navigator.storage?.persisted?.().then(setPersistent, () => setPersistent(null));
         // `installed` is the trigger, not an input: the answer is about the origin, not the list.
     }, [installed]);
+    // A tab on a device that also has the app: the two share this store, which is worth saying.
+    const alsoInApp = useInstalledApp();
     const [url, setUrl] = useState("");
     const [problems, setProblems] = useState<readonly PackProblem[] | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
@@ -99,6 +102,11 @@ export const PacksDialog = () => {
                 {persistent === false && (
                     <Alert severity="warning" sx={{ mb: 1 }}>
                         {t("pk.notkept")}
+                    </Alert>
+                )}
+                {alsoInApp && (
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                        {t("pk.inApp")}
                     </Alert>
                 )}
 
