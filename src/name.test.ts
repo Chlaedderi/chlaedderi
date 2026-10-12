@@ -99,12 +99,15 @@ describe("nothing in here is named after anything else", () => {
 
     it("spells the name in ASCII the one way, everywhere", () => {
         // `Chlädderi` itself does not match: the ä is not an ASCII letter. Anything that fills the
-        // gap with something else does.
+        // gap with something else does -- except the one spelling that is not ours to choose. The
+        // site is «chlädderi.ch», and DNS, certificates and URIs all write that as punycode, where
+        // the umlaut becomes a suffix rather than two letters in the middle.
+        const PUNYCODE = "chldderi";
         const spelling = /chl[a-z-]*dderi/gi;
         const wrong = tracked.flatMap((f) =>
             [...text(f).matchAll(spelling)]
-                .map((m) => m[0])
-                .filter((found) => found.toLowerCase() !== APP_SLUG)
+                .map((m) => m[0].toLowerCase())
+                .filter((found) => found !== APP_SLUG && found !== PUNYCODE)
                 .map((found) => `${f}: ${found}`),
         );
         expect([...new Set(wrong)]).toStrictEqual([]);

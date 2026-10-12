@@ -100,7 +100,7 @@ export default defineConfig({
                 // «chlaedderi-packs» cache and reads version.json with no-store to notice a new
                 // deploy. Letting the service worker precache either would break both.
                 // Matched against the *path* of the request, and the app is served from a folder
-                // (https://chlaedderi.github.io/), so these must not be anchored at the
+                // (https://xn--chldderi-2za.ch/), so these must not be anchored at the
                 // origin: `^/maps/` never matched anything on the deployed site.
                 //
                 // /pr-N/ is a pull request preview (see .github/workflows/preview.yml). The app's

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://chlaedderi.github.io/mappack.schema.json",
+  "$id": "https://xn--chldderi-2za.ch/mappack.schema.json",
   "title": "Chlädderi mappack",
   "description": "One climbing region for the Chlädderi app: crags («Gebiete»), their routes, the car parks, the area groups and the little bit of metadata the app needs to show the region. A mappack can be loaded into the app and unloaded again. Unknown properties are allowed on purpose: an older app ignores fields it does not know.",
   "type": "object",

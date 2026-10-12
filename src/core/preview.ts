@@ -1,8 +1,8 @@
 /**
  * Is this page a preview of a pull request, and if so, which one?
  *
- * A preview is published next to the app itself -- <https://chlaedderi.github.io/pr-12/>
- * beside <https://chlaedderi.github.io/> -- and browser storage belongs to the *host*, not to
+ * A preview is published next to the app itself -- <https://xn--chldderi-2za.ch/pr-12/>
+ * beside <https://xn--chldderi-2za.ch/> -- and browser storage belongs to the *host*, not to
  * the path. Without the suffix below, opening a preview would read and write the real favourites,
  * logbook, settings and installed packs of whoever opened it, and a half-finished branch could
  * damage them.

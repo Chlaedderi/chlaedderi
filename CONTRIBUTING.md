@@ -31,12 +31,12 @@ deploy builds it again from your branch. Nothing in `dist/` is ever edited by ha
 ## Your pull request, live
 
 Every pull request from this repository is published as it is: within a few minutes a comment
-appears with its address, `https://chlaedderi.github.io/pr-<number>/`, and the screenshots of
+appears with its address, `https://chlädderi.ch/pr-<number>/`, and the screenshots of
 every screen beside it shortly after. Open it, and link the screenshots that show what you changed
 from your description.
 
 A preview keeps its own favourites, logbook and settings – it never touches the data of the app at
-<https://chlaedderi.github.io/>, even though both live on the same host. It disappears when
+<https://chlädderi.ch/>, even though both live on the same host. It disappears when
 the pull request closes.
 
 A pull request from a fork gets no preview. It runs the branch's own code, so it is not allowed to

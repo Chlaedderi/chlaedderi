@@ -48,8 +48,8 @@ describe("previewSuffix", () => {
 });
 
 describe("ownShell", () => {
-    const app = "https://chlaedderi.github.io/";
-    const preview = "https://chlaedderi.github.io/pr-12/";
+    const app = "https://xn--chldderi-2za.ch/";
+    const preview = "https://xn--chldderi-2za.ch/pr-12/";
 
     it("is this deployment's own app shell", () => {
         expect(ownShell(`workbox-precache-v2-${app}`, app)).toBe(true);
