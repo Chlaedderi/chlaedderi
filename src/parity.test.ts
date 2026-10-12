@@ -342,6 +342,12 @@ const FEATURES: Feature[] = [
         exports: "packUrl",
     },
     {
+        what: "arriving with favourites, logbook and settings from the app's old address",
+        was: "nothing: the app had only ever had one address",
+        now: "src/features/shell/TransferLink.tsx",
+        exports: "TransferLink",
+    },
+    {
         what: "asking before a region from a link is loaded",
         was: "nothing: a link could not carry a region",
         now: "src/features/packs/PackOffer.tsx",

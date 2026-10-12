@@ -39,6 +39,8 @@ let
     "^src/data/conv\\.json$"
     # The page description, in German, the same text as in manifest.webmanifest.
     "^src/index\\.html$"
+    # The page left behind at the app's old address, in German like the rest of the product.
+    "^stub/index\\.html$"
   ];
 
   # Branches are worked on in git worktrees here, and .git/hooks is shared by every one of them:

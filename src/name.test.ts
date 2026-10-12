@@ -94,7 +94,10 @@ describe("no superseded address survives", () => {
         .split("\0")
         .filter(Boolean)
         // The minified packs are data, and the schema is matched on its own terms below.
-        .filter((f) => !f.startsWith("maps/"));
+        .filter((f) => !f.startsWith("maps/"))
+        // stub/ is the page left behind at the old address. Naming it is its whole job: it is
+        // served from `enteee.github.io/Chl-dderi/` and has to say so. See stub/README.md.
+        .filter((f) => !f.startsWith("stub/"));
 
     // This file has to spell out what it forbids, so it is never one of the files it reads.
     const HERE = "src/name.test.ts";

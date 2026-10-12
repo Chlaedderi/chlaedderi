@@ -48,6 +48,13 @@ export default defineConfig([
         },
     },
 
+    {
+        // stub/ is the page left behind at the app's old address: no bundle, no React, and a
+        // service worker that unregisters itself. See stub/README.md.
+        files: ["stub/**/*.js"],
+        languageOptions: { globals: { ...globals.serviceworker, ...globals.browser } },
+    },
+
     prettierRecommended,
 
     {

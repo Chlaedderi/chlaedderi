@@ -36,6 +36,7 @@ import { AppBarTop } from "./features/shell/AppBarTop";
 import { LegacyLink } from "./features/shell/LegacyLink";
 import { PackLink } from "./features/shell/PackLink";
 import { Toasts } from "./features/shell/Toasts";
+import { TransferLink } from "./features/shell/TransferLink";
 import { UpdateBanner } from "./features/shell/UpdateBanner";
 
 /**
@@ -416,6 +417,8 @@ export const App = () => (
                 />
                 {/* A link that carries a whole region rather than a crag. */}
                 <Route path="/pack" element={<PackLink />} />
+                {/* Favourites, logbook and settings arriving from the app's old address. */}
+                <Route path="/transfer" element={<TransferLink />} />
                 {/* `#<cragId>` and `#<cragId>~<routeKey>` from the hand-written app. */}
                 <Route path="*" element={<LegacyLink />} />
             </Routes>

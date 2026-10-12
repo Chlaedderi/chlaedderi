@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#28157a" />
+        <meta name="robots" content="noindex" />
+        <title>Chlädderi ist umgezogen</title>
+        <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+        <style>
+            :root {
+                color-scheme: light dark;
+                --ink: #16151a;
+                --bg: #f7f6fb;
+                --card: #ffffff;
+                --brand: #28157a;
+                --muted: #5b5870;
+                --line: #ddd9ea;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --ink: #ece9f6;
+                    --bg: #16141c;
+                    --card: #201d2a;
+                    --brand: #b9a9ff;
+                    --muted: #a39fb8;
+                    --line: #332e44;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+                background: var(--bg);
+                color: var(--ink);
+                font:
+                    16px/1.5 system-ui,
+                    -apple-system,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+            }
+            main {
+                max-width: 34rem;
+                margin: 0 auto;
+            }
+            h1 {
+                font-size: 1.5rem;
+                line-height: 1.25;
+                margin: 0 0 0.5rem;
+            }
+            p {
+                margin: 0 0 1rem;
+            }
+            .card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 16px;
+                margin: 0 0 16px;
+            }
+            a.go,
+            button {
+                display: block;
+                width: 100%;
+                padding: 14px 16px;
+                border: 0;
+                border-radius: 12px;
+                background: var(--brand);
+                color: #fff;
+                font: inherit;
+                font-weight: 600;
+                text-align: center;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            button.second {
+                background: transparent;
+                color: var(--brand);
+                border: 1px solid var(--line);
+                font-weight: 500;
+                margin-top: 8px;
+            }
+            code,
+            textarea {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                font-size: 12px;
+            }
+            textarea {
+                width: 100%;
+                min-height: 5.5rem;
+                resize: vertical;
+                padding: 10px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                background: var(--bg);
+                color: var(--ink);
+            }
+            .muted {
+                color: var(--muted);
+                font-size: 0.9rem;
+            }
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Chlädderi ist umgezogen</h1>
+            <p id="lead">Die App läuft neu unter <strong id="home">chlaedderi.ch</strong>.</p>
+
+            <div class="card" id="dataCard" hidden>
+                <p id="found">Deine Daten sind noch hier.</p>
+                <a class="go" id="take" href="#">Daten mitnehmen</a>
+                <button class="second" id="copy" type="button">Code kopieren</button>
+                <p class="muted" style="margin: 12px 0 6px">
+                    Falls der Knopf nichts tut: Code kopieren, drüben unter «Favoriten» → «Sichern
+                    und übertragen» einfügen.
+                </p>
+                <textarea id="code" readonly aria-label="Übertragungscode"></textarea>
+            </div>
+
+            <div class="card" id="emptyCard" hidden>
+                <p>Auf diesem Gerät sind hier keine Daten gespeichert.</p>
+                <a class="go" id="plain" href="#">Zur neuen Adresse</a>
+            </div>
+
+            <p class="muted">
+                Die Adresse hat gewechselt, und der Browser verwahrt Favoriten und Logbuch pro
+                Adresse. Darum müssen sie einmal mitgenommen werden. Diese Seite bleibt stehen –
+                auch in einem Jahr noch.
+            </p>
+            <p class="muted">
+                Der Code wird nur im Adressteil nach dem <code>#</code> weitergegeben. Der geht nie
+                an einen Server.
+            </p>
+        </main>
+
+        <script>
+            // The new home. One address, decided once: see the plan this page belongs to.
+            const HOME = "https://chlaedderi.ch/";
+            const NS = "finale-atlas";
+            const KEYS = ["fav", "log", "prefs"];
+
+            // An old share link that lands here -- «#crag?pack=…» or «#/pack?url=…» -- is not a
+            // hand-over, it is somebody following a link from a chat. Send it on unchanged, so
+            // every link ever sent keeps doing what it said it would.
+            const hash = location.hash.replace(/^#/, "");
+            if (hash && hash !== "/" && !hash.startsWith("/transfer")) {
+                location.replace(HOME + "#" + hash);
+            }
+
+            /** The {v,t,rev} envelope the app stores in all three layers. */
+            const asRecord = (raw) => {
+                if (raw == null) return null;
+                let value = raw;
+                if (typeof value === "string") {
+                    try {
+                        value = JSON.parse(value);
+                    } catch {
+                        return null;
+                    }
+                }
+                if (typeof value !== "object" || value === null) return null;
+                if (!("v" in value)) return null;
+                return {
+                    v: value.v,
+                    t: Number(value.t) || 0,
+                    rev: Number(value.rev) || 0,
+                };
+            };
+
+            /** The app's own order(): newest t, then rev, then the JSON itself as a tiebreak. */
+            const newer = (a, b) => {
+                if (!a) return b;
+                if (!b) return a;
+                if (a.t !== b.t) return a.t > b.t ? a : b;
+                if (a.rev !== b.rev) return a.rev > b.rev ? a : b;
+                return JSON.stringify(a.v) >= JSON.stringify(b.v) ? a : b;
+            };
+
+            const fromLocal = (key) => {
+                try {
+                    return asRecord(localStorage.getItem(NS + ":" + key));
+                } catch {
+                    return null;
+                }
+            };
+
+            const fromCache = async (key) => {
+                try {
+                    if (!("caches" in self)) return null;
+                    const cache = await caches.open(NS + "-user");
+                    // Relative, exactly as the app wrote it, so it resolves to this folder.
+                    const hit = await cache.match("./__store/" + encodeURIComponent(key) + ".json");
+                    return hit ? asRecord(await hit.text()) : null;
+                } catch {
+                    return null;
+                }
+            };
+
+            const fromIdb = async () => {
+                const out = {};
+                try {
+                    if (!("indexedDB" in self)) return out;
+                    // Do not call a database into being that was never there.
+                    if (indexedDB.databases) {
+                        const names = (await indexedDB.databases()).map((d) => d.name);
+                        if (!names.includes(NS)) return out;
+                    }
+                    const db = await new Promise((resolve, reject) => {
+                        const open = indexedDB.open(NS);
+                        open.onsuccess = () => resolve(open.result);
+                        open.onerror = () => reject(open.error);
+                        open.onblocked = () => reject(new Error("blocked"));
+                        setTimeout(() => reject(new Error("slow")), 2000);
+                    });
+                    if (!db.objectStoreNames.contains("kv")) return out;
+                    const tx = db.transaction("kv", "readonly").objectStore("kv");
+                    for (const key of KEYS) {
+                        out[key] = await new Promise((resolve) => {
+                            const req = tx.get(key);
+                            req.onsuccess = () => resolve(asRecord(req.result));
+                            req.onerror = () => resolve(null);
+                        });
+                    }
+                    db.close();
+                } catch {
+                    /* a browser that will not say is the same as one with nothing to say */
+                }
+                return out;
+            };
+
+            const b64url = (text) => {
+                const bytes = new TextEncoder().encode(text);
+                let binary = "";
+                for (const b of bytes) binary += String.fromCharCode(b);
+                return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+            };
+
+            const show = (id) => document.getElementById(id).removeAttribute("hidden");
+
+            (async () => {
+                document.getElementById("home").textContent = new URL(HOME).host;
+                document.getElementById("plain").href = HOME;
+
+                const idb = await fromIdb();
+                const best = {};
+                for (const key of KEYS) {
+                    best[key] = newer(
+                        newer(fromLocal(key), idb[key] ?? null),
+                        await fromCache(key),
+                    );
+                }
+
+                const fav = best.fav?.v ?? null;
+                const log = best.log?.v ?? null;
+                const prefs = best.prefs?.v ?? null;
+
+                const crags = Array.isArray(fav?.c) ? fav.c.length : 0;
+                const routes = Array.isArray(fav?.r) ? fav.r.length : 0;
+                const entries = Array.isArray(log) ? log.length : 0;
+                const packs = Array.isArray(prefs?.packs) ? prefs.packs.length : 0;
+
+                if (!crags && !routes && !entries && !packs) {
+                    show("emptyCard");
+                    return;
+                }
+
+                // FA2: favourites, logbook *and* the settings -- which is where the list of
+                // installed regions and the addresses they came from lives. FA1 carried only the
+                // first two, and «just install your regions again» meant retyping addresses.
+                const code =
+                    "FA2." +
+                    b64url(
+                        JSON.stringify({
+                            v: 2,
+                            fav: fav ?? undefined,
+                            log: log ?? undefined,
+                            prefs: prefs ?? undefined,
+                        }),
+                    );
+
+                const bits = [];
+                if (crags) bits.push(crags === 1 ? "1 Gebiet" : crags + " Gebiete");
+                if (routes) bits.push(routes === 1 ? "1 Route" : routes + " Routen");
+                if (entries)
+                    bits.push(entries === 1 ? "1 Logbucheintrag" : entries + " Logbucheinträge");
+                if (packs) bits.push(packs === 1 ? "1 Region" : packs + " Regionen");
+                document.getElementById("found").textContent =
+                    "Gefunden: " + bits.join(", ") + ". Der Knopf nimmt alles mit.";
+
+                document.getElementById("code").value = code;
+
+                const link = HOME + "#/transfer?c=" + code;
+                const take = document.getElementById("take");
+                // Some browsers baulk at a very long address. Above this the code is the way.
+                if (link.length <= 60000) {
+                    take.href = link;
+                } else {
+                    take.href = HOME;
+                    take.textContent = "Zur neuen Adresse (Code von Hand einfügen)";
+                }
+
+                document.getElementById("copy").addEventListener("click", async () => {
+                    const field = document.getElementById("code");
+                    try {
+                        await navigator.clipboard.writeText(code);
+                    } catch {
+                        field.select();
+                    }
+                    document.getElementById("copy").textContent = "Code kopiert";
+                });
+
+                show("dataCard");
+            })();
+
+            // Replace the app's old service worker with the one that removes itself. Without this
+            // the cached shell keeps answering and nobody ever sees this page.
+            // Only when something is still in charge of this page: once the app's worker has been
+            // replaced and removed, an uncontrolled load needs no worker at all, and registering
+            // one anyway would install and unregister it on every single visit.
+            if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.register("sw.js").catch(() => {});
+            }
+        </script>
+    </body>
+</html>

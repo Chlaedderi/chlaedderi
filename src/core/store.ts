@@ -489,27 +489,37 @@ export const DEFAULT_NAMESPACE = `finale-atlas${PREVIEW_SUFFIX}`;
 export const openStore = (ns: string = DEFAULT_NAMESPACE): Store =>
     stores[ns] ?? (stores[ns] = create(ns));
 
-// ---- Transfer code: "FA1." + base64url(UTF-8 JSON). Used to carry favourites and the logbook
-// between Safari and the home-screen app on iOS, which do not share storage.
+// ---- Transfer code: "FA<n>." + base64url(UTF-8 JSON). Used to carry favourites and the logbook
+// between Safari and the home-screen app on iOS, which do not share storage -- and, once, between
+// one address of the app and another, which is a thing browsers consider two different computers.
+//
+// FA1 carries `{ fav, log }`. FA2 adds `prefs`, which is where the list of installed regions and
+// the addresses they came from lives: without it "install your regions again" means copying
+// addresses out of a chat by hand. FA1 keeps being read, for ever -- codes are kept in notes apps
+// and pasted a year later.
 
-export const encodeTransfer = (obj: unknown): string => {
+/** The payload versions this app can write and read. */
+export type TransferVersion = 1 | 2;
+
+export const encodeTransfer = (obj: unknown, version: TransferVersion = 1): string => {
     try {
         if (!obj || typeof obj !== "object") return "";
         const bytes = new TextEncoder().encode(JSON.stringify(obj));
         let bin = "";
         for (const byte of bytes) bin += String.fromCharCode(byte);
-        return `FA1.${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+        const body = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        return `FA${String(version)}.${body}`;
     } catch {
         return "";
     }
 };
 
-/** The object, or null for anything invalid or incomplete. */
+/** The object, or null for anything invalid, incomplete, or of a version this app cannot read. */
 export const decodeTransfer = (code: string): unknown => {
     try {
-        const m = /^FA1\.([A-Za-z0-9_-]+)$/.exec(String(code).replace(/\s+/g, ""));
-        if (!m?.[1]) return null;
-        const bin = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
+        const m = /^FA([12])\.([A-Za-z0-9_-]+)$/.exec(String(code).replace(/\s+/g, ""));
+        if (!m?.[2]) return null;
+        const bin = atob(m[2].replace(/-/g, "+").replace(/_/g, "/"));
         const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
         const obj: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
         return obj && typeof obj === "object" ? obj : null;

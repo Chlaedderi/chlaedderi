@@ -95,6 +95,21 @@ English as the second language. Deployed to GitHub Pages at <https://chlaedderi.
   `refreshApp` drops only this deployment's own app shell — a preview that unregistered the app's
   service worker would take it offline for somebody standing under a cliff.
 
+- **The app changed address once, and `stub/` is what was left behind.** Browser storage belongs
+  to the host, so moving off the old personal address emptied every installed app at a stroke
+  (`stub/README.md` names it — nothing else here may, and `src/name.test.ts` sees to that). The page in `stub/` reads the three storage layers at the old address, encodes them as
+  an `FA2.` code and hands it to the new one in the fragment, where no server sees it; the service
+  worker beside it replaces the app's own — at the same path, or the cached shell would answer for
+  ever — and then removes itself. It is kept in this repository so it is reviewed and formatted
+  like everything else, and `tools/make-site.sh` never publishes it. `stub/README.md` says when it
+  ships and why `HOME` in it is the only thing that must be right first.
+
+- **A transfer code adds, it never replaces.** `src/core/transfer.ts` is the one place that folds
+  one into what a browser already has, used by the `#/transfer?c=…` link and by the «Sichern und
+  übertragen» button alike. FA1 (favourites and logbook) is read for ever; FA2 adds the settings,
+  which is where the installed regions and their addresses live. Someone pasting a year-old code
+  must come out with more than they went in with, never less.
+
 - **English in the repository, German in the app.** Everything written about the project — the
   README, `CONTRIBUTING.md`, this file, every comment, test name and commit message — is English.
   What stays German is the product: `src/i18n/de.json`, `dataTranslations.ts`, the page

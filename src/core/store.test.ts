@@ -66,6 +66,31 @@ describe("the transfer code", () => {
         expect(decodeTransfer(code)).toEqual(data);
     });
 
+    it("round-trips the settings too, which is what FA2 is for", () => {
+        // The list of installed regions, and the addresses they came from, live in the settings.
+        // Carrying them is the difference between «install your regions again» being a click and
+        // being a search through a chat for the addresses.
+        const data = {
+            v: 2,
+            fav: { c: ["rocca-di-perti"], r: [] },
+            log: [],
+            prefs: {
+                lang: "de",
+                packs: [{ id: "ow", src: { type: "url", url: "https://x/y.json" } }],
+            },
+        };
+        const code = encodeTransfer(data, 2);
+        expect(code.startsWith("FA2.")).toBe(true);
+        expect(decodeTransfer(code)).toEqual(data);
+    });
+
+    it("still reads a code written before FA2 existed", () => {
+        // Codes are kept in notes apps and pasted a year later. FA1 is never retired.
+        expect(decodeTransfer("FA1.eyJmYXYiOnsiYyI6WyJhIl0sInIiOltdfX0")).toEqual({
+            fav: { c: ["a"], r: [] },
+        });
+    });
+
     it("survives non-ASCII, which Swiss and Italian crag names are full of", () => {
         const data = { names: ["Gorge de l'Hérault", "È vietato", "Zeneggen – Törbel", "ß"] };
         expect(decodeTransfer(encodeTransfer(data))).toEqual(data);
@@ -80,7 +105,8 @@ describe("the transfer code", () => {
     it("refuses anything that is not a code", () => {
         expect(decodeTransfer("")).toBeNull();
         expect(decodeTransfer("FA1.")).toBeNull();
-        expect(decodeTransfer("FA2.abc")).toBeNull();
+        expect(decodeTransfer("FA3.abc")).toBeNull(); // a version this app does not know
+        expect(decodeTransfer("FA2.abc")).toBeNull(); // a version it knows, and still not a code
         expect(decodeTransfer("FA1.!!!not-base64!!!")).toBeNull();
         expect(decodeTransfer("FA1.YQ")).toBeNull(); // valid base64, but "a" is not an object
         expect(encodeTransfer("a string")).toBe("");

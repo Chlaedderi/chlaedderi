@@ -91,8 +91,10 @@ test.describe("favourites and the logbook", () => {
         const code = page.getByRole("textbox", { name: /copy this code/i });
         await expect(code).toBeVisible();
         const value = await code.inputValue();
-        // The transfer code the hand-written app used, so the two can exchange data.
-        expect(value.startsWith("FA1.")).toBe(true);
+        // FA2: the code carries the settings too now, which is how the list of installed regions
+        // and the addresses they came from travel between devices. FA1 is still read -- codes are
+        // kept in notes apps and pasted a year later. See src/core/transfer.ts.
+        expect(value.startsWith("FA2.")).toBe(true);
 
         // Taking it back changes nothing, and says so rather than duplicating.
         await page.getByLabel(/paste a code here/i).fill(value);

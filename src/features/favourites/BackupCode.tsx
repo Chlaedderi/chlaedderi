@@ -19,24 +19,32 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { favouritesActions } from "@app/slices/favouritesSlice";
 import { logbookActions } from "@app/slices/logbookSlice";
+import { prefsActions } from "@app/slices/prefsSlice";
 import { uiActions } from "@app/slices/uiSlice";
-import { cleanFavourites } from "@core/favourites";
-import { cleanLog } from "@core/logbook";
-import { decodeTransfer, encodeTransfer } from "@core/store";
+import { encodeTransfer } from "@core/store";
+import { mergeTransfer, readTransfer } from "@core/transfer";
 
 export const BackupCode = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const favourites = useAppSelector((s) => s.favourites);
     const entries = useAppSelector((s) => s.logbook.entries);
+    const prefs = useAppSelector((s) => s.prefs);
     const [code, setCode] = useState("");
     const [shown, setShown] = useState<string | null>(null);
 
     const make = (): void => {
-        const text = encodeTransfer({
-            fav: { c: favourites.crags, r: favourites.routes },
-            log: entries,
-        });
+        // FA2: the settings travel too, so the list of installed regions and the addresses they
+        // came from arrive with the rest. See src/core/transfer.ts.
+        const text = encodeTransfer(
+            {
+                v: 2,
+                fav: { c: favourites.crags, r: favourites.routes },
+                log: entries,
+                prefs,
+            },
+            2,
+        );
         setShown(text);
         navigator.clipboard?.writeText(text).then(
             () => dispatch(uiActions.toast({ message: t("fv.code.copied"), severity: "success" })),
@@ -47,32 +55,34 @@ export const BackupCode = () => {
     };
 
     const take = (): void => {
-        const value = decodeTransfer(code) as { fav?: unknown; log?: unknown } | null;
-        if (!value) {
+        const incoming = readTransfer(code);
+        if (!incoming) {
             dispatch(uiActions.toast({ message: t("fv.import.bad"), severity: "error" }));
             return;
         }
 
         // Merged, never replaced: taking a code from another device must not lose what is here.
-        const incoming = cleanFavourites(value.fav);
-        const mergedCrags = new Set([...favourites.crags, ...incoming.c]);
-        const mergedRoutes = new Set([...favourites.routes, ...incoming.r]);
+        // The same folding the `#/transfer` link does, from the one place that knows how.
+        const merged = mergeTransfer(incoming, {
+            crags: favourites.crags,
+            routes: favourites.routes,
+            log: entries,
+            prefs,
+        });
 
-        const known = new Set(entries.map((e) => e.id));
-        const added = cleanLog(value.log).filter((e) => !known.has(e.id));
-
-        const newCrags = mergedCrags.size - favourites.crags.length;
-        const newRoutes = mergedRoutes.size - favourites.routes.length;
-        const gained = newCrags + newRoutes + added.length;
-
-        dispatch(favouritesActions.restore({ crags: [...mergedCrags], routes: [...mergedRoutes] }));
-        if (added.length) dispatch(logbookActions.restore([...entries, ...added]));
+        dispatch(favouritesActions.restore({ crags: merged.crags, routes: merged.routes }));
+        if (merged.gained.entries) dispatch(logbookActions.restore([...merged.log]));
+        if (merged.prefs) dispatch(prefsActions.restore(merged.prefs));
         setCode("");
         dispatch(
             uiActions.toast({
-                message: gained
-                    ? t("fv.import.ok", { 0: newCrags, 1: newRoutes, 2: added.length })
-                    : t("fv.import.none"),
+                message: merged.nothingNew
+                    ? t("fv.import.none")
+                    : t("fv.import.ok", {
+                          0: merged.gained.crags,
+                          1: merged.gained.routes,
+                          2: merged.gained.entries,
+                      }),
                 severity: "success",
             }),
         );
