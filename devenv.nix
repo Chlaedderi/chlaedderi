@@ -53,6 +53,10 @@ let
 in
 {
   env = {
+    # Off in a shell a person is standing in, on in a CI runner, where tools/cicd.nix turns it on.
+    # What it buys is below, in `packages`.
+    cicd = lib.mkDefault false;
+
     # set do not track (https://consoledonottrack.com/)
     DO_NOT_TRACK = 1;
 
@@ -74,31 +78,36 @@ in
     LC_TIME = use-locale;
   };
 
-  packages = with pkgs; [
-    git
+  packages =
+    with pkgs;
+    [
+      git
 
-    # Ai
-    claude-code
+      # tools/make-packs.sh needs only these two
+      jq
+      perl
 
-    # tools/make-packs.sh needs only these two
-    jq
-    perl
+      # Playwright: the browsers come from the nix store, so nothing is downloaded on install.
+      # @playwright/test in package.json must stay pinned to playwright-driver.version (1.61.1).
+      playwright-driver.browsers
 
-    # Playwright: the browsers come from the nix store, so nothing is downloaded on install.
-    # @playwright/test in package.json must stay pinned to playwright-driver.version (1.61.1).
-    playwright-driver.browsers
+      # hook runner and the tools the hooks that are not wired through git-hooks.nix call directly
+      prek
+      check-jsonschema
+      renovate # for renovate-config-validator
 
-    # hook runner and the tools the hooks that are not wired through git-hooks.nix call directly
-    prek
-    check-jsonschema
-    renovate # for renovate-config-validator
-
-    # everyday shell, and `gh` for the pull requests and workflow runs of this repository
-    gh
-    curl
-    yq-go
-    dos2unix
-  ];
+      # everyday shell, and `gh` for the pull requests and workflow runs of this repository
+      gh
+      curl
+      yq-go
+      dos2unix
+    ]
+    # Only for a person in a shell. Nothing in CI calls these -- no hook, no script, no workflow
+    # step -- so a runner would build or download them and never open them. See tools/cicd.nix.
+    ++ lib.optionals (!config.env.cicd) [
+      # Ai
+      claude-code
+    ];
 
   # https://devenv.sh/languages/
   languages.nix.enable = true;

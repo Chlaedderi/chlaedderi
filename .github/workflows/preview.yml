@@ -52,6 +52,8 @@ jobs:
           # look like", and a branch that does not merge cleanly would otherwise get no preview at
           # all. What the merge looks like is the Checks workflow's business.
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Enter CI/CD mode
+        run: cp tools/cicd.nix devenv.local.nix
       - uses: cachix/install-nix-action@v31
       - uses: cachix/cachix-action@v16
         with:
@@ -89,6 +91,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Enter CI/CD mode
+        run: cp tools/cicd.nix devenv.local.nix
       - uses: cachix/install-nix-action@v31
       - uses: cachix/cachix-action@v16
         with:

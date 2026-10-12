@@ -27,6 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The tools that only a person in a shell ever opens are left out here; see tools/cicd.nix.
+      - name: Enter CI/CD mode
+        run: cp tools/cicd.nix devenv.local.nix
       - uses: cachix/install-nix-action@v31
       # Pull-only: the public devenv cache saves building the tool closure from source.
       - uses: cachix/cachix-action@v16
@@ -44,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Enter CI/CD mode
+        run: cp tools/cicd.nix devenv.local.nix
       - uses: cachix/install-nix-action@v31
       - uses: cachix/cachix-action@v16
         with:
