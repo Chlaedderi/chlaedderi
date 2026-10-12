@@ -121,10 +121,12 @@ The published files are written to the `gh-pages` branch, which is what Pages se
 | `tools/make-site.sh` | collects the files that get published – the same set for the app and for a preview |
 | `tools/publish-pages.sh` | writes the `gh-pages` branch: the app, a preview, or neither any more |
 | `tools/serve.pl` | a small local server for trying things out: `dist/` first, then the repository |
+| `tools/og-card.html`, `tools/make-og.mjs` | the share card and the one command that redraws it: `node tools/make-og.mjs` |
 | `devenv.nix`, `devenv.yaml` | the development environment, git hooks included |
 | `package.json`, `tsconfig*.json`, `vite.config.ts`, `eslint.config.mjs` | the build and the checking tools |
 | `manifest.webmanifest` | name, colours and icons for installing |
 | `icon-*.png`, `apple-touch-icon.png`, `favicon*` | the app icon in every size needed |
+| `og.png` | the picture a shared link shows in a chat window; drawn by `tools/make-og.mjs` |
 | `.github/workflows/pages.yml` | publishes the app on every push to `main` |
 | `.github/workflows/preview.yml` | publishes every pull request at `pr-<number>/`, screenshots included |
 | `.github/workflows/prune-previews.yml` | drops the previews of pull requests that are no longer open |

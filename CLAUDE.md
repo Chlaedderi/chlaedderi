@@ -98,6 +98,15 @@ redirects there.
   `packs/`. GitHub's own troubleshooting page warns about exactly this. So the site brings its own,
   and the domain survives every publish.
 
+- **The share card is addressed absolutely, and stays pointed at the deployed site.** The Open Graph
+  tags in `src/index.html` name `https://xn--chldderi-2za.ch/og.png` in full, because a crawler has
+  no page to resolve a relative address against, and `chlaedderi.ch` answers 301 to that host so the
+  ASCII domain needs no tags of its own. They do *not* follow a preview: `/pr-12/` advertises the
+  deployed card, which is what keeps a preview out of a search index — and which means a change to
+  the picture is invisible in its own preview. Look at `og.png`, and at the card once it is live.
+  `og.png` is deliberately not in the workbox precache: it is for crawlers, and an install should
+  not carry 100 KB it will never read. `tools/make-og.mjs` redraws it from `tools/og-card.html`.
+
 - **Version numbers are not in the bundle.** The deploy writes `version.json`; the app reads it.
   That keeps the build reproducible: two deploys of the same commit produce the same bundle, which
   is what lets a preview and the deploy be compared at all.
