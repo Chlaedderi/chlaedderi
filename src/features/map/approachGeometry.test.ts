@@ -40,8 +40,8 @@ describe("approachSpan", () => {
     });
 
     it("reaches from the wall to the car park of a real crag", () => {
-        // Bastionata Sinistra Boragni: the wall at 44.2132, its car park north of it at 44.2151.
-        const c = byId["valle-di-nava-bastionata-sinistra-boragni"]!;
+        // Musterwand: the wall at 46.6048, its car park north of it at 46.6075.
+        const c = byId["testing-musterwand"]!;
         const span = approachSpan(c, parks)!;
         expect(span).not.toBeNull();
         expect(span.south).toBeCloseTo(c.coord!.lat, 4);
@@ -54,7 +54,7 @@ describe("approachSpan", () => {
     it("contains every point of the drawn line, not just its ends", () => {
         // A path that bulges out of the box would be half-covered by the card the box makes room
         // for, which is the whole reason the box exists.
-        const c = byId["rocca-di-perti-placca-piotti"]!;
+        const c = byId["testing-attrappengrat-westgrat"]!;
         const span = approachSpan(c, parks)!;
         const line = approachLine(c.ap[0]!)!;
         expect(line.length).toBeGreaterThan(2);

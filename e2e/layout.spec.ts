@@ -90,17 +90,19 @@ test.describe("the wide layout", () => {
     });
 
     /**
-     * Two walls of Monte Cucco, 75 m apart and sharing the car park `monte_cucco`. Whichever of
-     * them the map has fitted itself to, the other is on screen -- and at that zoom the clusters
+     * The two walls of the Musterberg, about 240 m apart and sharing the car park `musterberg`. Whichever
+     * of them the map has fitted itself to, the other is on screen -- and at that zoom the clusters
      * are off -- so the second marker is reachable without panning or zooming first.
      */
-    const ANFITEATRO = "monte-cucco-anfiteatro";
-    const CENTRALE = "Settore Centrale";
+    const FIRST = "testing-musterwand";
+    const FIRST_NAME = "Musterwand";
+    const SECOND = "testing-musterwand-nord";
+    const SECOND_NAME = "Musterwand Nord";
 
     test("follows the map: a second marker moves the column", async ({ page }) => {
         // Straight to the crag rather than through a first marker tap: it is the same route the
         // store is driven from, and it leaves nothing to miss.
-        await page.goto(`/#/crag/${ANFITEATRO}`);
+        await page.goto(`/#/crag/${FIRST}`);
         await waitForApp(page);
         await expect(page.locator(".leaflet-container .mk.sel")).toBeVisible();
         await expect(page.locator(".pop")).toBeVisible();
@@ -131,31 +133,31 @@ test.describe("the wide layout", () => {
         // stale mid-click. Measure, then click the pixels.
         await expect(async () => {
             const box = await page
-                .locator(`.leaflet-marker-icon[title="${CENTRALE}"]`)
+                .locator(`.leaflet-marker-icon[title="${SECOND_NAME}"]`)
                 .boundingBox();
             expect(box, "the neighbouring marker should be on screen").not.toBeNull();
             await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-            await expect(page).toHaveURL(/#\/crag\/monte-cucco-settore-centrale$/, {
+            await expect(page).toHaveURL(new RegExp(`#/crag/${SECOND}$`), {
                 timeout: 3000,
             });
         }).toPass({ timeout: 15_000 });
 
         await page.waitForTimeout(1500);
         // The crag it started on, then the one that was tapped, and nothing else: the map moved
-        // once. A trailing `…, "Anfiteatro", "Settore Centrale"` is the bounce -- the route pulling
+        // once. A trailing `…, "Musterwand", "Musterwand Nord"` is the bounce -- the route pulling
         // the selection back to the open page before the page itself caught up.
         expect(await page.evaluate(() => (window as unknown as { __picked: string[] }).__picked)) //
-            .toEqual(["Anfiteatro", CENTRALE]);
-        await expect(detail(page).getByRole("heading", { level: 2 })).toHaveText(CENTRALE);
-        await expect(page.locator(".pop .t")).toContainText(CENTRALE);
+            .toEqual([FIRST_NAME, SECOND_NAME]);
+        await expect(detail(page).getByRole("heading", { level: 2 })).toHaveText(SECOND_NAME);
+        await expect(page.locator(".pop .t")).toContainText(SECOND_NAME);
 
         // Moving from crag to crag is navigation, so it is in the history like any other.
         await page.goBack();
-        await expect(page).toHaveURL(new RegExp(`#/crag/${ANFITEATRO}$`));
+        await expect(page).toHaveURL(new RegExp(`#/crag/${FIRST}$`));
     });
 
     test("a tap on the map puts the card away without closing the crag", async ({ page }) => {
-        await page.goto(`/#/crag/${ANFITEATRO}`);
+        await page.goto(`/#/crag/${FIRST}`);
         await waitForApp(page);
         await expect(page.locator(".pop")).toBeVisible();
         await page.waitForTimeout(1000);
@@ -168,7 +170,7 @@ test.describe("the wide layout", () => {
         // What the tap was for: seeing what the card covered. The crag itself is not given up.
         await expect(page.locator(".leaflet-container .mk.sel")).toBeVisible();
         await expect(page.locator(".leaflet-overlay-pane path").first()).toBeVisible();
-        await expect(page).toHaveURL(new RegExp(`#/crag/${ANFITEATRO}$`));
+        await expect(page).toHaveURL(new RegExp(`#/crag/${FIRST}$`));
         await expect(detail(page).getByRole("heading", { level: 2 })).toBeVisible();
     });
 
@@ -196,7 +198,7 @@ test.describe("the phone layout", () => {
     test.skip(({ isMobile }) => !isMobile, "the phone layout only");
 
     const ARROW = /^(back|zurück)$/i;
-    const CRAG = "monte-cucco-anfiteatro";
+    const CRAG = "testing-musterwand";
 
     test("has one way back on a crag, and it goes back", async ({ page }) => {
         await page.goto("/");

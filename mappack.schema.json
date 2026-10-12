@@ -21,6 +21,7 @@
     "updated": { "$ref": "#/$defs/date", "description": "When the data last changed." },
     "partial": { "type": "boolean", "default": false, "description": "true for a sample or showcase pack that only holds a few crags. The app then keeps asking for a full pack." },
     "ch": { "type": "boolean", "default": false, "description": "Region in Switzerland: swisstopo base map and trails, MeteoSchweiz forecast, approach planner on swisstopo paths." },
+    "fictional": { "type": "boolean", "default": false, "description": "The crags in this pack are invented. The app says so on every screen and withholds everything that would send somebody to a coordinate: no route to a cliff that does not exist." },
     "text": { "$ref": "#/$defs/text", "description": "The words that belong to this region: the app itself knows none of them." },
     "view": {
       "type": "object",

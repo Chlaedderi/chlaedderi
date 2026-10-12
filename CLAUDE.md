@@ -32,6 +32,28 @@ redirects there.
   really is a slice of the region it came from. The second says `skip`, not `ok`, on purpose; the
   real comparison is made in the private repository, where the data is.
 
+- **The showcase that ships is invented, and must stay that way.** `maps/pack.showcase.json` is
+  compiled into the bundle, so it is the one pack every visitor to the site gets without asking —
+  and it is **generated**, by `tools/make-packs.sh --showcase-from`. It used to be a slice of the
+  real Finale region, and it carried nineteen hot-linked photographs from other people's sites with
+  not one licence recorded, route lists in theCrag's order under CC BY-NC-SA, and scraped Climbook
+  ratings. None of that was ours to publish. It is now cut from `maps/pack.testing.json`, which is
+  invented from end to end; `make-showcase` is the canonical command and the only record of which
+  crags the cut takes. `src/core/packs/showcase.test.ts` fails if the shipped pack stops saying
+  `fictional: true`, or if a picture in it lacks an author and a licence, or if a picture comes from
+  anywhere but Wikimedia Commons — point the cut at a real region and it will tell you, loudly.
+  The handful of real photographs in it are Commons files under their own licences, captioned for
+  the real place they show and never as the invented crag they sit beside.
+
+- **A `fictional` region is marked, and nothing navigates to it.** The demo crags sit on real Swiss
+  ground, because that is what demonstrates the swisstopo maps and the MeteoSwiss forecast that the
+  old Italian showcase never could. The cost is that the app would otherwise happily walk somebody
+  up a real hillside to a cliff that is not there. So `src/features/shell/DemoNotice.tsx` puts a
+  strip on every screen and a dialog in front of the first visit, and every hand-off of a coordinate
+  — the Google and Apple Maps buttons, the OpenStreetMap link, the approach planner and with it the
+  GPX export — is withheld while the region on screen carries the flag. That is a safety control,
+  not decoration; do not quietly relax it to make a screenshot prettier.
+
 - **The storage names are load-bearing.** `chlaedderi` (namespace), `chlaedderi-user` and
   `chlaedderi-packs` (caches), `chlaedderi:prefs`, `chlaedderi-filters-v2` (items),
   `chlaedderi-tiles-v1`. Every one of them is built from `APP_SLUG` rather than written out, so

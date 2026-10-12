@@ -39,10 +39,10 @@ test.describe("a link to a locked region", () => {
         await dialog.getByRole("button", { name: /check this region/i }).click();
 
         // The region's own name and figures: proof the bytes were decrypted, not merely fetched.
-        await expect(dialog.getByText(/testing range|testgebiet/i)).toBeVisible({
+        await expect(dialog.getByText(/demo region|demo-gebiet/i)).toBeVisible({
             timeout: 15_000,
         });
-        await expect(dialog.getByText(/10 crags · 51 routes/i)).toBeVisible();
+        await expect(dialog.getByText(/15 crags · 310 routes/i)).toBeVisible();
 
         await dialog.getByRole("button", { name: /load region/i }).click();
         await expect(page.getByText(/region loaded/i)).toBeVisible({ timeout: 15_000 });
@@ -50,8 +50,8 @@ test.describe("a link to a locked region", () => {
         // And it really is installed: its crags are the ones the list shows. The crag page's own
         // heading, by level: on a wide screen the list stands beside the page, and the entry for
         // the same crag is a heading too -- which matched as well as often as the timing allowed.
-        await page.goto("/#/crag/testing-chalchofe-sued");
-        await expect(page.getByRole("heading", { level: 2, name: /Chalchofe Süd/i })).toBeVisible({
+        await page.goto("/#/crag/testing-demofels");
+        await expect(page.getByRole("heading", { level: 2, name: /Demofels/i })).toBeVisible({
             timeout: 15_000,
         });
     });
@@ -89,7 +89,7 @@ test.describe("a link to a plain region", () => {
 
         const dialog = await offer(page);
         await dialog.getByRole("button", { name: /check this region/i }).click();
-        await expect(dialog.getByText(/10 crags · 51 routes/i)).toBeVisible({ timeout: 15_000 });
+        await expect(dialog.getByText(/15 crags · 310 routes/i)).toBeVisible({ timeout: 15_000 });
 
         await dialog.getByRole("button", { name: /load region/i }).click();
         await expect(page.getByText(/region loaded/i)).toBeVisible({ timeout: 15_000 });

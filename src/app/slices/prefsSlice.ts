@@ -36,7 +36,7 @@ const prefsSlice = createSlice({
         setFlag: (
             state,
             action: PayloadAction<{
-                key: "allPaths" | "wx" | "allParks" | "chTrails" | "chWrz" | "legend";
+                key: "allPaths" | "wx" | "allParks" | "chTrails" | "chWrz" | "legend" | "demoSeen";
                 value: boolean;
             }>,
         ) => {

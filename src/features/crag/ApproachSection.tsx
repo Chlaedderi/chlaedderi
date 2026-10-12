@@ -75,6 +75,8 @@ const Summary = ({ crag, ap }: { crag: Crag; ap: Approach }) => {
 const ParkBox = ({ crag, park, ap }: { crag: Crag; park: Park; ap?: Approach }) => {
     const { t } = useTranslation();
     const lang = useLang();
+    // An invented crag is not navigated to: the coordinate is open hillside, not rock.
+    const invented = useRegionOf(crag)?.fictional === true;
 
     return (
         <Box
@@ -102,37 +104,49 @@ const ParkBox = ({ crag, park, ap }: { crag: Crag; park: Park; ap?: Approach }) 
                 </Typography>
             )}
 
-            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
-                <Button
-                    size="small"
-                    startIcon={<DirectionsIcon />}
-                    href={navUrl(park)}
-                    target="_blank"
-                    rel="noopener"
-                    title={t("nav.t")}
-                    sx={{ flex: 1 }}
+            {invented ? (
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mt: 1 }}
                 >
-                    {t("nav.gmaps")}
-                </Button>
-                {isApple() && (
-                    <Button
-                        size="small"
-                        href={appleUrl(park)}
-                        target="_blank"
-                        rel="noopener"
-                        title={t("nav.t")}
-                    >
-                        {t("nav.apple")}
-                    </Button>
-                )}
-                <Button size="small" href={webUrl(park)} target="_blank" rel="noopener">
-                    {t("nav.web")}
-                </Button>
-            </Stack>
+                    {t("demo.nav")}
+                </Typography>
+            ) : (
+                <>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
+                        <Button
+                            size="small"
+                            startIcon={<DirectionsIcon />}
+                            href={navUrl(park)}
+                            target="_blank"
+                            rel="noopener"
+                            title={t("nav.t")}
+                            sx={{ flex: 1 }}
+                        >
+                            {t("nav.gmaps")}
+                        </Button>
+                        {isApple() && (
+                            <Button
+                                size="small"
+                                href={appleUrl(park)}
+                                target="_blank"
+                                rel="noopener"
+                                title={t("nav.t")}
+                            >
+                                {t("nav.apple")}
+                            </Button>
+                        )}
+                        <Button size="small" href={webUrl(park)} target="_blank" rel="noopener">
+                            {t("nav.web")}
+                        </Button>
+                    </Stack>
 
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                {t("nav.fail")}
-            </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                        {t("nav.fail")}
+                    </Typography>
+                </>
+            )}
 
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
                 {t("nav.t")}
@@ -154,7 +168,8 @@ export const ApproachSection = ({ crag }: { crag: Crag }) => {
     const main = aps.find((a) => !a.alt) ?? null;
     const park = crag.pk ? parks[crag.pk] : null;
     const parkName = (key: string): string => longText(parks[key], "name", lang) ?? key;
-    const canPlan = region?.ch === true && crag.coord != null;
+    // Never for an invented region: there is no path to a crag that is not there.
+    const canPlan = region?.ch === true && region.fictional !== true && crag.coord != null;
 
     return (
         <Card id="apsec" sx={{ mt: 2 }}>
@@ -282,6 +297,15 @@ export const ApproachSection = ({ crag }: { crag: Crag }) => {
                         sx={{ display: "block", mt: 0.5 }}
                     >
                         {t("ap.plan.hint")}
+                    </Typography>
+                )}
+                {region?.fictional === true && (
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mt: 0.5 }}
+                    >
+                        {t("demo.plan")}
                     </Typography>
                 )}
                 {aps.length > 0 && (

@@ -39,6 +39,7 @@ const topLevel = [
     "updated",
     "partial",
     "ch",
+    "fictional",
     "text",
     "view",
     "bbox",

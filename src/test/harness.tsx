@@ -19,7 +19,7 @@ import { DataTestProvider } from "@app/DataProvider";
 import favourites from "@app/slices/favouritesSlice";
 import filters from "@app/slices/filtersSlice";
 import logbook from "@app/slices/logbookSlice";
-import prefs from "@app/slices/prefsSlice";
+import prefs, { prefsActions } from "@app/slices/prefsSlice";
 import ui from "@app/slices/uiSlice";
 import type { WeatherContextValue } from "@app/weatherContext";
 import { WeatherTestProvider } from "@app/WeatherProvider";
@@ -32,11 +32,22 @@ import { theme } from "../theme";
 
 export const showcase = showcaseJson as unknown as Mappack;
 
-export const makeStore = (preloaded?: Record<string, unknown>) =>
-    configureStore({
+/**
+ * The showcase is an invented region, so the app offers its «these crags are invented» dialog on
+ * a first visit -- and a modal dialog takes the whole screen away from every other test. Tests
+ * therefore start as a reader who has already read it; `DemoNotice.test.tsx` is where the dialog
+ * itself is checked.
+ */
+export const makeStore = (preloaded?: Record<string, unknown>) => {
+    const store = configureStore({
         reducer: { filters, favourites, logbook, prefs, ui },
         ...(preloaded ? { preloadedState: preloaded as never } : {}),
     });
+    if (!store.getState().prefs.demoSeen) {
+        store.dispatch(prefsActions.setFlag({ key: "demoSeen", value: true }));
+    }
+    return store;
+};
 
 export const mountedShowcase = (): DataContextValue => ({
     ...mountPacks([showcase]),

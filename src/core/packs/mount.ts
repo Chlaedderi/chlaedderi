@@ -217,6 +217,7 @@ export const toRegion = (pack: Mappack, picOffset = 0): Region => ({
     updated: pack.updated ?? null,
     partial: pack.partial === true,
     ch: pack.ch === true,
+    fictional: pack.fictional === true,
     text: pack.text ?? {},
     view: pack.view
         ? { center: [pack.view.center[0], pack.view.center[1]], zoom: pack.view.zoom ?? 13 }

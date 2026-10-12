@@ -38,7 +38,7 @@ test.describe("a link that carries a region", () => {
 
         const dialog = await offer(page);
         // Before the viewer asks, the region's own name is nowhere -- nothing has been fetched.
-        await expect(dialog.getByText(/testing range|testgebiet/i)).toHaveCount(0);
+        await expect(dialog.getByText(/demo region|demo-gebiet/i)).toHaveCount(0);
 
         await dialog.getByRole("button", { name: /check this region/i }).click();
         await expect(dialog.getByText(/crags · .* routes · version/i)).toBeVisible({
@@ -72,7 +72,7 @@ test.describe("a crag link that carries its region", () => {
     test("offers the region a shared crag came from, then opens the crag", async ({ page }) => {
         // Exactly the link the app now puts on the clipboard: a crag of a region this device has
         // never had, with the address that region came from.
-        await page.goto(`/#testing-chalchofe-sued?pack=${encodeURIComponent(PACK)}`);
+        await page.goto(`/#testing-demofels?pack=${encodeURIComponent(PACK)}`);
         await offer(page);
         await confirmPack(page);
 
@@ -101,12 +101,12 @@ test.describe("a crag link that carries its region", () => {
         await waitForApp(page);
         await loadPack(page, "testing");
 
-        await page.goto("/#testing-chalchofe-sued");
+        await page.goto("/#testing-demofels");
         await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
         await page.getByRole("button", { name: /share/i }).first().click();
 
         const copied = await page.evaluate(() => (window as { __copied?: string }).__copied);
-        expect(copied).toContain("#testing-chalchofe-sued?pack=");
+        expect(copied).toContain("#testing-demofels?pack=");
         expect(copied).toContain(encodeURIComponent("/maps/pack.testing.json"));
     });
 });

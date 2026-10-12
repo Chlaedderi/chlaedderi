@@ -166,7 +166,7 @@ test.describe("the way back, with filters on", () => {
 
         // The hand-written app's own link, opened cold: nothing of the app before it.
         await page.goto("about:blank");
-        await page.goto("/#monte-cucco-anfiteatro");
+        await page.goto("/#testing-musterwand");
         await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
         // The filters come back from the device and are mirrored, replacing the history entry.
         await expect(page).toHaveURL(/[?&]f=/);

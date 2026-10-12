@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { favouritesActions } from "@app/slices/favouritesSlice";
-import { useLang } from "@app/useAppData";
+import { useLang, useRegionOf } from "@app/useAppData";
 import { longText } from "@core/dataText";
 import type { Park } from "@domain/mappack";
 import type { Crag } from "@domain/model";
@@ -63,6 +63,8 @@ export const CragCallout = ({
     const { t } = useTranslation();
     const lang = useLang();
     const dispatch = useAppDispatch();
+    // An invented crag gets no «Directions»: the coordinate is a hillside, not a wall.
+    const invented = useRegionOf(crag)?.fictional === true;
     const isFav = useAppSelector((s) => s.favourites.crags.includes(crag?.id ?? ""));
 
     const host = useCallout({
@@ -177,7 +179,7 @@ export const CragCallout = ({
                 <Button variant="contained" sx={{ flex: 1 }} onClick={() => onOpen(crag.id)}>
                     {t("pop.open")}
                 </Button>
-                {park && (
+                {park && !invented && (
                     <Button
                         variant="outlined"
                         href={navUrl(park)}

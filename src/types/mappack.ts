@@ -373,6 +373,8 @@ export interface Mappack {
     partial?: boolean;
     /** Switzerland: swisstopo maps, trails and MeteoSwiss apply. */
     ch?: boolean;
+    /** Invented crags: the app marks every screen and withholds navigation. */
+    fictional?: boolean;
     text?: PackText;
     view?: MapView;
     /** `[south, west, north, east]`. */

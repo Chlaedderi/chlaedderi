@@ -50,7 +50,7 @@ test.describe("a link pasted into the packs dialog", () => {
     test("offers the region the link names, and the packs dialog gets out of the way", async ({
         page,
     }) => {
-        await useClipboard(page, `Testgebiet\n${HOST}/#/pack?url=${encodeURIComponent(PACK)}`);
+        await useClipboard(page, `Demo-Gebiet\n${HOST}/#/pack?url=${encodeURIComponent(PACK)}`);
         await openPacks(page);
 
         await pasteIt(page);
