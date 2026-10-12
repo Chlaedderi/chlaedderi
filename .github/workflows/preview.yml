@@ -27,9 +27,17 @@ concurrency:
   group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# A link is two things at once. What a machine follows is the punycode -- that is what DNS, the
+# certificate and the CNAME file speak -- but what a person reads is the domain they typed, with
+# its umlaut. So the comment writes the links as markdown: the umlaut spelling is the label, the
+# punycode is the target. SITE and PREVIEW stay ASCII because they are also pasted into `<img
+# src=...>`, where only the machine is reading.
 env:
   PR: ${{ github.event.pull_request.number }}
+  SITE: https://xn--chldderi-2za.ch/
+  SITE_SHOWN: https://chlädderi.ch/
   PREVIEW: https://xn--chldderi-2za.ch/pr-${{ github.event.pull_request.number }}/
+  PREVIEW_SHOWN: https://chlädderi.ch/pr-${{ github.event.pull_request.number }}/
 
 jobs:
   preview:
@@ -63,10 +71,10 @@ jobs:
           {
             echo "### Preview of this branch"
             echo
-            echo "${PREVIEW}"
+            echo "[${PREVIEW_SHOWN}](${PREVIEW})"
             echo
             echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
-            echo "data of the app at <https://xn--chldderi-2za.ch/>."
+            echo "data of the app at [${SITE_SHOWN}](${SITE})."
             echo
             echo "The screenshots follow in a few minutes."
           } >"${RUNNER_TEMP}/comment.md"
@@ -98,10 +106,10 @@ jobs:
           {
             echo "### Preview of this branch"
             echo
-            echo "${PREVIEW}"
+            echo "[${PREVIEW_SHOWN}](${PREVIEW})"
             echo
             echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
-            echo "data of the app at <https://xn--chldderi-2za.ch/>."
+            echo "data of the app at [${SITE_SHOWN}](${SITE})."
             echo
             echo "<details><summary>Every screen</summary>"
             echo
