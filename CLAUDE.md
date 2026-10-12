@@ -163,6 +163,11 @@ hooks to do it. Where a hook rewrites a file (prettier, `eslint --fix`) the comm
 into the tree — it fails when the bundle does not come out, and leaves `dist/` fresh for the `e2e`
 hook, which runs after it because prek goes in alphabetical order.
 
+The one hook `lint` leaves out is `no-commit-to-branch`, which refuses a commit made on `main`. It
+is about the act of committing rather than about the files, it is `always_run`, and it asks which
+branch is checked out — so under `prek run --all-files` it would fail wherever the answer is `main`,
+which includes CI on a push to `main`. It still runs where it means something, which is `git commit`.
+
 **And CI runs them again.** `.github/workflows/ci.yml` runs `devenv shell -- lint`, which is the
 same set over every file, plus the browser suite in a real Chromium — so nothing can pass on a
 laptop and fail in Actions, and a pull request says so on its own. `lint` exists for running the
