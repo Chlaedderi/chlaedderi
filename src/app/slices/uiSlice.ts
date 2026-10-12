@@ -65,7 +65,8 @@ export interface UiState {
      * region, followed once it is loaded; `fetchNow` says the viewer already consented to the
      * download by typing the address themselves.
      */
-    packOffer: { url: string; then?: string; fetchNow?: boolean } | null;
+    /** `key` is the one a share link carried; a plain pack has none and needs none. */
+    packOffer: { url: string; key?: string; then?: string; fetchNow?: boolean } | null;
 }
 
 export const initialUiState: UiState = {

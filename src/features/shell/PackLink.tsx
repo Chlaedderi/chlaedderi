@@ -23,13 +23,15 @@ export const PackLink = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const url = params.get("url");
+    // Inside the hash, so it never reaches a server -- see src/core/packs/chlpack.ts.
+    const key = params.get("k") ?? undefined;
 
     useEffect(() => {
         if (!url) return;
-        dispatch(uiActions.offerPack({ url }));
+        dispatch(uiActions.offerPack({ url, key }));
         // Away from the link at once, so that a reload does not ask a second time.
         void navigate("/", { replace: true });
-    }, [url, dispatch, navigate]);
+    }, [url, key, dispatch, navigate]);
 
     return url ? null : <LegacyLink />;
 };

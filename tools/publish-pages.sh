@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Chlädderi – put a folder on the branch GitHub Pages serves.
 #
-#   tools/publish-pages.sh root    DIR     the site at /, every pr-N/ left alone
+#   tools/publish-pages.sh root    DIR     the site at /, every pr-N/ and packs/ left alone
 #   tools/publish-pages.sh pr      N DIR   the preview of pull request N at /pr-N/
 #   tools/publish-pages.sh screens N DIR   the screenshots of N at /pr-N/screens/
 #   tools/publish-pages.sh remove  N       drop /pr-N/ again
 #   tools/publish-pages.sh prune   N...    drop every /pr-N/ that is not listed
+#   tools/publish-pages.sh packs   DIR     add DIR's *.chlpack to /packs/, keep what is there
+#   tools/publish-pages.sh unpack  ID...   drop those publications from /packs/
 #
 # Pages serves one site per repository, so the production app and the pull request previews have to
 # share it: the branch holds the app at the root and one folder per open pull request. That is also
@@ -36,7 +38,7 @@ MAIL="${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}
 TRIES="${PAGES_TRIES:-5}"
 
 usage() {
-  sed -ne '2,9s/^# \?//p' "${BASH_SOURCE[0]}" >&2
+  sed -ne '2,11s/^# \?//p' "${BASH_SOURCE[0]}" >&2
   exit 2
 }
 
@@ -88,9 +90,11 @@ for try in $(seq 1 "${TRIES}"); do
     root)
       dir="${1:?a directory to publish}"
       dir="$(cd -- "${dir}" && pwd)"
-      # Everything at the top level is the app, except the previews, which stay.
+      # Everything at the top level is the app, except the previews, which stay -- and packs/,
+      # which is not the app at all: the encrypted regions are published from the private
+      # Chlaedderi/maps repository, and a deploy must not sweep them off the site.
       find "${work}" -mindepth 1 -maxdepth 1 \
-        ! -name .git ! -name 'pr-*' -exec rm -rf {} +
+        ! -name .git ! -name 'pr-*' ! -name packs -exec rm -rf {} +
       cp -R "${dir}/." "${work}/"
       message="The app"
       ;;
@@ -130,6 +134,41 @@ for try in $(seq 1 "${TRIES}"); do
           rm -rf "${preview}"
         }
       done
+      ;;
+    packs)
+      dir="${1:?a directory to publish}"
+      dir="$(cd -- "${dir}" && pwd)"
+      # Additive on purpose. A published region is opened by a key that is in somebody's chat; it
+      # goes when `unpack` says so, not because something else was published today.
+      mkdir -p "${work}/packs"
+      added=0
+      for blob in "${dir}"/*.chlpack; do
+        [[ -f ${blob} ]] || continue
+        # The magic first: a plaintext region published by accident cannot be taken back off the
+        # internet afterwards.
+        magic="$(head -c 4 "${blob}")"
+        [[ ${magic} == "CHLP" ]] || {
+          echo "refusing ${blob##*/}: no CHLP magic" >&2
+          exit 1
+        }
+        cp "${blob}" "${work}/packs/"
+        added=$((added + 1))
+      done
+      [[ ${added} -gt 0 ]] || {
+        echo "no *.chlpack in ${dir}" >&2
+        exit 2
+      }
+      # How many, never which: this subject is public on the branch, and a publication id is half
+      # of what opens the region.
+      message="${added} region file(s) published"
+      ;;
+    unpack)
+      [[ $# -gt 0 ]] || usage
+      for id in "${@}"; do
+        [[ ${id} =~ ^[0-9a-f]{32}$ ]] || usage
+        rm -f "${work:?}/packs/${id}.chlpack"
+      done
+      message="$# region file(s) withdrawn"
       ;;
     *) usage ;;
   esac

@@ -71,6 +71,13 @@ so that a fresh install has something to look at; `pack.testing.json` is an inve
 is what the tests and the browser suite run on. Neither is anybody's real data, which is why a
 contributor needs nothing private to work on this repository.
 
+A region may also be published encrypted, as a `.chlpack` whose key travels in the share link
+(`src/core/packs/chlpack.ts`). That is an addition and nothing more: a plain JSON pack at a plain
+address keeps loading, keeps being shareable, and its link is unchanged. `maps/pack.testing.chlpack`
+and `maps/pack.testing.key` are fixtures for the browser suite — both public on purpose, since the
+plaintext is committed beside them. Re-seal with `node tools/seal-fixture.mjs` after changing the
+region, or `src/core/packs/chlpack.test.ts` will say they have drifted apart.
+
 The real regions live in the private `Chlaedderi/maps` repository. With access, `packs` links them
 into `maps/` so that `dev` and `serve` show the real thing; without it, that command says so in one
 line and everything else carries on. Nothing in CI depends on them. A new showcase is cut there and

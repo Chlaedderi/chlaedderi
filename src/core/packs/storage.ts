@@ -9,6 +9,7 @@
 import { PREVIEW_SUFFIX } from "@core/preview";
 import type { Mappack } from "@domain/mappack";
 
+import { ChlpackError, isChlpack, openChlpack } from "./chlpack";
 import { packUrl } from "./url";
 import { type PackCheck, type PackProblem, checkPack } from "./validate";
 
@@ -84,30 +85,64 @@ const problem = (code: PackProblem["code"], message: string, detail?: string): P
     problems: [{ where: "", message, code, detail }],
 });
 
-/** Read the body, giving up rather than growing past the cap. Null when it is too big. */
-const readCapped = async (response: Response): Promise<string | null> => {
+/**
+ * Read the body, giving up rather than growing past the cap. Null when it is too big.
+ *
+ * Bytes rather than text, because a pack may arrive encrypted (see chlpack.ts) and a TextDecoder
+ * would make nonsense of it before anything got the chance to look. A plain pack is decoded a few
+ * lines further down, exactly as before.
+ */
+const readCapped = async (response: Response): Promise<Uint8Array | null> => {
     const declared = Number(response.headers.get("content-length"));
     if (Number.isFinite(declared) && declared > MAX_PACK_BYTES) return null;
 
     // No stream to read in jsdom, and none in a browser answering from a synthetic Response.
     if (!response.body) {
-        const whole = await response.text();
+        const whole = new Uint8Array(await response.arrayBuffer());
         return whole.length > MAX_PACK_BYTES ? null : whole;
     }
 
     const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let text = "";
+    const chunks: Uint8Array[] = [];
+    let total = 0;
     for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        text += decoder.decode(value, { stream: true });
-        if (text.length > MAX_PACK_BYTES) {
+        total += value.length;
+        if (total > MAX_PACK_BYTES) {
             await reader.cancel();
             return null;
         }
+        chunks.push(value);
     }
-    return text + decoder.decode();
+    const bytes = new Uint8Array(total);
+    let at = 0;
+    for (const chunk of chunks) {
+        bytes.set(chunk, at);
+        at += chunk.length;
+    }
+    return bytes;
+};
+
+/**
+ * Bytes to the pack's JSON text: plain ones straight through, an encrypted one through its key.
+ *
+ * This is the only place that decides what the network handed over. Encryption is an addition --
+ * no magic, no key, nothing changes -- so a pack somebody else hosts as plain JSON keeps working
+ * exactly as it did, and a key offered for one is simply not needed.
+ */
+const asPackText = async (bytes: Uint8Array, key?: string): Promise<string | PackLoad> => {
+    if (!isChlpack(bytes)) return new TextDecoder().decode(bytes);
+    if (!key) {
+        return problem("locked", "is a locked region, and the link did not carry its key");
+    }
+    try {
+        return await openChlpack(bytes, key);
+    } catch (error) {
+        const code = error instanceof ChlpackError ? error.code : "badkey";
+        const message = error instanceof Error ? error.message : "could not be opened";
+        return problem(code, message);
+    }
 };
 
 const fromCheck = (check: PackCheck, bytes: number): PackLoad =>
@@ -147,6 +182,7 @@ const whyNoAnswer = (url: string): PackProblem["code"] => {
 export const fetchPack = async (
     raw: string,
     signal?: AbortSignal,
+    key?: string,
 ): Promise<PackLoad & { readonly text?: string; readonly url: string }> => {
     const url = packUrl(raw);
     let text: string;
@@ -172,7 +208,9 @@ export const fetchPack = async (
         if (read === null) {
             return { ...problem("toobig", "is too big to be a mappack"), url };
         }
-        text = read;
+        const opened = await asPackText(read, key);
+        if (typeof opened !== "string") return { ...opened, url };
+        text = opened;
     } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
             return { ...problem("aborted", "was not fetched"), url };
@@ -190,15 +228,21 @@ export const fetchPack = async (
     return { ...fromCheck(await checkPack(value), text.length), text, url };
 };
 
-/** The same, from a file the viewer picked. */
-export const readPackFile = async (file: File): Promise<PackLoad & { readonly text?: string }> => {
+/** The same, from a file the viewer picked -- a .json, or a .chlpack with its key. */
+export const readPackFile = async (
+    file: File,
+    key?: string,
+): Promise<PackLoad & { readonly text?: string }> => {
     let text: string;
     try {
-        text = await file.text();
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        if (bytes.length > MAX_PACK_BYTES) return problem("toobig", "is too big to be a mappack");
+        const opened = await asPackText(bytes, key);
+        if (typeof opened !== "string") return opened;
+        text = opened;
     } catch {
         return problem("unreadable", "could not be read");
     }
-    if (text.length > MAX_PACK_BYTES) return problem("toobig", "is too big to be a mappack");
     let value: unknown;
     try {
         value = JSON.parse(text);
@@ -211,7 +255,7 @@ export const readPackFile = async (file: File): Promise<PackLoad & { readonly te
 /** What is remembered about an installed pack, without its data. */
 export const packNote = (
     pack: Mappack,
-    source: { type: "url" | "file"; url?: string; name?: string } | null,
+    source: { type: "url" | "file"; url?: string; name?: string; key?: string } | null,
     bytes: number,
 ): {
     id: string;
@@ -221,7 +265,7 @@ export const packNote = (
     crags: number;
     routes: number;
     bytes: number;
-    src: { type: "url" | "file"; url?: string; name?: string } | null;
+    src: { type: "url" | "file"; url?: string; name?: string; key?: string } | null;
     at: number;
 } => ({
     id: pack.id,

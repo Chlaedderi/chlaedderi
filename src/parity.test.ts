@@ -342,6 +342,12 @@ const FEATURES: Feature[] = [
         exports: "packUrl",
     },
     {
+        what: "opening a region that was published encrypted",
+        was: "nothing: a region could only be published in the open",
+        now: "src/core/packs/chlpack.ts",
+        exports: "openChlpack",
+    },
+    {
         what: "asking before a region from a link is loaded",
         was: "nothing: a link could not carry a region",
         now: "src/features/packs/PackOffer.tsx",
