@@ -139,7 +139,9 @@ for try in $(seq 1 "${TRIES}"); do
       dir="${1:?a directory to publish}"
       dir="$(cd -- "${dir}" && pwd)"
       # Additive on purpose. A published region is opened by a key that is in somebody's chat; it
-      # goes when `unpack` says so, not because something else was published today.
+      # goes when `unpack` says so, not because something else was published today. What says
+      # `unpack` is now a sweep as often as it is a person -- the maps repository retires a
+      # publication thirty days after it was replaced -- but it is still a separate act either way.
       mkdir -p "${work}/packs"
       added=0
       for blob in "${dir}"/*.chlpack; do

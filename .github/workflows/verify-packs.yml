@@ -1,8 +1,9 @@
 name: Verify the published regions
 
-# The encrypted regions are published onto gh-pages from the private Chlaedderi/maps repository,
-# by hand. This is the check on the receiving side: the one failure that cannot be undone is a
-# plaintext mappack published by mistake, and anything readable under packs/ is exactly that.
+# The encrypted regions are published onto gh-pages from the private Chlaedderi/maps repository, by
+# a workflow there that holds a token for this one. This is the check on the receiving side: the one
+# failure that cannot be undone is a plaintext mappack published by mistake, and anything readable
+# under packs/ is exactly that. It matters more now that no person looks at the bytes in between.
 #
 # It needs nothing but a shell, so it answers within a minute of a publish.
 
