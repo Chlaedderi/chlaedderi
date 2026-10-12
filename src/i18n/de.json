@@ -530,7 +530,7 @@
     "pk.manage": "Regionen laden und verwalten",
     "pk.manage.h": "{0} geladen · {1} Gebiete",
     "pk.none": "Keine Region geladen.",
-    "pk.notkept": "Dieses Gerät behält das Pack nicht: Nach einem Neustart ist es wieder weg.",
+    "pk.notkept": "Dieser Browser sagt nicht zu, das Pack zu behalten: Er kann es löschen, wenn der Platz auf dem Gerät knapp wird, und Safari löscht es nach etwa einer Woche ohne Besuch.",
     "pk.own": "Aus Datei oder von einer Adresse",
     "pk.removed": "{0} entladen.",
     "pk.replaced": "{0} erneuert: {1} Gebiete.",

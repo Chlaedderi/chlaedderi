@@ -44,9 +44,13 @@ export const PacksDialog = () => {
     // Safari in private mode, and a device under storage pressure, will evict the pack cache.
     // The original warned about it rather than letting the packs vanish unexplained.
     const [persistent, setPersistent] = useState<boolean | null>(null);
+    // Asked again after every install, because installing is what asks the browser to keep the
+    // packs (DataProvider). Read only once, the warning would stay up until the next reload --
+    // over a device that had just granted persistence.
     useEffect(() => {
         navigator.storage?.persisted?.().then(setPersistent, () => setPersistent(null));
-    }, []);
+        // `installed` is the trigger, not an input: the answer is about the origin, not the list.
+    }, [installed]);
     const [url, setUrl] = useState("");
     const [problems, setProblems] = useState<readonly PackProblem[] | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
