@@ -116,6 +116,23 @@ redirects there.
   `og.png` is deliberately not in the workbox precache: it is for crawlers, and an install should
   not carry 100 KB it will never read. `tools/make-og.mjs` redraws it from `tools/og-card.html`.
 
+- **The service worker carries hand-written code, and the share target is a POST on purpose.**
+  `manifest.webmanifest` puts the installed app in the Android share sheet, and `tools/share-target.js`
+  — emitted into `dist/` by a plugin in `vite.config.ts` and pulled into the generated worker by
+  `workbox.importScripts` — is the only code in the shipping bundle that Workbox did not write. The
+  target takes a **POST** because a GET would have the system percent-encode the whole shared link
+  into a query string, fragment and all: a sealed region's key rides in that fragment, and whenever
+  no worker is controlling yet, that request line goes to GitHub, who is already hosting the
+  ciphertext. A request body never becomes a URL. The cost is that a share with no worker does not
+  degrade — GitHub Pages answers a POST with 405, measured — so the viewer sees an error page, opens
+  the app once, and the next share works. That is the trade: a visible failure in the rare case,
+  instead of a key on the wire in the common one. The file itself decides nothing; it joins the
+  fields, caps them and redirects to `#/share?text=…`, where `src/core/sharedLink.ts` reads it in
+  TypeScript the tests can reach. It cannot use the `workbox` global either — `inlineWorkboxRuntime`
+  is false, so that runtime is a module-local binding. A `/pr-N/` preview cannot try any of this out:
+  previews are in `navigateFallbackDenylist` and have no worker of their own, so it is checked
+  against a local build. iOS has no share targets at all.
+
 - **Version numbers are not in the bundle.** The deploy writes `version.json`; the app reads it.
   That keeps the build reproducible: two deploys of the same commit produce the same bundle, which
   is what lets a preview and the deploy be compared at all.

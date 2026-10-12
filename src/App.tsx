@@ -36,6 +36,7 @@ import { RevealRoute } from "./features/map/RevealRoute";
 import { AppBarTop } from "./features/shell/AppBarTop";
 import { LegacyLink } from "./features/shell/LegacyLink";
 import { PackLink } from "./features/shell/PackLink";
+import { ShareTarget } from "./features/shell/ShareTarget";
 import { Toasts } from "./features/shell/Toasts";
 import { UpdateBanner } from "./features/shell/UpdateBanner";
 
@@ -418,6 +419,8 @@ export const App = () => (
                 />
                 {/* A link that carries a whole region rather than a crag. */}
                 <Route path="/pack" element={<PackLink />} />
+                {/* What the share sheet left: the service worker turns its POST into this. */}
+                <Route path="/share" element={<ShareTarget />} />
                 {/* `#<cragId>` and `#<cragId>~<routeKey>` from the hand-written app. */}
                 <Route path="*" element={<LegacyLink />} />
             </Routes>

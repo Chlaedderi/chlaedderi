@@ -56,6 +56,28 @@ const rootStaticFiles = (): Plugin => {
     };
 };
 
+/**
+ * tools/share-target.js, into the build output.
+ *
+ * It is emitted rather than committed at the repository root: tools/make-site.sh copies dist/ as a
+ * whole, so an emitted file is published for free, while a root-level one would need that script,
+ * the dev server's allow-list above and its MIME map all changed to agree. Being globbed into the
+ * precache along the way is wanted -- `updateViaCache: "imports"` otherwise lets the HTTP cache
+ * answer for an `importScripts`ed file, and a precache revision is what forces a genuinely new
+ * worker. The bytes come off disk unchanged, so two builds of the same commit still match.
+ */
+const shareTarget = (): Plugin => ({
+    name: "chlaedderi-share-target",
+    // Before vite-plugin-pwa's `closeBundle` globs dist/, so the worker precaches it.
+    generateBundle() {
+        this.emitFile({
+            type: "asset",
+            fileName: "share-target.js",
+            source: readFileSync(path.join(repoRoot, "tools/share-target.js"), "utf8"),
+        });
+    },
+});
+
 export default defineConfig({
     root: "src",
     // Nothing to copy: the static files already sit at the repository root, where the build output
@@ -74,6 +96,7 @@ export default defineConfig({
         react(),
         svgr(),
         rootStaticFiles(),
+        shareTarget(),
         VitePWA({
             // The app asks before reloading, as it does today.
             registerType: "prompt",
@@ -85,6 +108,11 @@ export default defineConfig({
             manifest: false,
             workbox: {
                 globPatterns: ["**/*.{js,css,html,svg}"],
+                // The share target, above everything Workbox emits. Resolved relative to sw.js,
+                // so it is the right file at / and at /pr-N/ alike. It cannot reach the `workbox`
+                // global -- `inlineWorkboxRuntime` is false, so the runtime is a module-local
+                // binding -- and does not need to: it only listens for a POST.
+                importScripts: ["share-target.js"],
                 // The icons and the manifest live at the repository root, not in the build output.
                 additionalManifestEntries: [
                     "manifest.webmanifest",

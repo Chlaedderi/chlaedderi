@@ -22,5 +22,11 @@
     { "name": "Favoriten", "short_name": "Favoriten", "url": "./#/fav", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "Logbuch", "short_name": "Logbuch", "url": "./#/log", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ],
+  "share_target": {
+    "action": "./share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
   "related_applications": [{ "platform": "webapp", "url": "manifest.webmanifest" }]
 }

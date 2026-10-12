@@ -691,6 +691,7 @@
     "search.ph": "Gebiet, Ort, Route …",
     "share.copied": "Link zu {0} kopiert.",
     "share.copy": "Diesen Link zu {0} kopieren:",
+    "share.nolink": "Im Geteilten war kein Link.",
     "sort": "Sortieren",
     "sort.area": "Zone",
     "sort.dir": "Reihenfolge umkehren",

@@ -55,6 +55,15 @@ export default defineConfig([
         languageOptions: { globals: { ...globals.node } },
     },
 
+    {
+        // The one exception: tools/share-target.js is not a script anybody runs, it is the
+        // hand-written half of the service worker (vite.config.ts imports it into the generated
+        // one). So it lives in a worker, where `self`, `Response` and the fetch event are globals
+        // and Node is nowhere.
+        files: ["tools/share-target.js"],
+        languageOptions: { globals: { ...globals.serviceworker } },
+    },
+
     prettierRecommended,
 
     {

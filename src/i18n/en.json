@@ -691,6 +691,7 @@
     "search.ph": "Crag, village, route …",
     "share.copied": "Link to {0} copied.",
     "share.copy": "Copy this link to {0}:",
+    "share.nolink": "There was no link in what was shared.",
     "sort": "Sort",
     "sort.area": "Area",
     "sort.dir": "Reverse order",
