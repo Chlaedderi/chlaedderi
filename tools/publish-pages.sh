@@ -48,8 +48,16 @@ number() {
   printf '%s' "$1"
 }
 
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" ||
-  ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# The repository this script belongs to, and never the one you happen to be standing in. This is the
+# one place in here that does *not* ask `git rev-parse --show-toplevel` first, and the exception is
+# deliberate: a hook acts on the tree being committed, but this publishes a particular repository's
+# own branch, so the answer is fixed by where the file is and not by where it was called from.
+#
+# It did ask git first, and fall back to its own path only when that failed. That is how the private
+# maps repository's tools/publish.sh -- which clones this repository into a temporary directory and
+# then runs this script by path -- published three encrypted regions onto a gh-pages branch of the
+# *maps* repository, reported «3 region file(s) published», and exited 0.
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
 command="${1-}"
