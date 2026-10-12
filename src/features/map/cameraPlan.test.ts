@@ -37,6 +37,23 @@ const moved = (screens: number) => ({
     east: MIDDLE.east + screens,
 });
 
+/**
+ * A switch from one crag to the next, which is a different shape of request from a row tapped at
+ * the region's own zoom: the map is already framed on one approach, so the move is all travel and
+ * no depth. A screen here is the width of that frame, not of the region.
+ */
+const switchOf = (screens: number) =>
+    plan({
+        view: MIDDLE,
+        zoom: 17,
+        target: {
+            south: MIDDLE.south,
+            north: MIDDLE.north,
+            west: MIDDLE.west + screens * 0.06,
+            east: MIDDLE.east + screens * 0.06,
+        },
+    });
+
 describe("cameraPlan", () => {
     it("leaves the map alone when nobody asked it to move", () => {
         // A tap on a marker, which is the whole point: the viewer pointed at something they could
@@ -69,9 +86,26 @@ describe("cameraPlan", () => {
         expect(p.kind === "fly" && p.seconds).toBeCloseTo(0.856, 3);
     });
 
-    it("cuts when the flight would cross more screens than the eye can follow", () => {
-        // Leaflet would arc out towards world scale and the clusters would swallow the marker.
-        expect(plan({ target: moved(4) })).toEqual({ kind: "cut" });
+    it("flies across a region rather than jumping", () => {
+        // 31 screens is the median distance between two crags in a region the size of Oberwallis,
+        // and this is the switch that used to jump: at zoom 17 a screen is a few hundred metres,
+        // so almost any other crag was «too far». The flight dips to about the region's own
+        // overview and closes again. 0.45 + 0.3 * log2(32) = 1.95.
+        const p = switchOf(31);
+        expect(p.kind).toBe("fly");
+        expect(p.kind === "fly" && p.seconds).toBeCloseTo(1.95, 2);
+    });
+
+    it("keeps a hop to the next crag along brisk", () => {
+        // The other end of the same scale: 0.45 + 0.3 * log2(2) = 0.75.
+        const p = switchOf(1);
+        expect(p.kind === "fly" && p.seconds).toBeCloseTo(0.75, 2);
+    });
+
+    it("cuts only for the jump between one region and another", () => {
+        // Past this the dip reaches country scale, and no duration makes that followable.
+        expect(switchOf(60)).toEqual({ kind: "cut" });
+        expect(plan({ target: moved(60) })).toEqual({ kind: "cut" });
     });
 
     it("flies for longer the further it has to go", () => {
@@ -82,7 +116,7 @@ describe("cameraPlan", () => {
         expect(near.kind === "fly" && far.kind === "fly" && far.seconds > near.seconds).toBe(true);
     });
 
-    it("stays between half a second and 1.6, whatever it is given", () => {
+    it("stays between half a second and 2, whatever it is given", () => {
         // A crag with no approach at all is a single point: the ratio of the view to it is not a
         // number anyone should divide by, and the answer must still be a time. The depth is capped
         // at eight levels, so this is 0.45 + 0.8 rather than something unbounded.
@@ -91,10 +125,10 @@ describe("cameraPlan", () => {
         expect(p.kind === "fly" && Number.isFinite(p.seconds)).toBe(true);
         expect(p.kind === "fly" && p.seconds).toBe(1.25);
 
-        // Both at once -- the far side of what is still flown, and a point to land on -- is what
-        // the upper clamp is for: 0.45 + 0.3 * 3 + 0.8 would be 2.15.
-        const most = plan({ target: { ...point, west: 11.5, east: 11.5 } });
-        expect(most.kind === "fly" && most.seconds).toBe(1.6);
+        // Both at once -- a long way to go, and a point to land on -- is what the upper clamp is
+        // for: 0.45 + 0.3 * log2(41) + 0.8 would be 2.86.
+        const most = plan({ target: { ...point, west: 48.5, east: 48.5 } });
+        expect(most.kind === "fly" && most.seconds).toBe(2);
 
         // And the shortest possible hop still takes long enough to be seen as movement.
         const shortest = plan({ target: { south: 44.1, north: 44.9, west: 8.1, east: 8.9 } });
