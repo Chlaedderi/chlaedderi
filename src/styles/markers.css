@@ -1,0 +1,265 @@
+/*
+ * The markers, the clusters and the car parks, lifted from the hand-written app.
+ *
+ * This is CSS rather than MUI `sx` for a concrete reason: Leaflet takes marker content as an HTML
+ * **string** (`L.divIcon({html})`), which never passes through React, so emotion cannot reach it.
+ * The class names are the original ones, and the shapes carry meaning a climber reads off the map:
+ *
+ *   .mk          a located wall, filled with its grade colour
+ *   .mk.approx   the position is approximate -- dashed outline, hollow
+ *   .mk.anchor   the wall itself is NOT located; the marker stands by the car park -- a diamond
+ *   .mk.sel      the crag that is open
+ *   .mk.fav      a favourite -- the heart badge
+ *   .mk.closure  a confirmed ban -- the no-entry dot
+ *   .cl          a cluster: a white circle with a violet rim, not Leaflet's default colour blobs
+ *   .pk          a car park; .est when its position is an estimate; .hl when it belongs to the
+ *                crag that is open; .alt for an alternative approach
+ */
+
+/* ---------- crag markers */
+.mk {
+    position: relative;
+    display: block;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid #fff;
+    border-radius: 50%;
+    background: var(--unk);
+    box-shadow:
+        0 0 0 1px rgb(0 0 0 / 50%),
+        0 1px 3px rgb(0 0 0 / 35%);
+}
+
+.mk.easy {
+    background: #009e73;
+}
+.mk.mid {
+    background: #0072b2;
+}
+.mk.hard {
+    background: #d55e00;
+}
+
+.mk.approx {
+    border: 3px dashed #8a8698;
+    background: rgb(255 255 255 / 75%);
+    box-shadow: none;
+}
+.mk.approx.easy {
+    border-color: #009e73;
+}
+.mk.approx.mid {
+    border-color: #0072b2;
+}
+.mk.approx.hard {
+    border-color: #d55e00;
+}
+
+.mk.anchor {
+    width: 14px;
+    height: 14px;
+    margin: 2px;
+    border: 2.5px solid #8a8698;
+    border-radius: 3px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+    transform: rotate(45deg);
+}
+.mk.anchor.easy {
+    border-color: #009e73;
+}
+.mk.anchor.mid {
+    border-color: #0072b2;
+}
+.mk.anchor.hard {
+    border-color: #d55e00;
+}
+.mk.anchor.sel {
+    transform: rotate(45deg) scale(1.45);
+}
+.mk.anchor.fav::after,
+.mk.anchor.closure::before {
+    transform: rotate(-45deg);
+}
+
+.mk.sel {
+    z-index: 2;
+    box-shadow:
+        0 0 0 2px #1d1538,
+        0 0 0 5px #fff,
+        0 2px 8px rgb(0 0 0 / 50%);
+    transform: scale(1.45);
+}
+
+.mk.fav::after {
+    content: "♥";
+    position: absolute;
+    top: -13px;
+    right: -11px;
+    color: #e0245e;
+    font-size: 14px;
+    line-height: 1;
+    text-shadow:
+        0 0 2px #fff,
+        0 0 2px #fff,
+        0 0 1px #000;
+}
+
+.mk.closure::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: -9px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #b3261e linear-gradient(#fff, #fff) center / 7px 2.5px no-repeat;
+    box-shadow: 0 0 0 1px #fff;
+}
+
+/* ---------- car parks */
+.pk {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: #1565c0;
+    color: #fff;
+    font: 700 13px / 20px var(--display);
+    text-align: center;
+    box-shadow:
+        0 0 0 1.5px #fff,
+        0 1px 3px rgb(0 0 0 / 40%);
+}
+
+.pk.est {
+    background: #fff;
+    color: #1565c0;
+    box-shadow: 0 0 0 2px #1565c0;
+}
+
+.pk.hl {
+    box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4.5px #d81b78,
+        0 2px 8px rgb(0 0 0 / 50%);
+    transform: scale(1.35);
+}
+
+.pk.alt.hl {
+    box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4.5px #1d1538;
+}
+
+/* ---------- clusters */
+.cl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 2.5px solid #4b1fa0;
+    border-radius: 50%;
+    background: #fff;
+    color: #1d1538;
+    font: 700 15px var(--display);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+
+.cl.anchor {
+    width: 30px;
+    height: 30px;
+    border: 2px dashed #1565c0;
+    border-radius: 9px;
+    font-size: 14px;
+}
+
+/*
+ * Leaflet.markercluster brings its own green/yellow/red bubbles. The app has never used them:
+ * `iconCreateFunction` returns `.cl` instead, and these rules make sure nothing of the default
+ * styling shows through.
+ */
+.marker-cluster,
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+    background: none !important;
+}
+
+.marker-cluster div {
+    width: auto;
+    height: auto;
+    margin: 0;
+    background: none;
+    border-radius: 0;
+    font: inherit;
+}
+
+/* ---------- own position */
+.me {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--me);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 50%);
+}
+
+.me.manual {
+    border-radius: 3px;
+    transform: rotate(45deg);
+}
+
+/* ---------- labels drawn on the map */
+.mlabel {
+    color: var(--ink2);
+    font: 600 12px var(--display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow:
+        0 0 3px var(--land),
+        0 0 3px var(--land);
+}
+
+.plabel {
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: rgb(255 255 255 / 92%);
+    color: #1d1538;
+    font: 600 12.5px var(--body);
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+/* ---------- the rain mark that sits on a marker */
+.wx {
+    position: absolute;
+    right: -10px;
+    bottom: -9px;
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid #fff;
+    border-radius: 0 50% 50% 50%;
+    background: #1e6fd9;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+    transform: rotate(45deg);
+}
+
+.wx.wet {
+    background: #8ec5ff;
+}
+
+.wx.soon {
+    border: 2px solid #1e6fd9;
+    background: #fff;
+    box-shadow: 0 0 0 1px #fff;
+}
+
+.mk.anchor .wx {
+    right: -12px;
+    bottom: -4px;
+    transform: rotate(0deg);
+}

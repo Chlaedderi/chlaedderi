@@ -1,0 +1,45 @@
+# devenv
+.devenv*
+devenv.local.nix
+.direnv
+# devenv writes this as a symlink into the nix store
+.pre-commit-config.yaml
+
+# node / the TypeScript build
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+*.tsbuildinfo
+
+# The built app, which tools/build.sh writes to dist/ and tools/make-site.sh publishes from there.
+# It used to be committed at the repository root; these four lines are what stops it coming back by
+# accident, because a stray copy would be served by tools/serve.pl in front of the real build.
+/index.html
+/sw.js
+/workbox-*.js
+/assets/
+
+# written by the GitHub Pages workflow at deploy time, never by hand
+version.json
+
+# one checkout of this repository per branch in flight, see CONTRIBUTING.md
+/.claude/worktrees/
+
+# The real regions live in the private Chlaedderi/maps repository; `packs` clones it into .packs/
+# and links the three files in here. They are named one by one rather than globbed, so that
+# maps/pack.showcase.json (compiled into the app) and maps/pack.testing.json (what the tests and
+# the e2e suite run on) can never be ignored by accident.
+/maps/pack.finale.json
+/maps/pack.oltre.json
+/maps/pack.ow.json
+/.packs/
+
+# editors and operating systems
+.DS_Store
+*.swp
+
+# Playwright
+/.playwright/
+/playwright-report/
+/.screens/

@@ -1,0 +1,3 @@
+{
+  "Exclude": ["^index\\.html$", "^sw\\.js$", "^maps/", "^\\.packs/"]
+}

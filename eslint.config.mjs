@@ -1,0 +1,145 @@
+import js from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
+import globals from "globals";
+import tsParser from "@typescript-eslint/parser";
+import tseslint from "typescript-eslint";
+import importPlugin from "eslint-plugin-import";
+import prettierRecommended from "eslint-plugin-prettier/recommended";
+import reactPlugin from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import unusedImports from "eslint-plugin-unused-imports";
+
+export default defineConfig([
+    // Build output and vendored data. `dist/` is everything the bundler emits, including the
+    // `sw.js` and `workbox-*.js` of vite-plugin-pwa; none of it is committed.
+    //
+    // `.claude/` holds git worktrees -- whole second copies of this repository. Linting one costs
+    // half an hour, because every file in it falls outside `tsconfig.json` and the type-aware
+    // rules then build a program per file. The commit hook runs `eslint .`, so without this the
+    // commit simply never finishes.
+    // .packs/ is the clone of the private Chlaedderi/maps that `packs` makes: somebody else's
+    // repository, checked where it lives.
+    globalIgnores(["dist/", "maps/", ".packs/", ".devenv/", ".claude/"]),
+
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
+    reactPlugin.configs.flat.recommended,
+
+    {
+        files: ["src/**/*.{ts,tsx}"],
+        plugins: { "react-hooks": reactHooks },
+        rules: {
+            "react-hooks/rules-of-hooks": "error",
+            "react-hooks/exhaustive-deps": "warn",
+        },
+    },
+
+    {
+        // The browser tests are Playwright, not React: `use` there is the fixture callback rather
+        // than a hook, and `page.evaluate` bodies run in the browser.
+        files: ["e2e/**/*.ts", "playwright.config.ts"],
+        languageOptions: {
+            globals: { ...globals.node, ...globals.browser },
+            parser: tsParser,
+        },
+        rules: {
+            "func-style": "off",
+        },
+    },
+
+    prettierRecommended,
+
+    {
+        files: ["src/**/*.{ts,tsx}"],
+        plugins: {
+            "react-refresh": reactRefresh,
+            "unused-imports": unusedImports,
+            import: importPlugin,
+        },
+        linterOptions: { reportUnusedDisableDirectives: true },
+        languageOptions: {
+            globals: { ...globals.browser },
+            parser: tsParser,
+            parserOptions: { projectService: true, ecmaFeatures: { jsx: true } },
+        },
+        settings: {
+            react: { version: "detect" },
+            // vite-plugin-pwa supplies this at build time; there is no file on disk to resolve.
+            "import/core-modules": ["virtual:pwa-register/react"],
+            "import/resolver": {
+                typescript: { alwaysTryTypes: true, project: "./tsconfig.json" },
+                node: { extensions: [".js", ".jsx", ".ts", ".tsx", ".css"] },
+            },
+        },
+        rules: {
+            "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+            "react/function-component-definition": [
+                "error",
+                { namedComponents: "arrow-function", unnamedComponents: "arrow-function" },
+            ],
+            "react/react-in-jsx-scope": "off",
+            // The mappack format is deliberately open (additionalProperties: true), so the
+            // parsing layer has to accept values it cannot type yet.
+            "@typescript-eslint/no-explicit-any": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": [
+                "warn",
+                {
+                    vars: "all",
+                    varsIgnorePattern: "^_",
+                    args: "after-used",
+                    argsIgnorePattern: "^_",
+                },
+            ],
+            "import/extensions": [
+                "error",
+                "ignorePackages",
+                { js: "never", jsx: "never", ts: "never", tsx: "never" },
+            ],
+            quotes: ["error", "double", { avoidEscape: true }],
+            "prefer-const": "error",
+            "prettier/prettier": ["error"],
+            "func-style": ["error", "expression"],
+            "import/no-unresolved": "error",
+            "import/order": [
+                "error",
+                {
+                    groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+                    "newlines-between": "always",
+                    alphabetize: { order: "asc", caseInsensitive: true },
+                },
+            ],
+            "@typescript-eslint/naming-convention": [
+                "error",
+                { selector: "typeLike", format: ["PascalCase"] },
+                {
+                    selector: "variable",
+                    format: ["camelCase", "UPPER_CASE", "PascalCase"],
+                    leadingUnderscore: "allow",
+                },
+                { selector: "function", format: ["camelCase", "PascalCase"] },
+                {
+                    selector: "parameter",
+                    format: ["camelCase", "PascalCase"],
+                    leadingUnderscore: "allow",
+                    trailingUnderscore: "allow",
+                },
+                { selector: "parameter", filter: { regex: "^_+$", match: true }, format: null },
+                // Mappack fields are short and come from the data, not from us.
+                { selector: "objectLiteralProperty", format: null },
+                { selector: "typeProperty", format: null },
+            ],
+        },
+    },
+
+    {
+        files: ["*.config.{js,mjs,ts}", "vite.config.ts", "tools/**/*.ts"],
+        languageOptions: { globals: { ...globals.node }, parser: tsParser },
+        settings: { react: { version: "detect" } },
+        rules: {
+            "@typescript-eslint/no-require-imports": "off",
+            "import/no-unresolved": "off",
+        },
+    },
+]);

@@ -1,0 +1,139 @@
+name: Preview a pull request
+
+# Every pull request gets its own copy of the app on the Pages site, at /pr-N/, and the
+# screenshots of every screen next to it at /pr-N/screens/. Look at the result -- the habit that
+# CLAUDE.md asks for, where a reviewer can act on it. The folder is dropped again when the pull
+# request closes, and prune-previews.yml sweeps up whatever that misses.
+#
+# This is `pull_request`, never `pull_request_target`: a pull request from a fork then runs with a
+# read-only token and simply cannot publish, which is the point. The branch's own code runs here,
+# and it must never be able to write to this repository. Those pull requests get no preview; the
+# Checks workflow still checks them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One run per pull request, and a new push supersedes the one before it -- there is no point
+# publishing a preview of a commit that is already old, and the screenshots take minutes. This is
+# deliberately *not* a group shared with the deploy: GitHub keeps one pending run per group and
+# cancels the run that was waiting, so a shared group drops work instead of queueing it. Two
+# publishes landing at once are settled in tools/publish-pages.sh, on the branch itself.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PR: ${{ github.event.pull_request.number }}
+  PREVIEW: https://chlaedderi.github.io/pr-${{ github.event.pull_request.number }}/
+
+jobs:
+  preview:
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The branch as it is, not its merge with main: a preview answers "what does this branch
+          # look like", and a branch that does not merge cleanly would otherwise get no preview at
+          # all. What the merge looks like is the Checks workflow's business.
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+      - name: Build and prepare the preview
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: devenv shell -- ./tools/make-site.sh "${RUNNER_TEMP}/site" "pr-${PR}-${SHA::7}"
+      - name: Publish it
+        run: ./tools/publish-pages.sh pr "${PR}" "${RUNNER_TEMP}/site"
+      - name: Say where it is
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Preview of this branch"
+            echo
+            echo "${PREVIEW}"
+            echo
+            echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
+            echo "data of the app at <https://chlaedderi.github.io/>."
+            echo
+            echo "The screenshots follow in a few minutes."
+          } >"${RUNNER_TEMP}/comment.md"
+          gh pr comment "${PR}" --edit-last --body-file "${RUNNER_TEMP}/comment.md" ||
+            gh pr comment "${PR}" --body-file "${RUNNER_TEMP}/comment.md"
+
+  screens:
+    # After the preview, not beside it: both jobs write the same branch.
+    needs: preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+      - name: Capture every screen
+        run: devenv shell -- screens
+      - name: Publish the screenshots
+        run: ./tools/publish-pages.sh screens "${PR}" .screens
+      - name: Put them in the comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Preview of this branch"
+            echo
+            echo "${PREVIEW}"
+            echo
+            echo "It keeps its own favourites, logbook and settings -- a preview never touches the"
+            echo "data of the app at <https://chlaedderi.github.io/>."
+            echo
+            echo "<details><summary>Every screen</summary>"
+            echo
+            for shot in .screens/*.png; do
+              name="$(basename "${shot}" .png)"
+              echo "**${name}**"
+              echo
+              echo "<img src=\"${PREVIEW}screens/${name}.png\" width=\"420\" alt=\"${name}\">"
+              echo
+            done
+            echo "</details>"
+          } >"${RUNNER_TEMP}/comment.md"
+          gh pr comment "${PR}" --edit-last --body-file "${RUNNER_TEMP}/comment.md" ||
+            gh pr comment "${PR}" --body-file "${RUNNER_TEMP}/comment.md"
+
+  cleanup:
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Drop the preview, merged or not
+        run: ./tools/publish-pages.sh remove "${PR}"
+      - name: Say so
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Preview of this branch"
+            echo
+            echo "Gone: this pull request is closed."
+          } >"${RUNNER_TEMP}/comment.md"
+          gh pr comment "${PR}" --edit-last --body-file "${RUNNER_TEMP}/comment.md" ||
+            echo "no comment of ours to edit"

@@ -1,0 +1,18 @@
+/node_modules
+/.pnpm-store
+/.devenv
+/.direnv
+/dist
+/coverage
+pnpm-lock.yaml
+
+# data, not source
+/maps
+
+# the clone of the private Chlaedderi/maps that `packs` makes
+/.packs
+
+# Markdown and the workflows have their own checkers (markdownlint, yamllint, actionlint), and the
+# prose in README.md is written one paragraph per line on purpose.
+*.md
+/.github
