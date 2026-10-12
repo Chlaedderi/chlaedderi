@@ -141,25 +141,32 @@ module that carries it. Add a row when you add a feature; a row whose module dis
 suite. It exists because this rewrite was once reported complete while whole feature areas --
 weather, radar, the approach planner -- had never been written at all.
 
-**Just commit.** Every check is a git hook — prettier, eslint, tsc, vitest, the build, the
-Playwright suite, the pack checks — so `git commit` runs all of them. There is no need to run
-`lint` (or `test`, or `e2e`) first: that only repeats the slowest hooks. Where a hook rewrites a
-file (prettier, `eslint --fix`) the commit stops with "files were modified by this hook";
-`git add -A` and commit again. The `build` hook no longer writes anything into the tree — it
-fails when the bundle does not come out, and leaves `dist/` fresh for the `e2e` hook, which runs
-after it because prek goes in alphabetical order.
+**Just commit. Do not run the tests first.** Every check is a git hook — prettier, eslint, tsc,
+vitest, the build, the Playwright suite, the pack checks — and `git commit` runs all of them, on
+what you are actually committing. They are not a formality standing in for real tests: they *are*
+the tests, the whole suite and the browser suite included. So running `lint`, `test` or `e2e`
+beforehand tells you nothing the commit will not tell you a minute later, and repeats the slowest
+hooks to do it. Where a hook rewrites a file (prettier, `eslint --fix`) the commit stops with
+"files were modified by this hook"; `git add -A` and commit again. The `build` hook writes nothing
+into the tree — it fails when the bundle does not come out, and leaves `dist/` fresh for the `e2e`
+hook, which runs after it because prek goes in alphabetical order.
 
-`lint` exists for running the same set without committing, and it is what CI runs
-(`devenv shell -- lint`, not `devenv test`: `devenv test` swallows the failing hook's output).
+**And CI runs them again.** `.github/workflows/ci.yml` runs `devenv shell -- lint`, which is the
+same set over every file, plus the browser suite in a real Chromium — so nothing can pass on a
+laptop and fail in Actions, and a pull request says so on its own. `lint` exists for running the
+set without committing (`devenv shell -- lint`, not `devenv test`: `devenv test` swallows the
+failing hook's output). It is not a step before a commit.
 
 Translation keys: use the ones that exist. `src/i18n/keys.test.ts` reads the keys out of the source
 and fails on any that no language has, including both arms of a ternary.
 
 ## Branches, worktrees, pull requests
 
-**Nothing is committed on `main`.** Every task starts in its own worktree — the `EnterWorktree`
-tool, or `git worktree add .claude/worktrees/<name> -b claude/<topic> origin/main` — and ends as a
-pull request. The branch is `claude/<topic>`; `.claude/worktrees/` is ignored by git, by eslint and
+**Nothing is committed on `main`, and GitHub now refuses it.** A ruleset on the default branch
+requires a pull request, allows **squash** as the only merge method, and blocks force-pushes and
+deletion — for everybody, with no bypass. So every task starts in its own worktree — the
+`EnterWorktree` tool, or `git worktree add .claude/worktrees/<name> -b claude/<topic> origin/main`
+— and ends as a pull request. The branch is `claude/<topic>`; `.claude/worktrees/` is ignored by git, by eslint and
 by the hooks.
 
 **First thing in a new worktree: `direnv allow`.** devenv installs `node_modules` there with pnpm
