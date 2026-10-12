@@ -21,9 +21,13 @@ const repoRoot = import.meta.dirname;
  * keeps that working.
  */
 const rootStaticFiles = (): Plugin => {
-    const served = /^\/(maps\/[\w.-]+\.json|[\w.-]+\.(png|svg|ico|webmanifest)|version\.json)$/;
+    // .chlpack beside .json: a region may be published encrypted, and the e2e suite installs
+    // one from maps/ exactly as a viewer would from an address.
+    const served =
+        /^\/(maps\/[\w.-]+\.(json|chlpack)|[\w.-]+\.(png|svg|ico|webmanifest)|version\.json)$/;
     const types: Record<string, string> = {
         ".json": "application/json",
+        ".chlpack": "application/octet-stream",
         ".webmanifest": "application/manifest+json",
         ".png": "image/png",
         ".svg": "image/svg+xml",

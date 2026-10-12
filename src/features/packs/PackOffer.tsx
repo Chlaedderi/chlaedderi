@@ -101,12 +101,12 @@ export const PackOffer = () => {
         const controller = new AbortController();
         abort.current = controller;
         setChecking(true);
-        const load = await fetchPack(address.url, controller.signal);
+        const load = await fetchPack(address.url, controller.signal, offer?.key);
         if (controller.signal.aborted) return;
         abort.current = null;
         setChecking(false);
         setResult(load);
-    }, [address]);
+    }, [address, offer?.key]);
 
     // A new offer: refuse what cannot be fetched, skip what is already here, and otherwise either
     // ask or go straight to fetching.
@@ -183,6 +183,7 @@ export const PackOffer = () => {
             {
                 type: "url",
                 url: result.url,
+                key: offer.key,
             },
         );
         if (!done.ok) {

@@ -48,6 +48,13 @@ export default defineConfig([
         },
     },
 
+    {
+        // The little scripts in tools/ are Node, not the app: they read files and print to a
+        // terminal. tools/seal-fixture.mjs is the one that is JavaScript rather than shell.
+        files: ["tools/**/*.mjs"],
+        languageOptions: { globals: { ...globals.node } },
+    },
+
     prettierRecommended,
 
     {

@@ -21,7 +21,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { logbookActions } from "@app/slices/logbookSlice";
 import { prefsActions } from "@app/slices/prefsSlice";
 import { uiActions } from "@app/slices/uiSlice";
-import { useLogIndex, usePackUrlOf } from "@app/useAppData";
+import { useLogIndex, usePackKeyOf, usePackUrlOf } from "@app/useAppData";
 import { GRADES, GRADE_LO } from "@core/grades";
 import { LOG_STYLES, type LogEntry, type LogStyle, newLogId, todayIso } from "@core/logbook";
 import type { Crag, Route } from "@domain/model";
@@ -51,6 +51,7 @@ export const LogSheet = ({
     const navigate = useNavigate();
     const log = useLogIndex();
     const packUrl = usePackUrlOf(crag);
+    const packKey = usePackKeyOf(crag);
     const [confirming, setConfirming] = useState(false);
     const lastStyle = useAppSelector((s) => s.prefs.logStyle);
 
@@ -244,7 +245,12 @@ export const LogSheet = ({
                             size="small"
                             startIcon={<ShareIcon />}
                             onClick={() =>
-                                void share(route.key, `${route.name}, ${crag.name}`, packUrl)
+                                void share(
+                                    route.key,
+                                    `${route.name}, ${crag.name}`,
+                                    packUrl,
+                                    packKey,
+                                )
                             }
                             sx={{ alignSelf: "flex-start" }}
                         >

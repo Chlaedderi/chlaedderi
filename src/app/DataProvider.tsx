@@ -80,7 +80,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const install = useCallback(
         async (
             load: PackLoad & { text?: string },
-            source: { type: "url" | "file"; url?: string; name?: string },
+            source: { type: "url" | "file"; url?: string; name?: string; key?: string },
         ): Promise<PackLoad> => {
             if (!load.ok) return load;
             setBusy(true);
@@ -115,24 +115,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const installFromUrl = useCallback(
-        async (url: string) => {
-            const load = await fetchPack(url);
+        async (url: string, key?: string) => {
+            const load = await fetchPack(url, undefined, key);
             // What is remembered is the address that answered, not the one that was pasted: it is
-            // what «fetch again» asks for, and what a link to this region will carry.
-            return install(load, { type: "url", url: load.url });
+            // what «fetch again» asks for, and what a link to this region will carry -- with the
+            // key beside it, for a region that arrived locked.
+            return install(load, { type: "url", url: load.url, key });
         },
         [install],
     );
 
     /** The confirmation dialog's way in: it has already fetched and checked the pack. */
     const installLoaded = useCallback(
-        async (load: PackLoad & { text: string }, source: { type: "url"; url: string }) =>
-            install(load, source),
+        async (
+            load: PackLoad & { text: string },
+            source: { type: "url"; url: string; key?: string },
+        ) => install(load, source),
         [install],
     );
 
     const installFromFile = useCallback(
-        async (file: File) => install(await readPackFile(file), { type: "file", name: file.name }),
+        async (file: File, key?: string) =>
+            install(await readPackFile(file, key), { type: "file", name: file.name, key }),
         [install],
     );
 

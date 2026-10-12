@@ -1,0 +1,52 @@
+name: Verify the published regions
+
+# The encrypted regions are published onto gh-pages from the private Chlaedderi/maps repository,
+# by hand. This is the check on the receiving side: the one failure that cannot be undone is a
+# plaintext mappack published by mistake, and anything readable under packs/ is exactly that.
+#
+# It needs nothing but a shell, so it answers within a minute of a publish.
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Everything under packs/ is a sealed region
+        run: |
+          shopt -s nullglob
+          bad=0
+          found=0
+          for f in packs/*; do
+            found=$((found + 1))
+            if [[ ${f} != *.chlpack ]]; then
+              echo "::error file=${f}::not a .chlpack"
+              bad=1
+              continue
+            fi
+            size=$(stat -c%s "${f}")
+            if [[ ${size} -le 18 ]]; then
+              echo "::error file=${f}::shorter than the container header"
+              bad=1
+            fi
+            if [[ "$(head -c 4 "${f}")" != "CHLP" ]]; then
+              echo "::error file=${f}::no CHLP magic -- is this plaintext?"
+              bad=1
+            fi
+            version=$(head -c 5 "${f}" | tail -c 1 | od -An -tu1 | tr -d ' ')
+            if [[ ${version} != "1" ]]; then
+              echo "::error file=${f}::container version ${version}, expected 1"
+              bad=1
+            fi
+          done
+          echo "checked ${found} file(s) under packs/"
+          exit "${bad}"

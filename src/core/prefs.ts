@@ -22,6 +22,13 @@ export interface PackSource {
     readonly type: "url" | "file";
     readonly url?: string;
     readonly name?: string;
+    /**
+     * The key a locked region was opened with, so «fetch again» and «share» still work.
+     *
+     * It is on this device already -- it came in the link that installed the region, and the data
+     * it opens is in the cache beside it. Keeping it changes nothing about who can read what.
+     */
+    readonly key?: string;
 }
 
 /** What is remembered about an installed pack. Never its data -- that is in the Cache Storage. */

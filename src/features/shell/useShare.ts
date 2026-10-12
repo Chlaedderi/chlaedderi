@@ -27,18 +27,22 @@ import { packAddress } from "@core/packs/url";
  * first `#` before the first `?`, so one inside the address would take the rest of the link with
  * it.
  */
-export const linkTo = (token: string, packUrl?: string | null): string => {
+export const linkTo = (token: string, packUrl?: string | null, packKey?: string | null): string => {
     const base = `${location.origin}${location.pathname}#${encodeURIComponent(token)}`;
     const address = packUrl ? packAddress(packUrl) : null;
     if (!address) return base;
-    return `${base}?pack=${encodeURIComponent(address.url.split("#")[0] ?? address.url)}`;
+    const link = `${base}?pack=${encodeURIComponent(address.url.split("#")[0] ?? address.url)}`;
+    // Only a region that arrived locked has a key, so a link to a plain pack is byte for byte the
+    // link it always was. The key rides in the fragment, which no server is ever sent.
+    return packKey ? `${link}&k=${encodeURIComponent(packKey)}` : link;
 };
 
 /** `#/pack?url=…`: a link that says «here is my region» and nothing else. */
-export const packLinkTo = (packUrl: string): string | null => {
+export const packLinkTo = (packUrl: string, packKey?: string | null): string | null => {
     const address = packAddress(packUrl);
     if (!address) return null;
-    return `${location.origin}${location.pathname}#/pack?url=${encodeURIComponent(address.url)}`;
+    const link = `${location.origin}${location.pathname}#/pack?url=${encodeURIComponent(address.url)}`;
+    return packKey ? `${link}&k=${encodeURIComponent(packKey)}` : link;
 };
 
 /**
@@ -79,13 +83,14 @@ export const useShare = (): ((
     token: string,
     label?: string,
     packUrl?: string | null,
+    packKey?: string | null,
 ) => Promise<void>) => {
     const { t } = useTranslation();
     const share = useShareLink();
 
     return useCallback(
-        async (token: string, label?: string, packUrl?: string | null) =>
-            share(linkTo(token, packUrl), label ?? t("app.name")),
+        async (token: string, label?: string, packUrl?: string | null, packKey?: string | null) =>
+            share(linkTo(token, packUrl, packKey), label ?? t("app.name")),
         [share, t],
     );
 };

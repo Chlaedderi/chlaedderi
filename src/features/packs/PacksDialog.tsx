@@ -166,7 +166,10 @@ export const PacksDialog = () => {
                                             aria-label={t("pk.share")}
                                             disabled={busy}
                                             onClick={() => {
-                                                const link = packLinkTo(pack.src!.url!);
+                                                const link = packLinkTo(
+                                                    pack.src!.url!,
+                                                    pack.src!.key,
+                                                );
                                                 const name = pack.name
                                                     ? i18(pack.name, lang)
                                                     : pack.id;
@@ -182,7 +185,11 @@ export const PacksDialog = () => {
                                             disabled={busy}
                                             onClick={() =>
                                                 void run(
-                                                    () => installFromUrl(pack.src!.url!),
+                                                    () =>
+                                                        installFromUrl(
+                                                            pack.src!.url!,
+                                                            pack.src!.key,
+                                                        ),
                                                     pack.name ? i18(pack.name, lang) : pack.id,
                                                 )
                                             }
