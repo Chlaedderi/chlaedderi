@@ -74,6 +74,13 @@ redirects there.
   keeps working. Pruning that file is the only revocation there is. Do not reason about it as if
   it were anything else.
 
+  The pruning is now also automatic, and that is the one part of this that has a clock on it: the
+  publishing workflow in `Chlaedderi/maps` sweeps every publication that is not a region's current
+  one and has been superseded for thirty days. So a link that was sent goes on working for about a
+  month after it was replaced, and then stops — for everybody, without anybody deciding it that
+  day. Nothing else about the paragraph above changes; thirty days is a grace period, not a
+  guarantee, and still not access control.
+
 - **The schema is open on purpose** (`additionalProperties: true`): an older app has to be able to
   ignore fields it does not know. Ajv therefore does not run in strict mode.
 
