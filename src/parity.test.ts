@@ -137,6 +137,18 @@ const FEATURES: Feature[] = [
         now: "src/features/list/ListToolbar.tsx",
         exports: "ListToolbar",
     },
+    {
+        what: "a link that carries the filters",
+        was: "nothing: a link could only name a crag or a region",
+        now: "src/core/filterCode.ts",
+        exports: "encodeFilterCode",
+    },
+    {
+        what: "the filters kept in the address bar, so copying it shares the view",
+        was: "nothing: the filters never left the device",
+        now: "src/app/FilterUrl.tsx",
+        exports: "FilterUrl",
+    },
 
     // ---- weather
     { what: "is the rock dry", was: "wxStat", now: "src/core/weather.ts", exports: "readWeather" },

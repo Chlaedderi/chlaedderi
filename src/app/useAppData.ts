@@ -72,6 +72,24 @@ export const usePackKeyOf = (crag: Crag | null | undefined): string | null => {
     }, [packs, crag]);
 };
 
+/**
+ * Where the region on screen came from, for a link that carries it.
+ *
+ * The same answer `usePackUrlOf`/`usePackKeyOf` give for a crag, asked of the region itself --
+ * which is what a link to a *view* needs, a view having no one crag to ask about. Null for the
+ * built-in showcase and for anything installed from a file: neither has an address to hand on.
+ */
+export const useRegionSource = (): { url: string; key: string | null } | null => {
+    const packs = useAppSelector((s) => s.prefs.packs);
+    const region = useRegion();
+    return useMemo(() => {
+        if (!region) return null;
+        const note = packs.find((p) => p.id === region.key);
+        if (note?.src?.type !== "url" || !note.src.url) return null;
+        return { url: note.src.url, key: note.src.key ?? null };
+    }, [packs, region]);
+};
+
 /** The crags of the region shown. Filters apply inside one region, as they always have. */
 export const useRegionCrags = (): readonly Crag[] => {
     const { crags } = useData();

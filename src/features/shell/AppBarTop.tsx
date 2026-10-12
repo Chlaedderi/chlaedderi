@@ -25,6 +25,7 @@ import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -45,6 +46,16 @@ export const AppBarTop = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { pathname, key } = useLocation();
+    /**
+     * Whether the app was opened straight onto this page, rather than walked to.
+     *
+     * `key === "default"` says so only of the *first* location, and several things replace it
+     * before the back arrow is ever pressed: `LegacyLink` turns `#<cragId>` into `/crag/<id>`, and
+     * `FilterUrl` writes the filters into the query. Both mint a fresh key, and the arrow would
+     * then offer to go back to a page that is not the app. The bar is mounted once, outside
+     * `Routes`, and never unmounts, so the key it saw first is the one to ask.
+     */
+    const firstKey = useRef(key);
     const q = useAppSelector((s) => s.filters.q);
     const filters = useAppSelector(selectFilters);
     const active = activeCount(filters);
@@ -90,7 +101,9 @@ export const AppBarTop = () => {
                         // History back only when there is a page of the app to go back to. Opened
                         // from a shared link, the entry before is somebody else's page -- or none,
                         // in the installed app -- so there the way back is the map.
-                        onClick={() => void (key === "default" ? navigate("/") : navigate(-1))}
+                        onClick={() =>
+                            void (firstKey.current === "default" ? navigate("/") : navigate(-1))
+                        }
                         aria-label={t("back")}
                     >
                         <ArrowBackIcon />

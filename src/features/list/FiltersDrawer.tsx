@@ -1,5 +1,6 @@
 import CloseIcon from "@mui/icons-material/Close";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import ShareIcon from "@mui/icons-material/Share";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -17,10 +18,18 @@ import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { selectFilters } from "@app/selectors";
 import { filtersActions } from "@app/slices/filtersSlice";
 import { uiActions } from "@app/slices/uiSlice";
-import { useLang, useRegion, useRegionCrags, useShownCrags } from "@app/useAppData";
+import {
+    useLang,
+    useRegion,
+    useRegionCrags,
+    useRegionSource,
+    useShownCrags,
+} from "@app/useAppData";
 import { orientLabel } from "@core/dataText";
+import { encodeFilterCode } from "@core/filterCode";
 import {
     FILTER_VALUES,
     type FilterFlag,
@@ -30,6 +39,8 @@ import {
     ORIENTS,
 } from "@core/filters";
 import { GRADE_HI, GRADE_LO, GRADES, gradeIdx } from "@core/grades";
+
+import { useShareLink, viewLinkTo } from "../shell/useShare";
 
 import { optionCounts, optionLabel } from "./filterLabels";
 
@@ -103,12 +114,33 @@ const FiltersBody = () => {
     ].sort();
     const close = () => dispatch(uiActions.setFiltersOpen(false));
 
+    // The link to this view. Null when nothing is set: there is nothing to say about a list
+    // nobody has narrowed, and the button says so by being unavailable.
+    const filters = useAppSelector(selectFilters);
+    const sort = useAppSelector((s) => s.filters.sort);
+    const dir = useAppSelector((s) => s.filters.dir);
+    const source = useRegionSource();
+    const shareLink = useShareLink();
+    const code = encodeFilterCode(filters, sort, dir);
+
     return (
         <>
             <Toolbar sx={{ gap: 1 }}>
                 <Typography variant="h3" sx={{ flex: 1 }}>
                     {t("filters")}
                 </Typography>
+                <IconButton
+                    disabled={!code}
+                    aria-label={t("f.share")}
+                    onClick={() =>
+                        void shareLink(
+                            viewLinkTo(code, source?.url, source?.key),
+                            t("f.share.label"),
+                        )
+                    }
+                >
+                    <ShareIcon />
+                </IconButton>
                 <Button
                     size="small"
                     startIcon={<RestartAltIcon />}

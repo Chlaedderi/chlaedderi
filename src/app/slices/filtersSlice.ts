@@ -26,7 +26,20 @@ export interface FiltersState {
     muni: string;
     sort: SortKey;
     dir: 1 | -1;
+    /**
+     * Whether the stored filters -- or a link's -- have been read back yet.
+     *
+     * `FilterUrl` mirrors this state into the address bar, and must not do so before it is the
+     * viewer's state rather than the defaults: the read-back waits for the data to arrive, and on
+     * a cold cache that is later than the mirror's first chance to write. It would otherwise put a
+     * code for the defaults into the URL, which the read-back would then find and prefer to what
+     * is actually on the device.
+     */
+    hydrated: boolean;
 }
+
+/** The filter state as it travels: hydration is this device's business, not a stored field. */
+export type StorableFiltersState = Omit<FiltersState, "hydrated">;
 
 const base = emptyFilters();
 
@@ -62,10 +75,11 @@ export const initialFiltersState: FiltersState = {
     muni: "",
     sort: "area",
     dir: 1,
+    hydrated: false,
 };
 
 /** Put a `FiltersState` back together as the shape the pure filter functions take. */
-export const toFilters = (s: FiltersState): Filters =>
+export const toFilters = (s: StorableFiltersState): Filters =>
     ({
         ...s.one,
         ...s.flags,
@@ -80,7 +94,7 @@ export const toFilters = (s: FiltersState): Filters =>
     }) as unknown as Filters;
 
 /** And the other way round, for restoring a stored state. */
-export const fromFilters = (f: Filters, sort: SortKey, dir: 1 | -1): FiltersState => ({
+export const fromFilters = (f: Filters, sort: SortKey, dir: 1 | -1): StorableFiltersState => ({
     one: {
         fav: f.fav,
         star: f.star,
@@ -157,8 +171,19 @@ const filtersSlice = createSlice({
             state.dir = state.dir === 1 ? -1 : 1;
         },
         /** The reset button: everything back to default, but the search text stays. */
-        reset: (state) => ({ ...initialFiltersState, q: state.q }),
-        restore: (_state, action: PayloadAction<FiltersState>) => action.payload,
+        reset: (state) => ({ ...initialFiltersState, q: state.q, hydrated: state.hydrated }),
+        restore: (_state, action: PayloadAction<StorableFiltersState>) => ({
+            ...action.payload,
+            hydrated: true,
+        }),
+        /**
+         * Nothing was stored, or what was stored could not be read. Said out loud all the same,
+         * because every path out of the read-back has to mark it: one that forgets leaves the URL
+         * mirror silent for ever.
+         */
+        hydrated: (state) => {
+            state.hydrated = true;
+        },
     },
 });
 

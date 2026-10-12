@@ -23,6 +23,7 @@ import { Suspense, lazy } from "react";
 import { useTranslation } from "react-i18next";
 import { Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 
+import { FilterUrl } from "@app/FilterUrl";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { useLayout } from "@app/layout";
 import { Persistence } from "@app/Persistence";
@@ -351,6 +352,7 @@ const RouteFallback = () => (
 export const App = () => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
         <Persistence />
+        <FilterUrl />
         <RevealRoute />
         <AppBarTop />
         <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>

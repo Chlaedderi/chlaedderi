@@ -25,13 +25,17 @@ export const PackLink = () => {
     const url = params.get("url");
     // Inside the hash, so it never reaches a server -- see src/core/packs/chlpack.ts.
     const key = params.get("k") ?? undefined;
+    // A link to a *view* comes through here too, because filters without their region are an empty
+    // screen. The region is offered as always; the filters ride on to the map, where they mean
+    // something, and are read there (Persistence.tsx).
+    const code = params.get("f");
 
     useEffect(() => {
         if (!url) return;
         dispatch(uiActions.offerPack({ url, key }));
         // Away from the link at once, so that a reload does not ask a second time.
-        void navigate("/", { replace: true });
-    }, [url, key, dispatch, navigate]);
+        void navigate(code ? `/?f=${encodeURIComponent(code)}` : "/", { replace: true });
+    }, [url, key, code, dispatch, navigate]);
 
     return url ? null : <LegacyLink />;
 };

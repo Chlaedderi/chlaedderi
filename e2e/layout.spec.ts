@@ -206,7 +206,8 @@ test.describe("the phone layout", () => {
 
         await expect(page.getByRole("button", { name: ARROW })).toHaveCount(1);
         await page.getByRole("button", { name: ARROW }).click();
-        await expect(page).toHaveURL(/#\/$/);
+        // `?f=…` when filters are on: the map is the map either way (see filterlink.spec.ts).
+        await expect(page).toHaveURL(/#\/(\?|$)/);
     });
 
     test("goes to the map from a crag opened by a shared link", async ({ page }) => {
@@ -216,7 +217,8 @@ test.describe("the phone layout", () => {
         await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
 
         await page.getByRole("button", { name: ARROW }).click();
-        await expect(page).toHaveURL(/#\/$/);
+        // `?f=…` when filters are on: the map is the map either way (see filterlink.spec.ts).
+        await expect(page).toHaveURL(/#\/(\?|$)/);
         await expect(page.locator(".leaflet-container")).toBeVisible();
     });
 });
