@@ -27,6 +27,7 @@ import type { Crag } from "@domain/model";
 
 import { GAP_M, ROUTE_ATTRIBUTION, ROUTE_COLOUR, approachLine } from "./approachGeometry";
 import { parkIcon } from "./icons";
+import { Z_PARK } from "./stacking";
 
 export interface ApproachLayerProps {
     readonly crag: Crag | null;
@@ -64,7 +65,7 @@ export const ApproachLayer = ({ crag, parks, parkName, onParkClick }: ApproachLa
             if (!p) return;
             L.marker([p.lat, p.lon], {
                 icon: parkIcon(p.est === true, extra),
-                zIndexOffset: 600,
+                zIndexOffset: Z_PARK,
                 alt: parkName(key),
             })
                 .on("click", (e) => {

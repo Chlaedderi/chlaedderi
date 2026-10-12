@@ -17,6 +17,7 @@ import type { Crag } from "@domain/model";
 
 import { anchorClusterIcon, clusterIcon, cragIcon } from "./icons";
 import type { WeatherState } from "./markerState";
+import { Z_SELECTED_CRAG } from "./stacking";
 
 export interface CragMarkersProps {
     readonly shown: readonly CragMatch[];
@@ -92,8 +93,8 @@ export const CragMarkers = ({
                     favourite: favourites.has(crag.id),
                     weather: weatherOf(crag),
                 }),
-                // The open crag draws over its neighbours.
-                zIndexOffset: crag.id === selectedId ? 400 : 0,
+                // The open crag draws over its neighbours and over its own car parks.
+                zIndexOffset: crag.id === selectedId ? Z_SELECTED_CRAG : 0,
                 keyboard: true,
                 alt: crag.name,
                 title: crag.name,

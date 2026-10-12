@@ -11,6 +11,8 @@ import { useMap } from "react-leaflet";
 
 import type { PathCategory } from "@core/approach";
 
+import { Z_PLAN_VIA } from "../map/stacking";
+
 import type { PlanResult } from "./usePlanner";
 
 const CAT_COLOUR: Record<PathCategory, string> = {
@@ -80,7 +82,7 @@ export const PlannedRoute = ({
                     iconAnchor: [8, 8],
                     html: '<span class="me manual"></span>',
                 }),
-                zIndexOffset: 700,
+                zIndexOffset: Z_PLAN_VIA,
                 title: viaTitle,
             })
                 .on("click", (e) => {
