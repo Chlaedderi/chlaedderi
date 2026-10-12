@@ -133,6 +133,19 @@ redirects there.
   run per group and **cancels** the one that was waiting, which dropped a deploy of `main` the
   first time this was tried, silently, with every run green.
 
+- **A job that enters a devenv shell copies `tools/cicd.nix` over `devenv.local.nix` first.** devenv
+  merges that file over `devenv.nix`, which sets `env.cicd` and drops the packages a runner would
+  build and never open — `claude-code` today. Leave the step out of a new job and nothing says so:
+  the checks pass, having spent the minutes on an editor's worth of tooling first. So it belongs
+  beside `actions/checkout@v4`, in every job that goes on to run `devenv shell`, and nowhere else —
+  `verify-packs.yml` and the preview `cleanup` job touch no nix at all. The flag is read when the
+  expression is evaluated, not out of the environment, so nothing needs `--impure` and the runner's
+  own `CI` variable is never consulted. `cp tools/cicd.nix devenv.local.nix` locally shows what a
+  runner sees. Anything a hook or a `tools/` script reaches for stays in the list that is always
+  there: the hooks find `dos2unix`, `renovate-config-validator`, `check-jsonschema`, `jq` and `perl`
+  on `PATH` by name, and `lint` runs the `e2e` hook, so the Playwright browsers are needed even by
+  the job that only lints.
+
 - **A preview shares the host with the app.** `chlaedderi.github.io` is one origin, so a page at
   `/pr-12/` reaches the same localStorage and the same caches as `/`. Every
   storage name therefore carries `PREVIEW_SUFFIX` (`src/core/preview.ts`), which is empty on every

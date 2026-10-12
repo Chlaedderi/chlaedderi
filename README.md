@@ -123,6 +123,7 @@ The published files are written to the `gh-pages` branch, which is what Pages se
 | `tools/serve.pl` | a small local server for trying things out: `dist/` first, then the repository |
 | `tools/og-card.html`, `tools/make-og.mjs` | the share card and the one command that redraws it: `node tools/make-og.mjs` |
 | `devenv.nix`, `devenv.yaml` | the development environment, git hooks included |
+| `tools/cicd.nix` | what a CI runner changes about it: the tools only a person uses are left out |
 | `package.json`, `tsconfig*.json`, `vite.config.ts`, `eslint.config.mjs` | the build and the checking tools |
 | `manifest.webmanifest` | name, colours and icons for installing |
 | `icon-*.png`, `apple-touch-icon.png`, `favicon*` | the app icon in every size needed |
