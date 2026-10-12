@@ -1,0 +1,3 @@
+# The mappacks are minified single-line JSON: a textual diff of them is noise, and the pack checks
+# (tools/make-packs.sh --check, tools/validate-packs.sh) are what actually guards their content.
+maps/pack.*.json -diff

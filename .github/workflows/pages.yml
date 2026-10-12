@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+# The site is published by writing the branch Pages serves, not by uploading an artefact. An
+# artefact replaces the whole site, and the site now carries the previews of the open pull requests
+# alongside the app (see preview.yml). tools/publish-pages.sh keeps every pr-N/ folder in place.
+#
+# Pages must be set to that branch: Settings -> Pages -> Source: "Deploy from a branch",
+# gh-pages, / (root). The workflow token cannot switch it over.
+#
+# The app is built here, by tools/make-site.sh, because it is not committed -- so this job needs the
+# toolchain, through devenv like every other job in this repository. One toolchain, one `vite build`:
+# a second way of building would be a second thing that can differ from what the checks ran.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Deploys one at a time, and nothing else in this group. A group shared with the previews looked
+# like a queue and is not one: GitHub keeps a single pending run per group and cancels the one that
+# was already waiting, which silently dropped a deploy of main the first time this was tried. The
+# race against a preview publishing at the same moment is settled in tools/publish-pages.sh, on the
+# branch itself.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      # Pull-only: the public devenv cache saves building the tool closure from source.
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+      - name: Build and prepare the site
+        # One version per deploy: the date and the commit.
+        run: |
+          devenv shell -- ./tools/make-site.sh \
+            "${RUNNER_TEMP}/site" "$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}"
+      - name: Publish it
+        run: ./tools/publish-pages.sh root "${RUNNER_TEMP}/site"

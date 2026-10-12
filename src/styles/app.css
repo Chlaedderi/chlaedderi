@@ -1,0 +1,32 @@
+/*
+ * The app's own CSS, in four parts:
+ *
+ *   tokens.css     the original token names, aliased onto the MUI theme's variables
+ *   markers.css    crag, car-park and cluster markers -- Leaflet takes these as HTML strings
+ *   mapchrome.css  the map's furniture: controls, legend, radar bar, planner, call-out
+ *   chips.css      the quick-filter chips and the region switch
+ *
+ * Everything else is MUI.
+ */
+
+@import "./tokens.css";
+@import "./markers.css";
+@import "./mapchrome.css";
+@import "./chips.css";
+
+/* Long crag and route names must not push a row wider than the screen. */
+.kat-ellipsis {
+    overflow: hidden;
+    min-width: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/*
+ * The strip WebKit leaves below the page (see src/app/viewport.ts) shows only the page background:
+ * give it the colour of the bars and sheets that end on it.
+ */
+html.deadzone,
+html.deadzone body {
+    background: var(--panel);
+}

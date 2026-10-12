@@ -1,0 +1,22 @@
+# Everything written about this project is English and is checked. What stays German is the product
+# itself -- the interface texts, the page description and the data, with its Italian and Romansh
+# place names -- and `typos` only ships an English dictionary, so devenv.nix excludes
+# manifest.webmanifest, index.html, src/i18n/de.json and maps/ outright. What is left to configure
+# here are the words that still turn up in the files we do check.
+
+[default.extend-words]
+# "Oltre" – Oltrefinale, the region west of Finale Ligure.
+Oltre = "Oltre"
+# "ow" – the pack id of Oberwallis (Upper Valais).
+ow = "ow"
+# "ba" – appears inside swisstopo layer identifiers.
+ba = "ba"
+# "brouter" – BRouter, the OpenStreetMap routing service the approaches come from.
+brouter = "brouter"
+
+[default]
+extend-ignore-re = [
+  # Allow an explicit opt-out, the same spellings the typos documentation uses.
+  "(?Rm)^.*(#|//|/\\*)\\s*spellchecker:disable-line$",
+  "(?s)(#|//|/\\*)\\s*spellchecker:off.*?\\n\\s*(#|//|/\\*)\\s*spellchecker:on",
+]

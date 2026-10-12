@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Chlädderi</title>
+  <!--
+    Chlädderi favicon: the app icon reduced to what survives at 16 to 32 px.
+    Same scene and colours as icon-master.svg, but on a rounded tile, with a
+    larger pin and tower, a heavier route without bolts, and no glow or
+    reflection.
+  -->
+  <defs>
+    <clipPath id="tile">
+      <rect width="64" height="64" rx="14"/>
+    </clipPath>
+    <linearGradient id="sky" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="45">
+      <stop offset="0" stop-color="#2B1780"/>
+      <stop offset=".45" stop-color="#8A22A8"/>
+      <stop offset=".75" stop-color="#F2416E"/>
+      <stop offset="1" stop-color="#FF9B3F"/>
+    </linearGradient>
+    <linearGradient id="sea" gradientUnits="userSpaceOnUse" x1="0" y1="45" x2="0" y2="64">
+      <stop offset="0" stop-color="#34E2D0"/>
+      <stop offset="1" stop-color="#0C86B4"/>
+    </linearGradient>
+    <linearGradient id="pin-fill" gradientUnits="userSpaceOnUse" x1="29" y1="6" x2="38" y2="31">
+      <stop offset="0" stop-color="#FFA13D"/>
+      <stop offset="1" stop-color="#F0246B"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#tile)">
+    <!-- sky, sun, sea -->
+    <rect width="64" height="64" fill="url(#sky)"/>
+    <circle cx="13" cy="41" r="7.5" fill="#FFF1C4"/>
+    <rect y="45" width="64" height="19" fill="url(#sea)"/>
+    <!-- tower: shaded face, buttress, then the sunlit face on top -->
+    <path d="M40 30.3 L47 36 L48 46 L52 53 L53 64 H39 L36 48 L39 37 Z" fill="#F6A2A3"/>
+    <path d="M48 46 L52 53 L53 64 H46 L45 55 Z" fill="#9A50A6"/>
+    <path d="M34 26 L27 35 L25 46 L20 52 L18 64 H40 L37 48 L40 37 L41 31 Z" fill="#FFF5E6"/>
+    <!-- route and pin -->
+    <path d="M25.5 58 L31.5 49 L30.5 41 L34 30" fill="none" stroke="#2A1670" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M25.8 19.7 A9.5 9.5 0 1 1 42.2 19.7 C40.3 23 36.6 26.4 36.3 30.2 A2.3 2.3 0 0 1 31.7 30.2 C31.4 26.4 27.7 23 25.8 19.7 Z" fill="url(#pin-fill)"/>
+    <circle cx="34" cy="15" r="3.7" fill="#FFF9EE"/>
+  </g>
+</svg>

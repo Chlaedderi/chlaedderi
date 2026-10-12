@@ -1,0 +1,474 @@
+/*
+ * The map's own furniture: the control stack, the base-map menu, the note strip, the legend,
+ * the radar bar, the planner panel and the crag call-out -- ported from the hand-written app.
+ *
+ * Like markers.css this is CSS because Leaflet owns the DOM here: controls, tooltips and
+ * popup content are handed to Leaflet, not rendered by React into an emotion-styled tree.
+ */
+
+/*
+ * The plate under the tiles. A region that draws its own outline keeps the sea colour; without
+ * one the plate is land, so the tiles do not float on blue.
+ */
+.leaflet-container {
+    background: var(--sea);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 13.5px;
+}
+
+[data-mapbg="plain"] .leaflet-container {
+    background: var(--land);
+}
+
+/* ---------- the control stack, top right */
+.mapctl {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.mbtn {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--raise);
+    color: var(--ink);
+    font-size: 18px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+    cursor: pointer;
+}
+
+.mbtn[aria-pressed="true"] {
+    border-color: var(--me);
+    color: var(--me);
+}
+
+/* Waiting for a position fix. */
+.mbtn.wait {
+    animation: locpulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes locpulse {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0.35;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mbtn.wait {
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+/* ---------- base-map menu */
+.basemenu {
+    display: grid;
+    gap: 2px;
+    min-width: 170px;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--raise);
+    box-shadow: var(--shadow);
+}
+
+.basemenu button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.basemenu button[aria-checked="true"] {
+    background: var(--accent-soft);
+    font-weight: 600;
+}
+
+.basemenu label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border-top: 1px solid var(--line);
+}
+
+/* Picking a position by hand. */
+.kat-map.pick {
+    cursor: crosshair;
+}
+
+/* ---------- the note strip (tiles failed, map blocked …) */
+.mapnote {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 62px;
+    z-index: 500;
+    max-width: 420px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--raise);
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+/* ---------- legend, bottom left */
+.legend {
+    position: absolute;
+    bottom: 28px;
+    left: 10px;
+    z-index: 500;
+    display: grid;
+    gap: 4px;
+    max-width: 240px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--raise);
+    font-size: 12.5px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}
+
+.legend summary {
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.legend b {
+    color: var(--ink2);
+    font-family: var(--display);
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.legend .li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.legend .mk,
+.legend .pk {
+    flex: none;
+    transform: scale(0.8);
+}
+
+.legend .mk.anchor {
+    transform: rotate(45deg) scale(0.8);
+}
+
+.legend .ln {
+    flex: none;
+    width: 22px;
+    height: 0;
+    border-top: 4px solid #d81b78;
+    border-radius: 2px;
+}
+
+.legend .ln.alt {
+    border-top: 3px dashed #d81b78;
+}
+
+.legend .ln.air {
+    border-top: 2px dotted var(--ink);
+}
+
+.legend .wxi {
+    position: relative;
+    flex: none;
+    width: 18px;
+    height: 14px;
+}
+
+.legend .wxi .wx {
+    right: 4px;
+    bottom: 2px;
+}
+
+/* ---------- radar bar, top left */
+.radarbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 500;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    max-width: calc(100% - 76px);
+    padding: 4px 6px 4px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--raise);
+    font-size: 12.5px;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}
+
+.radarbar .ttl {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+}
+
+/* The rain-rate ramp the radar tiles use. */
+.radarbar .scale {
+    display: inline-block;
+    width: 46px;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #9be1ff, #0a7cff, #ffd400, #ff6a00, #d4005a);
+}
+
+/* The note strip and the radar bar share the top-left corner. */
+.mapnote:not([hidden]) ~ .radarbar {
+    top: auto;
+    bottom: 64px;
+}
+
+/* ---------- the approach planner, bottom left */
+.planbar {
+    position: absolute;
+    bottom: 28px;
+    left: 10px;
+    z-index: 520;
+    width: min(390px, calc(100% - 76px));
+    max-height: calc(100% - 90px);
+    overflow: auto;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--raise);
+    box-shadow: var(--shadow);
+}
+
+/* The planner takes the legend's place rather than covering it. */
+.planbar:not([hidden]) ~ .legend {
+    display: none;
+}
+
+/* ---------- the crag call-out */
+
+/*
+ * The card's width is pinned, as the original pinned it. The port had `width: auto !important`,
+ * which is not the same thing at all: Leaflet's `maxWidth` is only a clamp on a width it measures
+ * and then writes back inline, and an `!important` rule beats that write -- so with `auto` nothing
+ * bounds the card. One crag name without a space in it and the card is wider than the screen.
+ *
+ * (It is not what makes the tip point at the marker. That is `useCallout` putting the content in
+ * the container before Leaflet ever sees it; a pinned width would have hidden the bug rather than
+ * fixed it, by making Leaflet's one measurement independent of what was in the box.)
+ */
+:root {
+    /* Never wider than 280, never wider than the screen less a thumb. */
+    --popw: min(280px, calc(100vw - 44px));
+}
+
+/*
+ * One column, and that column is allowed to be narrower than what is in it.
+ *
+ * With no track written out the implicit column is `auto`, whose floor is the min-content width of
+ * the widest row -- and `.t` is a nowrap title beside two icon buttons, so that floor was the whole
+ * crag name. The card stayed pinned to 280 by `--popw` while its rows stood 384 wide inside it:
+ * «Rhonequelle (Lucky Luke / Wallisertitsch)» ran out over the map and took the heart and the cross
+ * with it, off the card and out of reach. The name never even shortened, because a row that is
+ * never squeezed leaves its `text-overflow: ellipsis` nothing to do. `minmax(0, 1fr)` takes the
+ * floor away, and `1fr` fills the card exactly as `auto` did, so nothing with a short name moves.
+ *
+ * `overflow-wrap` does the same one level in. Every row here is itself a flex container and its
+ * items carry the same floor, so without it the fix would only move the spill -- to the car-park
+ * line, and to the crag list of the park card, which sets `overflow-y` alone and would therefore
+ * have answered with a sideways scrollbar nobody asked for. `anywhere` rather than `break-word`
+ * because only `anywhere` lowers the intrinsic min-content width, which is the thing doing the
+ * damage; it adds break opportunities without preferring them, so «Gebiet öffnen» still breaks at
+ * its space. A pack may name a crag anything at all -- the schema sets no length -- and a pack is
+ * not ours, so nothing in this card may be sized by a name.
+ */
+.pop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 12px 14px 13px;
+    overflow-wrap: anywhere;
+}
+
+/* The off-screen box a card is measured in, at the width it will really have. */
+.popmeasure {
+    position: absolute;
+    top: 0;
+    left: -9999px;
+    visibility: hidden;
+    width: var(--popw);
+}
+
+.pop .a {
+    color: var(--ink2);
+    font-size: 12px;
+}
+
+.pop .t {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    font: 600 19px / 1.1 var(--display);
+}
+
+/*
+ * The title takes a second line rather than ending in a stump.
+ *
+ * Between the marker dot and the two buttons the name has about 170px, which at this size is some
+ * twenty-five characters: cut to one line it reads «Rhonequelle (Lucky Lu…», which tells a climber
+ * nothing. Two lines hold the names in the packs to hand, near enough -- the longest is fifty
+ * characters, and on a narrow phone even that one still ends in an ellipsis. That is the point: the
+ * clamp is a bound, not a promise. The whole name is on the crag page, and the area is in the line
+ * above.
+ *
+ * The `-webkit-` spelling is not nostalgia. The plain `line-clamp` wants Safari 26 and is not in
+ * Firefox at all, while this app supports iOS 16 and Firefox 128 (see browserslist); the prefixed
+ * one is in every browser there is. It must stay `-webkit-box` and never `-webkit-inline-box`,
+ * which is the inline twin and would not survive being a flex item. The clamp draws its own
+ * ellipsis and needs `overflow: hidden` to do it -- which this span has from `.kat-ellipsis` in
+ * app.css, a different file, so that rule is load-bearing here. Its `text-overflow` is not.
+ */
+.pop .t .kat-ellipsis {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+}
+
+.pop .t .star {
+    margin: -8px 0 -8px auto;
+    border: 0;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.pop .t .x {
+    margin: -8px -8px -8px 0;
+    color: var(--ink2);
+}
+
+/* A card with no star -- the car park, a tapped point -- still pushes its «close» to the end. */
+.pop .t > .x:only-of-type {
+    margin-left: auto;
+}
+
+.pop .pkline {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding-top: 7px;
+    border-top: 1px solid var(--line);
+    font-size: 13.5px;
+}
+
+.pop .pkline .pk {
+    flex: none;
+    margin-top: 1px;
+    transform: scale(0.85);
+}
+
+.pop .pkline.alt {
+    padding-top: 0;
+    border-top: 0;
+    color: var(--ink2);
+}
+
+.pop .poprow {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 7px;
+    margin-top: 2px;
+}
+
+/* Leaflet's own popup shell, given the theme's surfaces. */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    border: 1px solid var(--line);
+    background: var(--raise);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+}
+
+.leaflet-popup-content {
+    margin: 0;
+    width: var(--popw) !important;
+    line-height: 1.35;
+}
+
+/*
+ * Hung under the marker, so the call-out does not cover the approach. Only the tip moves: the
+ * card's own height is what `useCallout` turns into the popup's offset, so nothing inside here
+ * may add to it.
+ */
+.leaflet-popup.below .leaflet-popup-tip-container {
+    position: absolute;
+    top: -19px;
+    margin-top: 0;
+    transform: rotate(180deg);
+}
+
+.leaflet-tooltip {
+    border: 1px solid var(--line);
+    background: var(--raise);
+    color: var(--ink);
+    border-radius: 7px;
+    font: 500 12.5px var(--body);
+}
+
+.leaflet-tooltip::before {
+    display: none;
+}
+
+/* A permanent car-park label is just text on the map, with no box of its own. */
+.leaflet-tooltip.plain {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.leaflet-bar {
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%) !important;
+}
+
+.leaflet-bar a {
+    border-color: var(--line);
+    background: var(--raise);
+    color: var(--ink);
+}
+
+.leaflet-container .leaflet-control-attribution {
+    background: color-mix(in srgb, var(--raise) 82%, transparent);
+    color: var(--ink2);
+}
+
+.leaflet-container .leaflet-control-attribution a {
+    color: var(--accent);
+}

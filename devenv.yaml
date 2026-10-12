@@ -1,0 +1,15 @@
+# yamllint disable rule:line-length
+# renovate: datasource=git-refs depName=devenv-devenv packageName=https://github.com/cachix/devenv currentValue=main
+inputs:
+  # renovate: datasource=git-refs depName=devenv-git-hooks packageName=https://github.com/cachix/git-hooks.nix currentValue=master
+  git-hooks:
+    url: github:cachix/git-hooks.nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  # renovate: datasource=git-refs depName=devenv-nixpkgs packageName=https://github.com/cachix/devenv-nixpkgs currentValue=rolling
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  pre-commit-hooks:
+    follows: git-hooks
+allowUnfree: true

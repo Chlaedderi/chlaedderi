@@ -1,0 +1,322 @@
+{
+    "rows": [
+        {
+            "fr": "3",
+            "uiaa": ["II"],
+            "yds": ["5.2"],
+            "uk": ["D 2c"],
+            "aus": ["8"],
+            "sax": ["III"],
+            "fin": ["2", "3"]
+        },
+        {
+            "fr": "3+",
+            "uiaa": ["III"],
+            "yds": ["5.3"],
+            "uk": ["VD 3a"],
+            "aus": ["10"],
+            "sax": [],
+            "fin": []
+        },
+        {
+            "fr": "4a",
+            "uiaa": ["IV"],
+            "yds": ["5.4"],
+            "uk": ["VD 3c"],
+            "aus": ["12"],
+            "sax": [],
+            "fin": []
+        },
+        {
+            "fr": "4b",
+            "uiaa": ["IV+"],
+            "yds": ["5.5"],
+            "uk": ["MS 4a"],
+            "aus": ["13"],
+            "sax": [],
+            "fin": []
+        },
+        {
+            "fr": "4c",
+            "uiaa": ["V"],
+            "yds": ["5.6"],
+            "uk": ["S 4b"],
+            "aus": ["14"],
+            "sax": [],
+            "fin": []
+        },
+        {
+            "fr": "5a",
+            "uiaa": ["V+"],
+            "yds": ["5.7"],
+            "uk": ["MVS 4b"],
+            "aus": ["15"],
+            "sax": ["V"],
+            "fin": ["5-"]
+        },
+        {
+            "fr": "5b",
+            "uiaa": ["VI-"],
+            "yds": ["5.8"],
+            "uk": ["HVS 4c"],
+            "aus": ["16"],
+            "sax": ["VI", "VIIa"],
+            "fin": ["5", "5+"]
+        },
+        {
+            "fr": "5c",
+            "uiaa": ["VI"],
+            "yds": ["5.9"],
+            "uk": ["HVS 5a"],
+            "aus": ["17"],
+            "sax": ["VIIb"],
+            "fin": ["5+", "6-"]
+        },
+        {
+            "fr": "6a",
+            "uiaa": ["VI+"],
+            "yds": ["5.10a"],
+            "uk": ["E1 5a"],
+            "aus": ["18"],
+            "sax": ["VIIc"],
+            "fin": ["6-"]
+        },
+        {
+            "fr": "6a+",
+            "uiaa": ["VII-"],
+            "yds": ["5.10b"],
+            "uk": ["E2 5b"],
+            "aus": ["19"],
+            "sax": ["VIIIa"],
+            "fin": ["6-", "6"]
+        },
+        {
+            "fr": "6b",
+            "uiaa": ["VII"],
+            "yds": ["5.10c"],
+            "uk": ["E2 5b"],
+            "aus": ["20"],
+            "sax": ["VIIIb"],
+            "fin": ["6"]
+        },
+        {
+            "fr": "6b+",
+            "uiaa": ["VII+"],
+            "yds": ["5.10d"],
+            "uk": ["E3 5b"],
+            "aus": ["21"],
+            "sax": ["VIIIc"],
+            "fin": ["6", "6+"]
+        },
+        {
+            "fr": "6c",
+            "uiaa": ["VII+", "VIII-"],
+            "yds": ["5.11a", "5.11b"],
+            "uk": ["E3 5c"],
+            "aus": ["22", "23"],
+            "sax": ["VIIIc", "IXa"],
+            "fin": ["6+"]
+        },
+        {
+            "fr": "6c+",
+            "uiaa": ["VIII-"],
+            "yds": ["5.11c"],
+            "uk": ["E4 6a"],
+            "aus": ["24"],
+            "sax": ["IXa"],
+            "fin": ["6+", "7-"]
+        },
+        {
+            "fr": "7a",
+            "uiaa": ["VIII"],
+            "yds": ["5.11d"],
+            "uk": ["E5 6a"],
+            "aus": ["24"],
+            "sax": ["IXb"],
+            "fin": ["7-"]
+        },
+        {
+            "fr": "7a+",
+            "uiaa": ["VIII+"],
+            "yds": ["5.12a"],
+            "uk": ["E5 6a"],
+            "aus": ["25"],
+            "sax": ["IXc"],
+            "fin": ["7"]
+        },
+        {
+            "fr": "7b",
+            "uiaa": ["VIII+"],
+            "yds": ["5.12b"],
+            "uk": ["E5 6b"],
+            "aus": ["26"],
+            "sax": ["IXc", "Xa"],
+            "fin": ["7+"]
+        },
+        {
+            "fr": "7b+",
+            "uiaa": ["IX-"],
+            "yds": ["5.12c"],
+            "uk": ["E6 6b"],
+            "aus": ["27"],
+            "sax": ["Xa"],
+            "fin": ["8-"]
+        },
+        {
+            "fr": "7c",
+            "uiaa": ["IX"],
+            "yds": ["5.12d"],
+            "uk": ["E6 6b"],
+            "aus": ["28"],
+            "sax": ["Xb"],
+            "fin": ["8"]
+        },
+        {
+            "fr": "7c+",
+            "uiaa": ["IX+"],
+            "yds": ["5.13a"],
+            "uk": ["E6 6c"],
+            "aus": ["29"],
+            "sax": ["Xc"],
+            "fin": ["8+"]
+        },
+        {
+            "fr": "8a",
+            "uiaa": ["IX+"],
+            "yds": ["5.13b"],
+            "uk": ["E7 6c"],
+            "aus": ["29"],
+            "sax": ["Xc"],
+            "fin": ["9-"]
+        },
+        {
+            "fr": "8a+",
+            "uiaa": ["X-"],
+            "yds": ["5.13c"],
+            "uk": ["E7 7a"],
+            "aus": ["30"],
+            "sax": ["XIa"],
+            "fin": ["9+"]
+        },
+        {
+            "fr": "8b",
+            "uiaa": ["X"],
+            "yds": ["5.13d"],
+            "uk": ["E8 7a"],
+            "aus": ["31"],
+            "sax": ["XIb"],
+            "fin": ["10-"]
+        },
+        {
+            "fr": "8b+",
+            "uiaa": ["X+"],
+            "yds": ["5.14a"],
+            "uk": ["E8 7a"],
+            "aus": ["32"],
+            "sax": ["XIc"],
+            "fin": ["10"]
+        },
+        {
+            "fr": "8c",
+            "uiaa": ["X+"],
+            "yds": ["5.14b"],
+            "uk": ["E9 7b"],
+            "aus": ["33"],
+            "sax": ["XIc", "XIIa"],
+            "fin": ["10+"]
+        },
+        {
+            "fr": "8c+",
+            "uiaa": ["XI-"],
+            "yds": ["5.14c"],
+            "uk": ["E9 7b"],
+            "aus": ["34"],
+            "sax": ["XIIa"],
+            "fin": ["11-"]
+        },
+        {
+            "fr": "9a",
+            "uiaa": ["XI"],
+            "yds": ["5.14d"],
+            "uk": ["E10 7c"],
+            "aus": ["35"],
+            "sax": ["XIIb"],
+            "fin": ["11"]
+        },
+        {
+            "fr": "9a+",
+            "uiaa": ["XI+"],
+            "yds": ["5.15a"],
+            "uk": ["E11 7c"],
+            "aus": ["36"],
+            "sax": ["XIIb", "XIIc"],
+            "fin": ["11+"]
+        },
+        {
+            "fr": "9b",
+            "uiaa": ["XII-"],
+            "yds": ["5.15b"],
+            "uk": ["E11 8a"],
+            "aus": ["37"],
+            "sax": ["XIIc"],
+            "fin": [">11+"]
+        },
+        {
+            "fr": "9b+",
+            "uiaa": ["XII"],
+            "yds": ["5.15c"],
+            "uk": ["E11 8a"],
+            "aus": ["38"],
+            "sax": [">XIIc"],
+            "fin": [">11+"]
+        },
+        {
+            "fr": "9c",
+            "uiaa": ["XIII-"],
+            "yds": ["5.15d"],
+            "uk": ["E11 8c"],
+            "aus": ["39"],
+            "sax": [">XIIc"],
+            "fin": [">11+"]
+        }
+    ],
+    "boulder": [
+        ["4-", "V0-"],
+        ["4", "V0"],
+        ["4+", "V0+"],
+        ["5", "V1"],
+        ["5+", "V2"],
+        ["6A", "V3"],
+        ["6A+", "V3/4"],
+        ["6B", "V4"],
+        ["6B+", "V4/5"],
+        ["6C", "V5"],
+        ["6C+", "V5/6"],
+        ["7A", "V6"],
+        ["7A+", "V7"],
+        ["7B", "V8"],
+        ["7B+", "V8/9"],
+        ["7C", "V9"],
+        ["7C+", "V10"],
+        ["8A", "V11"],
+        ["8A+", "V12"],
+        ["8B", "V13"],
+        ["8B+", "V14"],
+        ["8C", "V15"],
+        ["8C+", "V16"],
+        ["9A", "V17"]
+    ],
+    "src": [
+        {
+            "name": "Mountain Project – International Climbing Grade Comparison Chart",
+            "url": "https://www.mountainproject.com/international-climbing-grades",
+            "cols": ["uiaa", "yds", "uk", "aus", "boulder"]
+        },
+        {
+            "name": "Bergfreunde.de – Vergleichstabelle der Kletterskalen (PDF)",
+            "url": "https://www.bergfreunde.de/out/pictures/wysiwigpro/kalkulatoren/pdf/kletterskalen-vergleich-tabelle.pdf",
+            "cols": ["sax", "fin"]
+        }
+    ],
+    "read": "2026-10-07"
+}

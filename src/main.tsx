@@ -1,0 +1,63 @@
+/**
+ * The entry point. Fonts are bundled rather than fetched from Google Fonts: the app is meant to
+ * work offline, and a CDN stylesheet is the one thing the old version could not do without a
+ * network.
+ */
+
+import "@fontsource/barlow/400.css";
+import "@fontsource/barlow/500.css";
+import "@fontsource/barlow/600.css";
+import "@fontsource/barlow/700.css";
+import "@fontsource/barlow-condensed/500.css";
+import "@fontsource/barlow-condensed/600.css";
+import "@fontsource/barlow-condensed/700.css";
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "./styles/app.css";
+
+import CssBaseline from "@mui/material/CssBaseline";
+import { ThemeProvider } from "@mui/material/styles";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { I18nextProvider } from "react-i18next";
+import { Provider } from "react-redux";
+import { HashRouter } from "react-router-dom";
+
+import { App } from "./App";
+import { DataProvider } from "./app/DataProvider";
+import { store } from "./app/store";
+import { watchViewport } from "./app/viewport";
+import { WeatherProvider } from "./app/WeatherProvider";
+import { detectLang } from "./core/lang";
+import { createI18n } from "./i18n";
+import { theme } from "./theme";
+
+const prefs = store.getState().prefs;
+
+// The theme attribute is set before the first paint, so there is no flash of the wrong scheme.
+if (prefs.theme === "auto") document.documentElement.removeAttribute("data-theme");
+else document.documentElement.setAttribute("data-theme", prefs.theme);
+
+const i18n = createI18n(prefs.lang ?? detectLang());
+document.documentElement.lang = i18n.language;
+
+watchViewport();
+
+createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+        <Provider store={store}>
+            <I18nextProvider i18n={i18n}>
+                <ThemeProvider theme={theme} defaultMode="system">
+                    <CssBaseline enableColorScheme />
+                    <DataProvider>
+                        <WeatherProvider>
+                            <HashRouter>
+                                <App />
+                            </HashRouter>
+                        </WeatherProvider>
+                    </DataProvider>
+                </ThemeProvider>
+            </I18nextProvider>
+        </Provider>
+    </StrictMode>,
+);

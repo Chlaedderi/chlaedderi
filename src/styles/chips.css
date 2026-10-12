@@ -1,0 +1,166 @@
+/*
+ * The chip row and the segmented region switch, from the hand-written app.
+ *
+ * These are React-rendered, so MUI could style them -- but the quick chips sit directly under the
+ * app bar on every screen and their look is part of what the app *is*, so they stay the shape they
+ * were: a pill that fills with the accent colour when it is on.
+ */
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    min-height: 30px;
+    padding: 4px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--raise);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 13.5px;
+    user-select: none;
+    cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+/* The quick-chip row scrolls sideways rather than wrapping: it must not push the map down. */
+.quickchips {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px 10px;
+    scrollbar-width: none;
+}
+
+.quickchips::-webkit-scrollbar {
+    display: none;
+}
+
+.quickchips .chip {
+    flex: none;
+}
+
+/* ---------- the region switch */
+.seg {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--raise);
+}
+
+.seg button {
+    border: 0;
+    border-left: 1px solid var(--line);
+    background: none;
+    color: var(--ink);
+    padding: 5px 12px;
+    min-height: 32px;
+    font-family: var(--display);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.seg button:first-child {
+    border-left: 0;
+}
+
+.seg button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.seg button.add {
+    padding: 5px 11px;
+    color: var(--accent);
+    font-size: 17px;
+}
+
+.seg button[aria-pressed="true"].add {
+    color: var(--accent-ink);
+}
+
+/* The hourly rain chart on a crag page -- the original's `.wxchart` block, index.html:1018. */
+.wxchart {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 64px;
+    border-bottom: 1px solid var(--mui-palette-divider);
+    padding-top: 4px;
+}
+.wxchart i {
+    flex: 1;
+    min-width: 0;
+    background: #1e6fd9;
+    border-radius: 2px 2px 0 0;
+    min-height: 0;
+}
+.wxchart i.f {
+    background: #7fb3f0;
+}
+.wxchart .now {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 2px dashed var(--mui-palette-text-secondary);
+}
+.wxchart .max {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 11px;
+    color: var(--mui-palette-text-secondary);
+    background: var(--mui-palette-background-paper);
+    padding: 0 3px;
+}
+.wxax {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--mui-palette-text-secondary);
+}
+
+/* The crags a car park serves, in its call-out -- the original's park popup list. */
+.pop ul.pkcrags {
+    list-style: none;
+    margin: 4px 0;
+    padding: 0;
+    max-height: 190px;
+    overflow-y: auto;
+}
+.pop ul.pkcrags button {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    padding: 5px 2px;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-bottom: 1px solid var(--mui-palette-divider);
+}
+.pop ul.pkcrags button > span:last-child {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--mui-palette-text-secondary);
+    white-space: nowrap;
+}

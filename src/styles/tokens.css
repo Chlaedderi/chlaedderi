@@ -1,0 +1,97 @@
+/*
+ * The few tokens MUI's theme does not already provide, and the safe-area insets.
+ *
+ * Everything with a colour lives in src/theme.ts and arrives here as a `--mui-palette-*` variable;
+ * these are the aliases the ported rules use, so those rules stay as close to the original as
+ * possible. The original names (`--ink`, `--line`, `--raise`, `--accent`…) are kept on purpose:
+ * the marker and map-chrome CSS below is lifted from the hand-written app and reads the same.
+ */
+
+:root {
+    --ink: var(--mui-palette-text-primary);
+    --ink2: var(--mui-palette-text-secondary);
+    --line: var(--mui-palette-divider);
+    --panel: var(--mui-palette-surface-panel);
+    --raise: var(--mui-palette-surface-raise);
+    --bg: var(--mui-palette-background-default);
+    --accent: var(--mui-palette-primary-main);
+    --accent-ink: var(--mui-palette-primary-contrastText);
+    --accent-soft: var(--mui-palette-surface-accentSoft);
+
+    --easy: var(--mui-palette-grade-easy);
+    --mid: var(--mui-palette-grade-mid);
+    --hard: var(--mui-palette-grade-hard);
+    --unk: var(--mui-palette-grade-unknown);
+
+    --me: var(--mui-palette-marker-me);
+    --fav: var(--mui-palette-marker-fav);
+    --park: var(--mui-palette-marker-park);
+    --route: var(--mui-palette-marker-route);
+    --rate: var(--mui-palette-marker-rate);
+
+    --sea: var(--mui-palette-map-sea);
+    --land: var(--mui-palette-map-land);
+    --border-geo: var(--mui-palette-map-borderGeo);
+
+    --rainc: var(--mui-palette-accentColors-rain);
+    --sun: var(--mui-palette-accentColors-sun);
+    --hot: var(--mui-palette-accentColors-hot);
+    --violet: var(--mui-palette-accentColors-violet);
+    --teal: var(--mui-palette-accentColors-teal);
+    --amber: var(--mui-palette-accentColors-amber);
+    --onc: #ffffff;
+
+    /* The app bar and the crag page's hero: the original's purple band (bar1 → bar3). */
+    --bar1: #28157a;
+    --bar2: #4b1fa0;
+    --bar3: #8a22a8;
+    --bar-ink: #ffffff;
+
+    --ok: var(--mui-palette-success-main);
+    --warn: var(--mui-palette-warning-main);
+    --closed: var(--mui-palette-error-main);
+
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Barlow", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+    --r: 10px;
+    --r-s: 7px;
+    --shadow: 0 6px 24px rgb(29 21 56 / 16%);
+
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+}
+
+:root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+        --shadow: 0 6px 24px rgb(0 0 0 / 50%);
+        --bar1: #1b0f52;
+        --bar2: #34167a;
+        --bar3: #5c1b78;
+        --onc: #14102a;
+    }
+}
+
+:root[data-theme="dark"] {
+    --shadow: 0 6px 24px rgb(0 0 0 / 50%);
+    --bar1: #1b0f52;
+    --bar2: #34167a;
+    --bar3: #5c1b78;
+    --onc: #14102a;
+}
+
+/* The purple band of the original: the app bar and the crag page's hero. */
+.kat-band {
+    background: linear-gradient(100deg, var(--bar1), var(--bar2) 55%, var(--bar3));
+    color: var(--bar-ink);
+}
+
+/*
+ * The iPhone home-screen app: the layout ends one status bar above the bottom of the screen, so
+ * the strip below shows only the page background and serves as the home-indicator inset.
+ */
+html.deadzone {
+    --sab: max(0px, calc(env(safe-area-inset-bottom, 0px) - var(--dead, 0px)));
+}
