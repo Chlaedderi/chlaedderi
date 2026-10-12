@@ -1,0 +1,53 @@
+name: Something is wrong
+description: The app does something other than what it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Chlädderi runs on your own device and keeps your favourites and logbook there, so almost
+        everything needed to understand a problem is on your screen rather than on a server. The
+        more of it that lands here, the less there is to guess at.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, and what the app did instead of what you expected.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Which version
+      description: "«More» shows the running version. Without it, «the newest» usually is not."
+      placeholder: 2026-10-12.1
+  - type: input
+    id: region
+    attributes:
+      label: Which region
+      description: >
+        The mappack that was loaded, if the problem needs one. A name is enough — please do not
+        paste the address of a region that is not meant to be public.
+  - type: dropdown
+    id: where
+    attributes:
+      label: What you were using
+      multiple: true
+      options:
+        - Phone
+        - Tablet
+        - Laptop or desktop
+        - Installed to the home screen
+  - type: checkboxes
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - label: It happened with no connection, or a bad one
+  - type: textarea
+    id: more
+    attributes:
+      label: A screenshot, or anything else
+      description: >
+        A picture of the screen says more than a description of it, and this is an app you mostly
+        look at. Drag one in.

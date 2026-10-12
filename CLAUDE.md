@@ -182,6 +182,15 @@ dies with a missing config; `direnv allow` in the checkout you are in writes it 
 
 Then **just commit** (above), `git push -u origin claude/<topic>`, and `gh pr create`.
 
+**Fill the templates in, by hand.** `.github/PULL_REQUEST_TEMPLATE.md` and the two forms in
+`.github/ISSUE_TEMPLATE/` are what a person gets in the web interface — but `gh pr create --body`
+and `gh issue create --body` send exactly what they are given and never see a template, so writing
+a description from scratch quietly skips it. Read the file and answer its sections: for a pull
+request, «What changes», «Looking at it» with the preview screenshots linked, and «Worth knowing»
+where there is something. For an issue, follow whichever form fits — «Something is wrong» wants the
+version from the «More» page, the region, the device and a screenshot; «An idea» wants the
+climbing-day problem behind it. Drop the HTML comments, keep the headings.
+
 **Look at the preview.** A few minutes after the push the pull request carries a comment with
 `https://chlaedderi.github.io/pr-<N>/` — this branch, live, with storage of its own — and a
 few minutes later the screenshots of every screen beside it under `pr-<N>/screens/`. Open it. Then
