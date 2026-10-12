@@ -1,0 +1,10 @@
+# A blank issue stays available on purpose: the two forms are there to save thinking, not to
+# refuse anything that does not fit them.
+blank_issues_enabled: true
+contact_links:
+  - name: Working on Chlädderi
+    url: https://github.com/Chlaedderi/chlaedderi/blob/main/CONTRIBUTING.md
+    about: Setting up, the way through a change, and what to watch out for.
+  - name: The region format
+    url: https://github.com/Chlaedderi/chlaedderi/blob/main/mappack.schema.json
+    about: What a mappack may contain, for anyone publishing a region of their own.

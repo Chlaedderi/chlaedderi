@@ -1,0 +1,23 @@
+name: An idea
+description: Something the app could do, or could do better.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What you were trying to do
+      description: >
+        The climbing-day problem behind it. An idea is far easier to judge — and often easier to
+        solve some better way — when the thing you were actually trying to do is written down
+        beside it.
+  - type: textarea
+    id: today
+    attributes:
+      label: How you manage today
+      description: What you do instead, and where that falls short.
