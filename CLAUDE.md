@@ -174,9 +174,10 @@ and fails on any that no language has, including both arms of a ternary.
 
 ## Branches, worktrees, pull requests
 
-**Nothing is committed on `main`, and GitHub now refuses it.** A ruleset on the default branch
+**Nothing is committed on `main`, and two things refuse it.** A ruleset on the default branch
 requires a pull request, allows **squash** as the only merge method, and blocks force-pushes and
-deletion — for everybody, with no bypass. So every task starts in its own worktree — the
+deletion — for everybody, with no bypass. And the `no-commit-to-branch` hook says so at commit
+time, before there is a commit on the wrong branch to disentangle. So every task starts in its own worktree — the
 `EnterWorktree` tool, or `git worktree add .claude/worktrees/<name> -b claude/<topic> origin/main`
 — and ends as a pull request. The branch is `claude/<topic>`; `.claude/worktrees/` is ignored by git, by eslint and
 by the hooks.
