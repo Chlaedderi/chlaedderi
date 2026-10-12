@@ -395,6 +395,12 @@ const FEATURES: Feature[] = [
         exports: "ShareTarget",
     },
     {
+        what: "taking a copied link out of the clipboard, which on iOS is the only way in",
+        was: "nothing: a link had to be typed into the address field by hand",
+        now: "src/features/packs/usePasteLink.ts",
+        exports: "usePasteLink",
+    },
+    {
         what: "saying that a region loaded in the browser is in the installed app too",
         was: "nothing: the browser tab and the installed app looked like two separate atlases",
         now: "src/features/packs/useInstalledApp.ts",
