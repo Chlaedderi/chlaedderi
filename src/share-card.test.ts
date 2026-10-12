@@ -41,11 +41,20 @@ const SITE = "https://xn--chldderi-2za.ch/";
 const BUDGET = 300 * 1024;
 
 describe("a shared link carries a card", () => {
-    it("says what it is, in the words the page already uses", () => {
+    it("describes the page to a search engine and to the manifest in the same words", () => {
         const description = grab(INDEX, /name="description"\s+content="([^"]*)"/);
         expect(description).not.toBe("");
-        expect(meta("og:description")).toBe(description);
         expect(MANIFEST.description).toBe(description);
+    });
+
+    it("says it shorter on the card, in a sentence that ends", () => {
+        // The card's own line, not the page description: a search result shows about 160
+        // characters, a chat window a good deal fewer, and it cuts rather than shortens. The first
+        // card out of here carried the page's description and arrived as «… Die Gebiete kommen».
+        const line = meta("og:description");
+        expect(line).not.toBe("");
+        expect(line.length).toBeLessThanOrEqual(120);
+        expect(line.endsWith(".")).toBe(true);
     });
 
     it("names the pictures and pages by an address a crawler can fetch", () => {
