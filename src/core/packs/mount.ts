@@ -21,7 +21,7 @@ const RX_CAUTION =
     /dangerous|abandon|outdated|old (and )?(dangerous|bolt|peg|equipment)|poorly maintained|re-bolt|restyling|dated bolt|not well bolted|sparse|weakness|rockfall|loose/i;
 // «unsuitable», «unsafe», «unfit» -- but not the un-words that negate nothing: «children under 6
 // need a helmet» or «until noon» used to mark a family crag as not one.
-const RX_NEGATED = /\b(not|(?!under|until|unit|univers|uniqu)un\w+)\b/i;
+const RX_NEGATED = /\b(not|(?!under|until|unit|univers|unique)un\w+)\b/i;
 
 /** Split a warning into sentences, so that one clause cannot colour the whole text. */
 const sentences = (s: string): string[] => s.match(/[^.!]+[.!]*\s*/g) ?? [];
