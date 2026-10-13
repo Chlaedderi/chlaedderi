@@ -1,6 +1,7 @@
 import CloseIcon from "@mui/icons-material/Close";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import DownloadIcon from "@mui/icons-material/Download";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ShareIcon from "@mui/icons-material/Share";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -26,6 +27,8 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { prefsActions } from "@app/slices/prefsSlice";
 import { uiActions } from "@app/slices/uiSlice";
 import { useLang } from "@app/useAppData";
+import { downloadFile } from "@core/download";
+import { packFileName, storedPackText } from "@core/packs/storage";
 import type { PackProblem } from "@core/packs/validate";
 import { i18 } from "@core/text";
 
@@ -80,6 +83,18 @@ export const PacksDialog = () => {
             close();
         } else {
             setProblems(result.problems ?? []);
+        }
+    };
+
+    // The file as it was stored, for passing on by hand. Only for a pack with no key: a sealed one
+    // is stored opened, and saving that would undo the seal its publisher put on it.
+    const download = async (id: string) => {
+        const text = await storedPackText(id);
+        try {
+            if (text == null) throw new Error("not in the cache");
+            downloadFile(packFileName(id), text, "application/json");
+        } catch {
+            dispatch(uiActions.toast({ message: t("pk.download.fail"), severity: "warning" }));
         }
     };
 
@@ -194,6 +209,16 @@ export const PacksDialog = () => {
                                             }}
                                         >
                                             <ShareIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                    {pack.src && !pack.src.key && (
+                                        <IconButton
+                                            aria-label={t("pk.download")}
+                                            title={t("pk.download")}
+                                            disabled={busy}
+                                            onClick={() => void download(pack.id)}
+                                        >
+                                            <DownloadIcon fontSize="small" />
                                         </IconButton>
                                     )}
                                     {pack.src?.type === "url" && pack.src.url && (

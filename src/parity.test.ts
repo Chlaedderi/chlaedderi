@@ -409,6 +409,12 @@ const FEATURES: Feature[] = [
         exports: "ShareTarget",
     },
     {
+        what: "saving a loaded region as a file, to pass it on by hand",
+        was: "nothing: a region could be shared only as a link, and one from a file not at all",
+        now: "src/core/packs/storage.ts",
+        exports: "storedPackText",
+    },
+    {
         what: "taking a copied link out of the clipboard, which on iOS is the only way in",
         was: "nothing: a link had to be typed into the address field by hand",
         now: "src/features/packs/usePasteLink.ts",

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MAX_PACK_BYTES, fetchPack, readPackFile } from "./storage";
+import { MAX_PACK_BYTES, fetchPack, packFileName, readPackFile } from "./storage";
 
 /**
  * What the install dialog is told when a pack cannot be read at all.
@@ -151,5 +151,18 @@ describe("readPackFile", () => {
         const load = await readPackFile(file);
         expect(load.ok).toBe(false);
         if (!load.ok) expect(load.problems[0]?.code).toBe("toobig");
+    });
+});
+
+describe("packFileName", () => {
+    it("names the file after the region", () => {
+        expect(packFileName("testing")).toBe("testing.json");
+        expect(packFileName("ow-2")).toBe("ow-2.json");
+    });
+
+    it("keeps a separator or a dot from leading anywhere", () => {
+        expect(packFileName("../../etc/passwd")).toBe("etc-passwd.json");
+        expect(packFileName("a/b c")).toBe("a-b-c.json");
+        expect(packFileName("///")).toBe("mappack.json");
     });
 });

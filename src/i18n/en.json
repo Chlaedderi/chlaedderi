@@ -523,6 +523,8 @@
     "pk.added": "{0} loaded: {1} crags.",
     "pk.bad": "Not loaded. {0}",
     "pk.builtin": "Comes with the app",
+    "pk.download": "Save as a file",
+    "pk.download.fail": "The region could not be saved as a file in this browser.",
     "pk.empty": "No region loaded, so there is nothing to show.",
     "pk.err.aborted": "Loading was stopped.",
     "pk.err.badblob": "This region file is damaged, or written in a newer format than this app can read.",
