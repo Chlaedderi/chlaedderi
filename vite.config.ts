@@ -10,11 +10,10 @@ import { defineConfig } from "vitest/config";
 const repoRoot = import.meta.dirname;
 
 /**
- * The repository root is the *output* directory of this build (the deploy publishes the flat folder,
- * see .github/workflows/pages.yml), so the source lives in src/ and `root` points there. The icons,
- * the manifest and the mappacks in maps/ stay where they are, which means the dev server has to
- * serve them from the repository root by hand -- `publicDir` cannot, because that would copy them
- * into the build output and duplicate them.
+ * The source lives in src/ and `root` points there; the build goes to dist/. The icons, the
+ * manifest and the mappacks in maps/ stay at the repository root, which means the dev server has to
+ * serve them from there by hand -- `publicDir` cannot, because that would copy them into the build
+ * output. tools/make-site.sh puts the icons and the manifest beside the build for publishing.
  *
  * maps/ matters here even though it is never deployed: tools/serve.pl serves the repository folder,
  * which is how a pack is loaded locally (http://localhost:…/maps/pack.ow.json). The dev server
@@ -80,8 +79,8 @@ const shareTarget = (): Plugin => ({
 
 export default defineConfig({
     root: "src",
-    // Nothing to copy: the static files already sit at the repository root, where the build output
-    // joins them.
+    // Nothing to copy: the static files stay at the repository root, and tools/make-site.sh puts
+    // them beside the build output when it publishes.
     publicDir: false,
     base: "./",
     build: {
@@ -89,7 +88,7 @@ export default defineConfig({
         emptyOutDir: true,
         assetsDir: "assets",
         // One version per deploy comes from version.json, not from the bundle, so the build stays
-        // deterministic and `build && git diff --exit-code` is a meaningful check.
+        // deterministic: two builds of the same commit give the same bytes.
         sourcemap: false,
     },
     // The radar decoder runs in a module worker. Vite's default worker output is an IIFE, which

@@ -13,7 +13,7 @@
 # refers to exists, that the counts match the data, that no crag id appears in two packs, and – when a
 # showcase is there – that it is really a part of the pack it was cut from.
 #
-# Needs only jq and perl. A mappack is described in mappack.schema.json; the schema itself is checked in CI.
+# Needs only jq (and awk). A mappack is described in mappack.schema.json; the schema itself is checked in CI.
 #
 set -euo pipefail
 # The checks pipe into `lines`, and `say` records a failure in `fail`: without this the last part of
@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
     --check) CHECK=1 ;;
     --showcase-from) FROM="$2"; shift ;;
     --ids) IDS="$2"; shift ;;
-    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -163,9 +163,9 @@ if [[ -f "${SHOW}" ]]; then
       "${SHOW}" "${src}" | tr '|' '\t' | lines
   else
     # Not "ok". The strongest check this script has is that the showcase really is a slice of the
-    # region it was cut from, and without that region it checks nothing at all. Since the regions
-    # moved to the private Chlaedderi/maps repository that is the normal case here, and it has to
-    # read as a gap rather than as a pass -- the real comparison is made there, where the data is.
+    # region it was cut from, and without that region it checks nothing at all. The showcase here is
+    # cut from pack.testing.json, which is beside it; a showcase cut from a real region would land
+    # here without its source, and that has to read as a gap rather than as a pass.
     say skip "showcase: pack.${want}.json is not here, so nothing was compared (run \`packs\`)"
   fi
 fi
@@ -175,7 +175,7 @@ fi
 # ---------------------------------------------------------------- the showcase goes into the app
 # Nothing to splice any more: src/app/DataProvider.tsx imports maps/pack.showcase.json, so the
 # build puts the showcase into the app by itself. Writing the file is all this script has to do.
-if [[ "${CHECK}" = 0 ]] && [[ -f "${SHOW}" ]]; then
+if [[ "${CHECK}" = 0 ]] && [[ -n "${FROM}" ]] && [[ -f "${SHOW}" ]]; then
   echo "showcase written to ${SHOW} – run the build to put it into the app"
 fi
 echo "done"

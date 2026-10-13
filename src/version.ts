@@ -2,8 +2,8 @@
  * Which version is published, and the reset that fetches the app's files again.
  *
  * Not a constant the build stamps in: the deploy writes `version.json` next to the app. That keeps
- * the build reproducible -- a bundle with a commit hash inside it could never satisfy
- * `build && git diff --exit-code`.
+ * the build reproducible -- a bundle with a commit hash inside it would differ between a preview
+ * and the deploy of the same commit.
  *
  * It is a **store**, not a mutable module object. The first version of this file exported an object
  * and mutated it in place; React never re-renders for that, so the «More» page showed `dev` for

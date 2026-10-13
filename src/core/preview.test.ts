@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { WX_KEY } from "@services/openMeteo";
@@ -25,6 +27,13 @@ describe("the storage names", () => {
         expect(PREFS_ITEM).toBe("chlaedderi:prefs");
         expect(FILTER_KEY).toBe("chlaedderi-filters-v2");
         expect(WX_KEY).toBe("chlaedderi:wx");
+    });
+
+    it("include the map tiles, which vite.config.ts has to spell out", () => {
+        // The build config imports nothing from src/, so the name is written there by hand; this
+        // is what holds it to the spelling the tiles on people's devices are under.
+        const config = readFileSync("vite.config.ts", "utf8");
+        expect(config).toContain(`cacheName: "${DEFAULT_NAMESPACE}-tiles-v1"`);
     });
 });
 

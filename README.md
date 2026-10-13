@@ -53,9 +53,9 @@ The format is described in [`mappack.schema.json`](mappack.schema.json) (JSON Sc
 
 `maps/` holds two packs. `maps/pack.showcase.json` is the showcase, which the build compiles into the app, and `maps/pack.testing.json` is an invented region the tests and the browser suite run on. The real regions are not here: they live in the private `Chlaedderi/maps` repository, and `packs` links them in for whoever has access to it. Everything in this repository builds, tests and lints without them.
 
-`tools/make-packs.sh` checks every pack in `maps/`: the format, unique crag ids, resolvable car-park and area references, picture sources, counts, and that no crag sits in two packs. `--check` writes nothing. Two of its checks can only mean something where all the regions are, which is the private repository: that no crag id turns up in two regions, and that the showcase really is a slice of the region it was cut from. With only the two packs here the second one reports `skip`, not `ok`.
+`tools/make-packs.sh` checks every pack in `maps/`: the format, unique crag ids, resolvable car-park and area references, picture sources, counts, and that no crag sits in two packs. `--check` writes nothing. One of its checks only means something where all the regions are, which is the private repository: that no crag id turns up in two regions. That the showcase really is a slice of the region it was cut from is checked here, against `maps/pack.testing.json`.
 
-Cutting a new showcase is therefore done in `Chlaedderi/maps`, and the result arrives here as a pull request — it is the one thing that crosses between the two repositories. Schema validation of what *is* here runs on every push in [`ci.yml`](.github/workflows/ci.yml).
+The showcase is invented and is cut here, from `maps/pack.testing.json`, with `make-showcase`. Schema validation of what *is* here runs on every push in [`ci.yml`](.github/workflows/ci.yml).
 
 ## Backing up favourites and the logbook
 
@@ -67,7 +67,7 @@ Before you delete the icon from the homescreen, copy the code: on the iPhone, de
 
 ## Updating
 
-The app is built from `src/`. The way is: change `src/`, commit, push to `main` – the deploy builds the app itself. `build` writes it into `dist/` for looking at it locally; `dist/` is not in the repository, and neither are `index.html`, `sw.js`, `workbox-*.js` and `assets/`, which used to lie in the main folder. A git hook builds before every commit, so a change that does not build never reaches a branch; more on that under *Development*.
+The app is built from `src/`. The way is: change `src/` on a branch of your own, commit, push and open a pull request; `main` only takes squash-merged pull requests, and the deploy of `main` builds the app itself. `build` writes it into `dist/` for looking at it locally; `dist/` is not in the repository, and neither are `index.html`, `sw.js`, `workbox-*.js` and `assets/`, which used to lie in the main folder. A git hook builds before every commit, so a change that does not build never reaches a branch; more on that under *Development*.
 
 The build output was committed until October 2026, so that the published bytes could be read in the repository. Every pull request then conflicted with every other one, because each build gives `index.html` ten new content hashes and writes `sw.js` as a single 100 KB line that no merge can resolve. The bytes are still readable: the `gh-pages` branch is a commit of exactly what is served, and every pull request carries a preview of itself.
 
@@ -87,9 +87,9 @@ The published files are written to the `gh-pages` branch, which is what Pages se
 
 - Needed once: **Settings → Pages → Build and deployment → Source = *Deploy from a branch*, branch `gh-pages`, folder `/ (root)`**.
 - GitHub Pages is available for **private** repositories only on a paid GitHub plan (Pro, say). On the free plan GitHub switches Pages off as soon as the repository becomes private: the workflow still writes `gh-pages`, but nothing serves it. The published site itself is public in every case.
-- The app files sit on one level, plus `assets/` with the built bundles. [`tools/make-site.sh`](tools/make-site.sh) builds the app, copies `dist/` and then names every other file individually, publishing nothing it does not know about – `package.json`, `tsconfig.json` and `renovate.json` live in the main folder too and do not belong on a public site. The deploy and the previews both go through it, so neither can publish something the other does not.
+- The app files sit on one level, plus `assets/` with the built bundles. [`tools/make-site.sh`](tools/make-site.sh) builds the app, copies `dist/` and then names every other file individually (the icons by their extension), publishing nothing it does not know about – `package.json`, `tsconfig.json` and `renovate.json` live in the main folder too and do not belong on a public site. The deploy and the previews both go through it, so neither can publish something the other does not.
 - The `maps/` folder is **not** published: mappacks are not part of the app. Anyone who wants to offer their own packs puts them where they want them (their own repository, web space, cloud) and enters their address in the app.
-- Testing locally: `build` and then `serve`, then open <http://localhost:8000/>. `serve` puts `dist/` in front of the repository folder, which is how the published site is laid out: the built app, with the icons, the manifest and `maps/` beside it. A plain `python3 -m http.server` in the main folder no longer finds an app, because the build is not there. While developing, `dev` is more convenient. The service worker, the cache storage for the mappacks and loading a pack from an address only work over `http(s)://`, not by opening the file directly.
+- Testing locally: `build` and then `serve`, then open <http://localhost:8000/>. `serve` puts `dist/` in front of the repository folder, which is close to how the published site is laid out: the built app, with the icons and the manifest beside it. It also serves `maps/`, which the published site does not, so that a pack can be loaded locally over an address. A plain `python3 -m http.server` in the main folder no longer finds an app, because the build is not there. While developing, `dev` is more convenient. The service worker, the cache storage for the mappacks and loading a pack from an address only work over `http(s)://`, not by opening the file directly.
 
 ### Previews of pull requests
 
@@ -103,7 +103,8 @@ The published files are written to the `gh-pages` branch, which is what Pages se
 
 1. Fork this repository (the workflows come along).
 2. Push a commit to `main`, or start the workflow by hand: that writes the `gh-pages` branch, which does not exist before the first run.
-3. **Settings → Pages → Source = *Deploy from a branch*, branch `gh-pages`, folder `/ (root)`**. The app then runs at `https://<GitHub name>.github.io/<name of the repository>/`.
+3. Change the domain in [`tools/make-site.sh`](tools/make-site.sh) first: it writes this site's `CNAME` into every publication unless the environment sets `CNAME`, and a fork would otherwise claim this site's domain.
+4. **Settings → Pages → Source = *Deploy from a branch*, branch `gh-pages`, folder `/ (root)`**. The app then runs at your own domain, or – with no custom domain – at `https://<GitHub name>.github.io/<name of the repository>/`.
 
 ## Files
 
@@ -155,7 +156,8 @@ After that the following are available:
 | `serve` | serves the built app over http (the service worker needs `http(s)://`) |
 | `packs` | links the real regions in from the private `Chlaedderi/maps`; says one line and carries on without access |
 | `check-packs` | checks the mappacks against the schema and against each other |
-| `make-packs` | the same, and cuts a showcase out of a pack on request |
+| `make-packs` | checks the mappacks against each other (not against the schema), and cuts a showcase out of a pack on request |
+| `make-showcase` | cuts the showcase in the app out of the invented testing region |
 
 Checking happens on three levels: unit tests for the logic, browser tests for everything you can
 only see (the map, the service worker, a button sitting behind the navigation bar), and
@@ -172,7 +174,8 @@ Where things live:
 ```text
 src/core/      logic with no interface: packs, filters, grades, logbook, storage – with tests
 src/types/     mappack.ts mirrors the schema, model.ts is what the app works with
-src/features/  the interface, by subject: map, list, crag, logbook, packs, more, know
+src/features/  the interface, by subject: map, list, crag, logbook, packs, more, know, …
+src/services/  the outside services: weather, radar, swisstopo, routing
 src/app/       state (Redux) and the loaded packs (context)
 src/i18n/      the interface texts in English and German, the same keys in both
 ```
@@ -185,10 +188,10 @@ What a mappack says is that pack's responsibility: it brings its own source and 
 
 - **Approach paths** are computed (BRouter on OpenStreetMap data or, in Switzerland, the swissTLM3D hiking trails) and not checked on site. Car parks with a pale, outlined P are estimated.
 - **Dries fast** is an estimate from sun and aspect and is marked as such in the app; where a source says otherwise, the source wins.
-- **Rain and weather** are **model values** from [Open-Meteo](https://open-meteo.com/) (grid about 1 km, hourly, 2 days back and 2 days ahead) – not a measurement at the wall; a model often misses thunderstorms. "Dry now" means: no rain now, none expected in the next 6 hours, and less than 1 mm over the time the wall is estimated to need for drying (12 h fast, 24 h medium, 48 h slow). The values are fetched again every 30 minutes and never cached for offline use.
+- **Rain and weather** are **model values** from [Open-Meteo](https://open-meteo.com/) (grid about 1 km, hourly, 2 days back and 2 days ahead) – not a measurement at the wall; a model often misses thunderstorms. "Dry now" means: no rain now, none expected in the next 6 hours, and less than 1 mm over the time the wall is estimated to need for drying (12 h fast, 24 h medium, 48 h slow). The values are fetched again every 30 minutes; the last answer is kept on the device for up to two days and shown at start while a new one is fetched.
 - **Switzerland:** the ICON-CH1/CH2 model from [MeteoSwiss](https://www.meteoswiss.admin.ch/) (1–2 km, around 5 days), queried through Open-Meteo. Days 6–7 and the rain probability come from Open-Meteo's standard models. The temperatures apply to the height of the wall, from swisstopo's elevation model.
 - **Approach planner (Switzerland):** the path network from the swissTLM3D hiking trails (through api3.geo.admin.ch), heights from swisstopo's elevation model, walking time by the formula of the Swiss hiking trails association, without breaks. Climbers' paths to the wall are usually not in the network; those stretches are dotted (straight line) and are to be checked on site. If the hiking trails cannot be reached, the planner computes with BRouter on OpenStreetMap and says so.
-- **Rain radar:** [RainViewer](https://www.rainviewer.com/) (free of charge, since 2026 only up to zoom level 7, hence enlarged and rather blurred) and [Radar-DPC](https://radar.protezionecivile.it/) from the Italian Protezione Civile (1 km, every 5 minutes). If Radar-DPC fails, the app switches over to RainViewer.
+- **Rain radar:** in Switzerland the MeteoSwiss precipitation composite, in Italy [Radar-DPC](https://radar.protezionecivile.it/) from the Italian Protezione Civile (1 km, every 5 minutes), and [RainViewer](https://www.rainviewer.com/) elsewhere (free of charge, since 2026 only up to zoom level 7, hence enlarged and rather blurred). If MeteoSwiss or Radar-DPC fails, the app switches over to RainViewer.
 - **Grade conversion** is an approximation: the scales do not measure quite the same thing, and published tables differ from each other by about one step.
 - The **Google Maps button** opens the Google Maps app on the iPhone. If it is not installed, the app offers the link in the browser after a moment.
 - The app is no replacement for a guidebook. Always check closures and the state of the bolts on site.

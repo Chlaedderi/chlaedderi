@@ -27,10 +27,11 @@ redirects there.
   region that the unit tests and the browser suite run on. `finale`, `oltre` and `ow` live in the
   private `Chlaedderi/maps`; `packs` (`tools/get-packs.sh`) symlinks them in for whoever has access
   and says one line and carries on for whoever does not. **Nothing in CI may depend on them** --
-  a fork's checks and an outside pull request have to be able to go green. Two checks in
-  `make-packs.sh` go quiet without them: that no crag id is in two regions, and that the showcase
-  really is a slice of the region it came from. The second says `skip`, not `ok`, on purpose; the
-  real comparison is made in the private repository, where the data is.
+  a fork's checks and an outside pull request have to be able to go green. One check in
+  `make-packs.sh` means little without them: that no crag id is in two regions. The other, that
+  the showcase really is a slice of the region it came from, runs here against
+  `pack.testing.json`, the region it is cut from; were it ever cut from a region that is not here,
+  it would say `skip`, not `ok`, on purpose.
 
 - **The showcase that ships is invented, and must stay that way.** `maps/pack.showcase.json` is
   compiled into the bundle, so it is the one pack every visitor to the site gets without asking —
@@ -55,9 +56,11 @@ redirects there.
   not decoration; do not quietly relax it to make a screenshot prettier.
 
 - **The storage names are load-bearing.** `chlaedderi` (namespace), `chlaedderi-user` and
-  `chlaedderi-packs` (caches), `chlaedderi:prefs`, `chlaedderi-filters-v2` (items),
-  `chlaedderi-tiles-v1`. Every one of them is built from `APP_SLUG` rather than written out, so
-  the set cannot drift; `src/core/preview.test.ts` pins each spelling. People have favourites and
+  `chlaedderi-packs` (caches), `chlaedderi:prefs`, `chlaedderi-filters-v2`, `chlaedderi:wx`
+  (items), `chlaedderi-tiles-v1` (the map tiles). Every one of them is built from `APP_SLUG` rather
+  than written out — except the tile cache, which `vite.config.ts` has to spell out because it
+  imports nothing from `src/` — and `src/core/preview.test.ts` pins each spelling, that one
+  included. People have favourites and
   logbooks on their devices under these names — renaming any of them hides that data, with no
   warning and no way back.
 
@@ -209,15 +212,17 @@ redirects there.
   description in `src/index.html` and `manifest.webmanifest`, and the data in `maps/`.
 
 - **German is not spell-checked.** `typos` has no German dictionary and flags ordinary words, so
-  `devenv.nix` excludes exactly the German files listed above — and nothing else, now that the
-  prose is English. Keep new German text out of a file that is checked, or add the file to that
-  list.
+  `devenv.nix` (`natural-language`) excludes the German files listed above, plus the share card's
+  words in `tools/og-card.html` and the grade-scale abbreviations in `src/data/conv.json`; generated
+  files are excluded separately. The prose is English and is checked. Keep new German text out of a
+  file that is checked, or add the file to that list.
 
 ## Working on it
 
 ```sh
 direnv allow    # or: devenv shell
-devenv-help     # dev, build, test, e2e, screens, lint, serve, packs, check-packs, make-packs
+devenv-help     # dev, build, test, e2e, screens, lint, serve, packs, check-packs, make-packs,
+                # make-showcase
 ```
 
 **Look at the result.** `screens` writes every screen to `.screens/`; open them. Three bugs that
@@ -269,7 +274,8 @@ by the hooks.
 and writes the hook config, and without it every hook fails for want of `./node_modules/.bin/…`.
 `.git/hooks` is shared by every worktree, and activating devenv re-points it at the checkout you are
 standing in — which is why no hook and no script names a checkout any more. They ask
-`git rev-parse --show-toplevel` and act on the tree being committed. A hook that built the main
+`git rev-parse --show-toplevel` (or, in `make-packs.sh` and `validate-packs.sh`, their own path,
+which hooks run from the tree being committed) and act on the tree being committed. A hook that built the main
 checkout while you committed in a worktree would pass, and mean nothing.
 
 The one thing that shared hook still points at by name is the generated `.pre-commit-config.yaml`
@@ -301,9 +307,12 @@ project, and say what changes for whoever uses the app.
 ## Layout
 
 ```text
-src/core/      logic with no UI: packs, filters, grades, logbook, the triple store — all tested
+src/core/      logic with no UI: packs, filters, grades, logbook, the triple store — mostly tested
+src/services/  the outside services: Open-Meteo, MeteoSwiss, swisstopo, BRouter, the radars
+src/data/      static tables (grade conversion)
 src/types/     mappack.ts mirrors the schema; model.ts is the shape the app works with
-src/features/  the UI by subject: map, list, crag, logbook, favourites, packs, more, know
+src/features/  the UI by subject: map, list, crag, logbook, favourites, packs, more, know,
+  shell, weather, radar, approach
 src/app/       Redux for the viewer's state; a context for the mounted packs (large, immutable)
 src/i18n/      the interface keys, the same set in English and German
 tools/         make-packs.sh and validate-packs.sh (what a pack must look like), build.sh into
