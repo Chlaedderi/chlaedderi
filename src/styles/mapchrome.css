@@ -112,6 +112,18 @@
     border-top: 1px solid var(--line);
 }
 
+/*
+ * Leaflet gives its own container `overflow: hidden`, which takes the scrollbar away but leaves a
+ * scroll container behind -- and a card or a marker that reaches past the edge is enough for the
+ * browser to scroll it by a few pixels the moment anything inside takes focus, which puts every
+ * marker a few pixels away from where the eye says it is. `clip` is not a scroll container at all.
+ */
+@supports (overflow: clip) {
+    .kat-map {
+        overflow: clip;
+    }
+}
+
 /* Picking a position by hand. */
 .kat-map.pick {
     cursor: crosshair;

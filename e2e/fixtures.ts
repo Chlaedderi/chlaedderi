@@ -152,6 +152,23 @@ export const gotoTab = async (page: Page, name: RegExp): Promise<void> => {
 };
 
 /**
+ * Bring the crag list within reach, whichever layout is on screen.
+ *
+ * On a wide screen it is a column that is always there, so this does nothing. On a phone it is
+ * parked below the map with a transform and slides up when «List» is pressed -- and until it
+ * does, nothing in it can be tapped. Tests used to reach into it anyway, and it worked: the pane
+ * was off the screen, but the box holding it could still be scrolled by a script, so Playwright
+ * scrolled a card up and clicked it. That hole is the one a stray focus used to fall through
+ * (see https://github.com/Chlaedderi/chlaedderi/issues/30) and it is closed now, so a test asks
+ * for the list the way a thumb does.
+ */
+export const openList = async (page: Page): Promise<void> => {
+    const toggle = page.getByRole("button", { name: /^(list|liste)$/i });
+    if (await toggle.isVisible().catch(() => false)) await toggle.click();
+    await expect(page.locator(".MuiCard-root").first()).toBeInViewport();
+};
+
+/**
  * Tap a crag marker and wait for its call-out.
  *
  * Retried as a unit: the map fits itself to the crags when it loads, and a click that lands while
