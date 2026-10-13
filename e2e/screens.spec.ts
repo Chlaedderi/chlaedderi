@@ -24,6 +24,11 @@ const shotOf = async (locator: import("@playwright/test").Locator, name: string)
 
 for (const theme of ["light", "dark"] as const) {
     test(`every screen, ${theme}`, async ({ page }, info) => {
+        // By far the longest test in the suite: fifteen screens, each of them waited for and
+        // photographed, and every map among them now drawing tiles rather than nothing at all.
+        // It ran at around twenty seconds against a thirty-second limit, which is a timeout
+        // waiting for a busy machine rather than a measurement of anything.
+        test.slow();
         const tag = `${info.project.name}-${theme}`;
         await page.emulateMedia({ colorScheme: theme });
         await page.goto("/");

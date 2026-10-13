@@ -153,16 +153,14 @@ test.describe("the crag call-out", () => {
     });
 
     /**
-     * Known broken on the phone viewport, and not by this test's doing: tapping the marker of the
-     * crag that is already chosen does not bring its card back. The click reaches the marker and no
-     * popup is built at all, so the selection is never dispatched -- see
+     * The last assertion here was red for a while, and not for the reason it looked like: nothing
+     * was wrong with the selection. Every tile in the suite was being aborted -- see
+     * `stubNetwork` -- so the map's «the base map is not drawing» warning lay across the top of
+     * it in every test, and with this region's geometry the marker ended up underneath. The tap
+     * went down on the marker and up on the warning, which is a click on neither. See
      * https://github.com/Chlaedderi/chlaedderi/issues/30.
-     *
-     * It is geometry, not code: pristine `main` built with only this region's data swapped in
-     * reproduces it, and this branch's code with the old data does not. Left standing rather than
-     * deleted, because it is the guard for a bug that is now real.
      */
-    test.fixme("closes from its own button, without letting the crag go", async ({ page }) => {
+    test("closes from its own button, without letting the crag go", async ({ page }) => {
         await page
             .locator(".pop")
             .getByRole("button", { name: /close|schliessen/i })

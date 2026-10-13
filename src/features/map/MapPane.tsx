@@ -649,6 +649,7 @@ export const MapPane = () => {
             {tileTrouble && (
                 <Alert
                     severity="warning"
+                    data-testid="tile-trouble"
                     onClose={() => setTileTrouble(false)}
                     sx={{
                         position: "absolute",
@@ -656,6 +657,15 @@ export const MapPane = () => {
                         left: 8,
                         right: 56,
                         zIndex: 500,
+                        // A warning is not a lid. This one appears exactly when the tiles do not
+                        // -- offline, under a cliff, which is the app's own case -- and it lies
+                        // across the top of the map, over whatever markers are up there. They
+                        // then cannot be tapped at all, and a tap that goes down on a marker and
+                        // comes up on the warning reaches neither: Leaflet never hears the click,
+                        // and the crag simply does not open. So the map keeps its taps and the
+                        // warning keeps only the button that puts it away.
+                        pointerEvents: "none",
+                        "& .MuiAlert-action": { pointerEvents: "auto" },
                     }}
                 >
                     {region?.outline ? t("map.blocked") : t("map.baseFail", { 0: baseName })}

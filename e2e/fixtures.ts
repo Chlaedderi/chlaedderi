@@ -9,11 +9,17 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
 /**
- * Every tile request is answered with a PNG from the repository itself. Any small image does --
- * the tests are about the app, not about what the tiles show -- and taking one off disk keeps a
- * long base64 blob out of the source, where it only reads like a leaked credential.
+ * Every tile request is answered with one flat square, written here rather than read off disk.
+ *
+ * It has to be a real image -- a map that decodes nothing is a map that says its base layer is
+ * broken, and puts a warning over itself to say so. Beyond that the tests are not about what the
+ * tiles show, so the quietest thing that draws wins: plain paper-grey, which leaves the markers,
+ * the approach lines and the cards legible in `.screens/`, and which a screenshot of a whole map
+ * compresses to a few kilobytes. A photograph tiled across the screen did neither.
  */
-const TILE_FILE = "favicon-32.png";
+const TILE_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">' +
+    '<rect width="256" height="256" fill="#e9e5dd"/></svg>';
 
 const TILE_HOSTS = [
     "**/*.tile.openstreetmap.org/**",
@@ -24,16 +30,29 @@ const TILE_HOSTS = [
     "**/wms.geo.admin.ch/**",
     "**/server.arcgisonline.com/**",
     "**/radar-geowebcache.protezionecivile.it/**",
-    // The showcase gallery points at Wikimedia Commons. Answering it from disk keeps the browser
-    // suite off the network and still draws a picture where a picture belongs.
+    // The showcase gallery points at Wikimedia Commons. Answering it here keeps the browser
+    // suite off the network and still draws something where a picture belongs.
     "**/upload.wikimedia.org/**",
 ];
 
-/** Stub every host the app talks to. Individual tests override what they need. */
+/**
+ * Stub every host the app talks to. Individual tests override what they need.
+ *
+ * The catch-all goes on **first**, and that order is the whole point: Playwright consults route
+ * handlers in the reverse order they were added, so the last one registered is the first one
+ * asked. Registered last, the catch-all answered for everything -- every tile in the suite was
+ * aborted, the stubs below never ran, and the map put its «the base map is not drawing» warning
+ * over the top-left corner of itself in every browser test. That warning is a real element with
+ * real hit-testing, so a marker that happened to sit under it could not be tapped; which marker
+ * that is depends on where the region's crags are, which is why swapping the showcase's data was
+ * enough to turn a passing test red -- see https://github.com/Chlaedderi/chlaedderi/issues/30.
+ */
 export const stubNetwork = async (page: Page): Promise<void> => {
+    // Anything external that nothing below answers for is a mistake the test should notice.
+    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
     for (const pattern of TILE_HOSTS) {
         await page.route(pattern, (route) =>
-            route.fulfill({ contentType: "image/png", path: TILE_FILE }),
+            route.fulfill({ contentType: "image/svg+xml", body: TILE_SVG }),
         );
     }
     await page.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
@@ -42,8 +61,6 @@ export const stubNetwork = async (page: Page): Promise<void> => {
     );
     await page.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
     await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
-    // Anything else external is a mistake the test should notice, not silently allow.
-    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
 };
 
 /**
