@@ -1,6 +1,8 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { APP_NAME } from "@core/name";
+
 import { makeStore, mountedShowcase, renderApp, showcase } from "../../test/harness";
 
 import { PackOffer } from "./PackOffer";
@@ -65,6 +67,34 @@ describe("PackOffer", () => {
         ).not.toBeInTheDocument();
     });
 
+    it("reads this site's own domain back into the name it is served under", async () => {
+        const fetched = vi.fn(() => Promise.resolve(answer(pack())));
+        globalThis.fetch = fetched as unknown as typeof fetch;
+
+        renderApp(<PackOffer />, {
+            store: offering({ url: "https://xn--chldderi-2za.ch/maps/pack.ow.json" }),
+        });
+
+        // The line that asks somebody to recognise something has to be in the spelling they
+        // would recognise. The address under it stays what the machine will really go and get.
+        expect(await screen.findByText(`from ${APP_NAME.toLowerCase()}.ch`)).toBeInTheDocument();
+        expect(
+            screen.getByText("https://xn--chldderi-2za.ch/maps/pack.ow.json"),
+        ).toBeInTheDocument();
+        expect(fetched).not.toHaveBeenCalled();
+    });
+
+    it("leaves a host it cannot vouch for in the spelling the machine uses", async () => {
+        globalThis.fetch = vi.fn(() => Promise.resolve(answer(pack()))) as unknown as typeof fetch;
+
+        renderApp(<PackOffer />, {
+            store: offering({ url: "https://xn--80ak6aa92e.com/p.json" }),
+        });
+
+        // It reads as аррӏе.com in Cyrillic, and a trust prompt is the worst place to learn that.
+        expect(await screen.findByText(/from xn--80ak6aa92e\.com/i)).toBeInTheDocument();
+    });
+
     it("refuses a data: link, which would install a pack with no host at all", () => {
         renderApp(<PackOffer />, {
             store: offering({ url: "data:application/json,%7B%7D" }),
@@ -101,6 +131,38 @@ describe("PackOffer", () => {
         expect(await screen.findByText(/replaces the loaded region Obwalden/i)).toBeInTheDocument();
         expect(screen.getByText(/version 2026-01-01/i)).toBeInTheDocument();
         expect(await screen.findByRole("button", { name: /replace region/i })).toBeInTheDocument();
+    });
+
+    it("names the host it is replacing the same way, and still calls it a different one", async () => {
+        globalThis.fetch = vi.fn(() => Promise.resolve(answer(pack()))) as unknown as typeof fetch;
+        const base = makeStore().getState();
+        const store = makeStore({
+            ui: { ...base.ui, packOffer: { url: "https://example.org/p.json", fetchNow: true } },
+            prefs: {
+                ...base.prefs,
+                packs: [
+                    {
+                        id: "ow",
+                        name: { en: "Obwalden", de: "Obwalden" },
+                        version: "2026-01-01",
+                        crags: 94,
+                        src: {
+                            type: "url",
+                            url: "https://xn--chldderi-2za.ch/maps/pack.ow.json",
+                        },
+                    },
+                ],
+            },
+        });
+
+        renderApp(<PackOffer />, { store });
+
+        // Both hosts in this dialog are read the same way, because the dialog is asking for them
+        // to be compared -- and the comparison itself is made on the host, never on the reading.
+        const said = await screen.findByText(
+            new RegExp(`from ${APP_NAME.toLowerCase()}\\.ch`, "i"),
+        );
+        expect(said.closest(".MuiAlert-root")?.className).toMatch(/Error/);
     });
 
     it("keeps a name that would reshape the dialog to one line", async () => {

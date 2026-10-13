@@ -146,9 +146,11 @@ describe("packAddress", () => {
         expect(packAddress("https://user:pw@example.org/p.json")).toBeNull();
     });
 
-    it("hands back the punycode host, which is what should be shown", () => {
-        // A host written in another script reads as that script and resolves as this: the one
-        // the browser really goes to is the one the dialog has to name.
+    it("hands back the host the browser really goes to, punycode and all", () => {
+        // A host written in another script resolves as this, so this is what is compared,
+        // remembered and fetched. Whether it can also be *read* as a name is asked once, at the
+        // moment of showing it, by `src/core/idn.ts` -- and the answer for this one is no.
         expect(packAddress("https://пример.org/p.json")?.host).toBe("xn--e1afmkfd.org");
+        expect(packAddress("https://chlädderi.ch/p.json")?.host).toBe("xn--chldderi-2za.ch");
     });
 });

@@ -81,8 +81,10 @@ export const packUrl = (raw: string): string => {
  *   - No credentials in the address: `https://raw.githubusercontent.com@evil.example/p.json`
  *     reads as GitHub to a person and as `evil.example` to the browser.
  *
- * The host comes back parsed -- punycode for an international domain, which is what should be
- * shown -- so that no caller is tempted to find it in the string itself.
+ * The host comes back parsed -- punycode for an international domain, port and all -- so that no
+ * caller is tempted to find it in the string itself. This is the host to compare, to remember and
+ * to fetch with, and the only one there is. Reading it back into a name a person recognises is a
+ * separate question, asked by `src/core/idn.ts` at the moment of showing it and nowhere else.
  */
 export const packAddress = (
     raw: string,
