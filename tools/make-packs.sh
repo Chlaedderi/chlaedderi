@@ -16,6 +16,9 @@
 # Needs only jq and perl. A mappack is described in mappack.schema.json; the schema itself is checked in CI.
 #
 set -euo pipefail
+# The checks pipe into `lines`, and `say` records a failure in `fail`: without this the last part of
+# each pipe runs in a subshell, the flag is lost, and no check could ever fail the script.
+shopt -s lastpipe
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"

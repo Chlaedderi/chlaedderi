@@ -14,6 +14,7 @@
  */
 
 import type { ForecastData } from "@core/forecast";
+import { toLV95 } from "@core/geo";
 
 import { fetchHeight } from "./swisstopo";
 
@@ -70,7 +71,8 @@ export const loadForecast = async ({
 }: ForecastRequest): Promise<ForecastData> => {
     let elevation = knownElevation;
     if (ch && elevation == null) {
-        elevation = await fetchHeight(lat, lon).catch(() => null);
+        // swisstopo speaks LV95 metres, not degrees.
+        elevation = await fetchHeight(...toLV95(lat, lon)).catch(() => null);
     }
 
     const query =

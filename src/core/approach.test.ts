@@ -71,6 +71,28 @@ describe("buildGraph", () => {
         expect(lengthByCategory(leg)[0]).toBeLessThan(5);
         expect(lengthOf(leg)).toBeCloseTo(100, 0);
     });
+
+    it("joins a trail that stops a few metres short of another", () => {
+        // The spur ends at (50,3), three metres off the long path: surveyed data rarely lands
+        // exactly, and the crossing pass does not see a line that never reaches the other.
+        const g = buildGraph([line(0, 0, 100, 0), line(50, 60, 50, 3)]);
+        const leg = findLeg(g, [50, 60], [100, 0]);
+        expect(lengthByCategory(leg)[0]).toBeLessThan(5);
+        expect(lengthOf(leg)).toBeLessThan(115);
+    });
+
+    it("goes straight from one crossing to the next on the same segment", () => {
+        //   │ │    two paths crossing one long segment 20 m apart
+        // ──┼─┼──────────
+        //   │ │
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(500, -300, 500, 300),
+            line(520, -300, 520, 300),
+        ]);
+        const leg = findLeg(g, [500, -300], [520, 300]);
+        expect(lengthOf(leg)).toBeCloseTo(620, 0);
+    });
 });
 
 describe("nearest", () => {

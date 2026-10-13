@@ -14,8 +14,6 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { favouritesActions } from "@app/slices/favouritesSlice";
-import { useLang } from "@app/useAppData";
-import { i18 } from "@core/text";
 
 import { CragCard } from "../list/CragCard";
 
@@ -28,11 +26,10 @@ import { SaveStatus } from "./SaveStatus";
  */
 export const FavouritesPage = () => {
     const { t } = useTranslation();
-    const lang = useLang();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const [clearing, setClearing] = useState(false);
-    const { byId, regions } = useData();
+    const { byId } = useData();
     const favCrags = useAppSelector((s) => s.favourites.crags);
     const favRoutes = useAppSelector((s) => s.favourites.routes);
     const saved = useAppSelector((s) => s.favourites.saved);
@@ -47,21 +44,6 @@ export const FavouritesPage = () => {
         .filter((x): x is NonNullable<typeof x> => !!x);
 
     const waiting = favCrags.length - crags.length + (favRoutes.length - routes.length);
-
-    // Which packs those waiting favourites belong to. A favourite's id starts with its pack's,
-    // so the names can be given even while the pack is unloaded.
-    const loaded = new Set(regions.map((r) => r.key));
-    const awayRegions = [
-        ...new Set(
-            [...favCrags, ...favRoutes.map((k) => k.split("~")[0] ?? "")]
-                .filter((id) => !byId[id])
-                .map((id) => id.split("/")[0] ?? "")
-                .filter((key) => key && !loaded.has(key)),
-        ),
-    ].map((key) => {
-        const region = regions.find((r) => r.key === key);
-        return region ? i18(region.name, lang) : key;
-    });
 
     return (
         <Box sx={{ height: "100%", overflowY: "auto", p: 2, pb: 4 }}>
@@ -170,9 +152,9 @@ export const FavouritesPage = () => {
                     color="text.secondary"
                     sx={{ display: "block", mt: 2 }}
                 >
-                    {awayRegions.length
-                        ? t("fv.away", { 0: awayRegions.join(", ") })
-                        : t("fav.waiting", { 0: waiting })}
+                    {/* Not which region: a crag id does not name its pack, and an unloaded pack
+                        is not here to ask. */}
+                    {t("fav.waiting", { 0: waiting })}
                 </Typography>
             )}
         </Box>

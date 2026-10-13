@@ -176,6 +176,14 @@ describe("csvText", () => {
         expect(csv).toContain('"A;B ""C""\nD"');
     });
 
+    it("keeps a name that looks like a formula as text", () => {
+        const csv = csvText([entry({ n: '=HYPERLINK("http://x","y")', s: "c1" })], columns, lookup);
+        expect(csv).toContain(';"\'=HYPERLINK(""http://x"",""y"")";');
+        expect(csvText([entry({ n: "@SUM(A1)", s: "c1" })], columns, lookup)).toContain(
+            ";'@SUM(A1);",
+        );
+    });
+
     it("leaves the crag columns empty when its pack is not loaded", () => {
         const csv = csvText([entry({ s: "not-loaded" })], columns, lookup);
         expect(csv).toContain("2026-10-01;Route;6a;RP;;;;");

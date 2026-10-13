@@ -7,14 +7,15 @@
  * exactly that reason.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { ForecastData } from "@core/forecast";
 import { FC_TTL, loadForecast } from "@services/forecast";
 
 const cache = new Map<string, ForecastData>();
-const inFlight = new Map<string, Promise<ForecastData | null>>();
+/** One request per place, shared by every view asking for it; it settles to the data or the error. */
+const inFlight = new Map<string, Promise<{ value: ForecastData } | { error: string }>>();
 
 export interface ForecastState {
     readonly data: ForecastData | null;
@@ -36,8 +37,14 @@ export const useForecast = (place: Place, ch: boolean): ForecastState => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // The place on screen now. An answer for one the viewer has since left -- tapped point A, then
+    // point B before A came back -- must not land in B's card.
+    const current = useRef(place.id);
+    current.current = place.id;
+
     // A different place: show what is already known about it, and nothing else.
     useEffect(() => {
+        setLoading(false);
         setData(cache.get(place.id) ?? null);
         setError(null);
     }, [place.id]);
@@ -66,17 +73,16 @@ export const useForecast = (place: Place, ch: boolean): ForecastState => {
                 })
                     .then((value) => {
                         cache.set(place.id, value);
-                        return value;
+                        return { value };
                     })
-                    .catch((e: unknown) => {
-                        setError(e instanceof Error ? e.message : String(e));
-                        return null;
-                    })
+                    .catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }))
                     .finally(() => inFlight.delete(place.id));
 
             inFlight.set(place.id, pending);
-            void pending.then((value) => {
-                if (value) setData(value);
+            void pending.then((result) => {
+                if (current.current !== place.id) return;
+                if ("value" in result) setData(result.value);
+                else setError(result.error);
                 setLoading(false);
             });
         },

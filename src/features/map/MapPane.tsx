@@ -409,7 +409,12 @@ export const MapPane = () => {
         if (!planning || !selected?.crag.coord) return;
         const from = planStart || plannerStarts[0]?.value;
         if (!from) return;
-        if (from !== planStart) setPlanStart(from);
+        if (from !== planStart) {
+            // The change runs this again with the start in place; planning now as well would ask
+            // for the same route twice.
+            setPlanStart(from);
+            return;
+        }
 
         const park = parks[from];
         const origin: [number, number] | null =

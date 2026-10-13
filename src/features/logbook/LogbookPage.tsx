@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { logbookActions } from "@app/slices/logbookSlice";
 import { uiActions } from "@app/slices/uiSlice";
 import { useLang } from "@app/useAppData";
+import { downloadFile } from "@core/download";
 import { GRADES } from "@core/grades";
 import {
     type LogEntry,
@@ -116,12 +117,7 @@ export const LogbookPage = () => {
             },
         );
         try {
-            const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${APP_SLUG}-logbuch.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
+            downloadFile(`${APP_SLUG}-logbuch.csv`, text, "text/csv;charset=utf-8");
         } catch {
             // Some browsers refuse a script-made download outright. Say so rather than
             // appearing to have done nothing.

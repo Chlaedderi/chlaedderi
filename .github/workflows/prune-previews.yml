@@ -29,6 +29,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -t open < <(gh pr list --state open --limit 200 --json number --jq '.[].number')
+          # Asked into a variable first: a failed `gh` inside `<(...)` would go unnoticed and read
+          # as "nothing is open", and every preview would be pruned.
+          numbers="$(gh pr list --state open --limit 200 --json number --jq '.[].number')"
+          mapfile -t open <<< "${numbers}"
+          [[ -n "${open[0]:-}" ]] || open=()
           echo "open pull requests: ${open[*]:-none}"
           ./tools/publish-pages.sh prune "${open[@]}"

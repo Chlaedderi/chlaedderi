@@ -141,6 +141,13 @@ export const openChlpack = async (bytes: Uint8Array, keyB64: string): Promise<st
         throw new ChlpackError("badkey", "this key does not open this region");
     }
 
-    const text = flags & FLAG_GZIP ? await gunzip(plain as Uint8Array<ArrayBuffer>) : plain;
-    return new TextDecoder("utf-8", { fatal: true }).decode(text);
+    // Past the tag the key is known to be right, so whatever fails from here on is the container's
+    // content -- not a reason to send anybody looking for another key.
+    try {
+        const text = flags & FLAG_GZIP ? await gunzip(plain as Uint8Array<ArrayBuffer>) : plain;
+        return new TextDecoder("utf-8", { fatal: true }).decode(text);
+    } catch (error) {
+        if (error instanceof ChlpackError) throw error;
+        throw new ChlpackError("badblob", "the region inside could not be unpacked");
+    }
 };

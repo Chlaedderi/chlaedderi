@@ -42,8 +42,7 @@ export interface UiState {
     /** Via points the viewer tapped, in WGS84. */
     planVia: [number, number][];
     toasts: Toast[];
-    /** Where the viewer is, when they asked for it. */
-    /** Where the viewer is. `manual` when they tapped the map rather than the browser finding it. */
+    /** Where the viewer is, when they asked for it. `manual` when they tapped the map rather than the browser finding it. */
     me: { lat: number; lon: number; acc: number; manual?: boolean } | null;
     /** Waiting for a tap on the map to set the position by hand. */
     picking: boolean;
@@ -67,9 +66,9 @@ export interface UiState {
      * One slot: a second offer arriving while one is on screen is ignored rather than swapping the
      * dialog's content out from under whoever is reading it. `then` is the link that asked for the
      * region, followed once it is loaded; `fetchNow` says the viewer already consented to the
-     * download by typing the address themselves.
+     * download by typing the address themselves. `key` is the one a share link carried; a plain
+     * pack has none and needs none.
      */
-    /** `key` is the one a share link carried; a plain pack has none and needs none. */
     packOffer: { url: string; key?: string; then?: string; fetchNow?: boolean } | null;
     /**
      * Something just happened that installing would help with: a region came onto the device, a

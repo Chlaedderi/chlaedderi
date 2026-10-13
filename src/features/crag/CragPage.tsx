@@ -145,7 +145,7 @@ export const CragPage = () => {
     const share = useShare();
     const ctx = useFilterContext();
     const { stateOf } = useWeather();
-    const { byId } = useData();
+    const { byId, booted } = useData();
     const crag = id ? byId[id] : undefined;
     const region = useRegionOf(crag);
     const packUrl = usePackUrlOf(crag);
@@ -168,7 +168,9 @@ export const CragPage = () => {
         if (id) dispatch(uiActions.select(id));
     }, [id, dispatch]);
 
-    if (!crag) return <Navigate to="/" replace />;
+    // An installed region is read back out of the cache after the first render; a link to one of
+    // its crags must wait for that instead of giving up on the showcase alone.
+    if (!crag) return booted ? <Navigate to="/" replace /> : null;
 
     // The rail only offers sections this crag actually has.
     const sections = new Set<string>(["routesec", "cragLog", "wxsec", "fcsec", "moresec"]);

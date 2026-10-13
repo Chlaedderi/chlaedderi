@@ -160,7 +160,10 @@ export const csvText = (
     lookup: CsvLookup,
 ): string => {
     const cell = (v: unknown): string => {
-        const s = String(v ?? "");
+        // Names come out of mappacks, which anybody can publish. A leading `=`, `+`, `-` or `@`
+        // would make a spreadsheet run the cell as a formula; a quote in front keeps it text.
+        const raw = String(v ?? "");
+        const s = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
         return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows: string[][] = [

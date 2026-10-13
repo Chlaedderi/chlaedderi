@@ -26,12 +26,12 @@ const favouritesSlice = createSlice({
         toggleRoute: (state, action: PayloadAction<string>) => {
             toggle(state.routes, action.payload);
         },
-        /** From the store, or from another tab. */
         /** Throw them all away. The page asks first, as the original did. */
         clear: (state) => {
             state.crags = [];
             state.routes = [];
         },
+        /** From the store, or from another tab. */
         restore: (state, action: PayloadAction<{ crags: string[]; routes: string[] }>) => {
             state.crags = action.payload.crags;
             state.routes = action.payload.routes;

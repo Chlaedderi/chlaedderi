@@ -260,7 +260,6 @@
     "fc.tomorrow": "Morgen",
     "fc.wind": "Wind km/h",
     "filters": "Filter",
-    "fv.away": "Für eine nicht geladene Region gespeichert: {0}. Sie kommen mit deren Mappack zurück.",
     "fv.backup": "Sichern und übertragen",
     "fv.backup.t": "Ein Code enthält deine Favoriten und dein Logbuch. Auf dem iPhone haben Browser und Homescreen-App getrennte Speicher: Mit dem Code überträgst du alles vom einen ins andere oder auf ein anderes Gerät. Kopiere ihn, bevor du die App vom Homescreen entfernst.",
     "fv.bad": "Dieser Browser lässt die Seite nichts speichern (privater Modus?). Favoriten halten nur, bis die Seite geschlossen wird. Den Sicherungscode verwenden.",

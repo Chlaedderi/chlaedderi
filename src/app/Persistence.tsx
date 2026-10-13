@@ -11,7 +11,7 @@
  * the setup they had.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
@@ -38,13 +38,21 @@ const store = openStore();
 export const Persistence = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-    const favourites = useAppSelector((s) => s.favourites);
+    // The lists only, not the slice: the slice also holds `saved`, which every write below sets
+    // anew -- watching it would make each write schedule the next one, forever.
+    const favCrags = useAppSelector((s) => s.favourites.crags);
+    const favRoutes = useAppSelector((s) => s.favourites.routes);
+    const favourites = useMemo(
+        () => ({ crags: favCrags, routes: favRoutes }),
+        [favCrags, favRoutes],
+    );
     const entries = useAppSelector((s) => s.logbook.entries);
     const prefs = useAppSelector((s) => s.prefs);
     const filters = useAppSelector(selectFilters);
     const sort = useAppSelector((s) => s.filters.sort);
     const dir = useAppSelector((s) => s.filters.dir);
-    const { crags, regions } = useData();
+    const hydrated = useAppSelector((s) => s.filters.hydrated);
+    const { crags, regions, booted } = useData();
     const { search } = useLocation();
 
     // The settings as they are *now*, for the asynchronous read-back below: a closure over `prefs`
@@ -106,7 +114,9 @@ export const Persistence = () => {
     // to the device below.
     const fromLink = useRef<string | null>(null);
     useEffect(() => {
-        if (restoredFilters.current || !crags.length) return;
+        // Not before the installed packs are read back: until then only the showcase is mounted,
+        // and an area or municipality of an installed region would be thrown away as unknown.
+        if (restoredFilters.current || !booted || !crags.length) return;
         restoredFilters.current = true;
         try {
             const where = {
@@ -148,7 +158,7 @@ export const Persistence = () => {
             // the URL mirror stays silent until it knows this state is the viewer's own.
             dispatch(filtersActions.hydrated());
         }
-    }, [crags, regions, prefs.region, search, dispatch, t]);
+    }, [booted, crags, regions, search, dispatch, t]);
 
     // ---- write on change
     useDebouncedWrite(favourites, (value) => {
@@ -189,7 +199,11 @@ export const Persistence = () => {
         void store.set("prefs", value);
     });
 
-    useDebouncedWrite({ filters, sort, dir }, ({ filters: f, sort: s, dir: d }) => {
+    // Memoised, so that only a change of the filters writes them, not every render of this component.
+    const filterState = useMemo(() => ({ filters, sort, dir }), [filters, sort, dir]);
+    useDebouncedWrite(filterState, ({ filters: f, sort: s, dir: d }) => {
+        // Not before the stored filters were read back: this would overwrite them with the defaults.
+        if (!hydrated) return;
         try {
             const text = JSON.stringify(toStored(f, s, d));
             // Still exactly what the link asked for: the viewer has looked at somebody else's view

@@ -260,7 +260,6 @@
     "fc.tomorrow": "Tomorrow",
     "fc.wind": "Wind km/h",
     "filters": "Filters",
-    "fv.away": "Kept for a region that is not loaded: {0}. They come back with its mappack.",
     "fv.backup": "Back up and transfer",
     "fv.backup.t": "One code holds your favourites and your logbook. On the iPhone, the browser and the home-screen app keep separate storage: with the code you move everything from one to the other, or to another device. Copy it before you remove the app from the home screen.",
     "fv.bad": "This browser does not let the page store anything (private mode?). Favourites last only until the page is closed. Use the backup code.",

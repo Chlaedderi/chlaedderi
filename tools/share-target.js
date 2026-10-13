@@ -35,7 +35,10 @@ self.addEventListener("fetch", (event) => {
                 const text = SHARED_FIELDS.map((name) => form.get(name))
                     .filter((value) => typeof value === "string" && value !== "")
                     .join(" ")
-                    .slice(0, SHARED_TEXT_MAX);
+                    .slice(0, SHARED_TEXT_MAX)
+                    // A cut through an emoji leaves half of it, which encodeURIComponent refuses
+                    // -- and the whole share, link and all, would be lost to the catch below.
+                    .replace(/[\uD800-\uDBFF]$/, "");
                 const to = new URL("./#/share?text=" + encodeURIComponent(text), home);
                 // 303, so the browser follows it with a GET: the navigation fallback answers that
                 // one out of the precache, which is why a share works with no network at all.

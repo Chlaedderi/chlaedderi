@@ -64,13 +64,17 @@ export interface NearPoint {
     readonly d: number;
 }
 
-/** The nearest points on trail segments, closest first, no two within 25 m of each other. */
+/**
+ * The nearest points on trail segments, closest first, no two within 25 m of each other.
+ * `skip` leaves out segments by their two ends, before anything is counted.
+ */
 export const nearest = (
     g: TrailGraph,
     x: number,
     y: number,
     maxD: number,
     maxN: number,
+    skip?: (a: number, b: number) => boolean,
 ): NearPoint[] => {
     const r = Math.ceil(maxD / g.G);
     const cx = Math.floor(x / g.G);
@@ -86,6 +90,7 @@ export const nearest = (
                 if (seen.has(i)) continue;
                 seen.add(i);
                 const [p, q, cat] = g.segs[i]!;
+                if (skip?.(p, q)) continue;
                 const dx = g.X[q]! - g.X[p]!;
                 const dy = g.Y[q]! - g.Y[p]!;
                 const l2 = dx * dx + dy * dy;
@@ -184,8 +189,15 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
     for (let k = 0; k < g.n; k++) {
         if (adj[k]!.length !== 1) continue;
         const onward = adj[k]![0]!.to;
-        const hit = nearest(g, X[k]!, Y[k]!, 6, 1).find(
-            (h) => h.a !== k && h.b !== k && h.a !== onward && h.b !== onward,
+        // Its own segments are left out before the search, not after: the closest segment to an
+        // end is always its own, at no distance at all, and would be the only one returned.
+        const [hit] = nearest(
+            g,
+            X[k]!,
+            Y[k]!,
+            6,
+            1,
+            (a, b) => a === k || b === k || a === onward || b === onward,
         );
         if (!hit) continue;
         const p = X.length;
@@ -199,6 +211,13 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
 
     // Two trails crossing without a shared vertex: put a node where they cross.
     const done = new Set<string>();
+    // Where along each segment its crossings lie, so that two on one segment can be joined.
+    const along = new Map<number, { t: number; p: number }[]>();
+    const at = (seg: number, t: number, p: number): void => {
+        const list = along.get(seg);
+        if (list) list.push({ t, p });
+        else along.set(seg, [{ t, p }]);
+    };
     for (const list of grid.values()) {
         for (let i = 0; i < list.length; i++) {
             for (let j = i + 1; j < list.length; j++) {
@@ -239,8 +258,17 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
                 link(p, u[1], u[2]);
                 link(p, v[0], v[2]);
                 link(p, v[1], v[2]);
+                at(list[i]!, a, p);
+                at(list[j]!, c, p);
             }
         }
+    }
+
+    // Each crossing is linked to its segment's two ends; crossings on the same segment also have
+    // to be linked to each other, or going from one to the next means out to an end and back.
+    for (const [seg, list] of along) {
+        list.sort((m, n) => m.t - n.t);
+        for (let i = 1; i < list.length; i++) link(list[i - 1]!.p, list[i]!.p, segs[seg]![2]);
     }
 
     g.n = X.length;
