@@ -29,7 +29,7 @@ test("a region loaded from a file is saved as the same file", async ({ page }) =
     const card = again.locator(".MuiCard-root").filter({ hasText: /pack\.testing\.json/i });
     const [download] = await Promise.all([
         page.waitForEvent("download"),
-        card.getByRole("button", { name: /save as a file|als datei speichern/i }).click(),
+        card.getByRole("button", { name: /save as a file|datei speichern/i }).click(),
     ]);
     expect(download.suggestedFilename()).toBe("testing.json");
     const saved = readFileSync(await download.path(), "utf8");
@@ -45,6 +45,6 @@ test("a region that arrived sealed offers no file", async ({ page }) => {
     await expect(dialog.getByText(/pack\.testing\.chlpack/i)).toBeVisible();
     await expect(dialog.getByRole("button", { name: /share this region|teilen/i })).toBeVisible();
     await expect(
-        dialog.getByRole("button", { name: /save as a file|als datei speichern/i }),
+        dialog.getByRole("button", { name: /save as a file|datei speichern/i }),
     ).toHaveCount(0);
 });
