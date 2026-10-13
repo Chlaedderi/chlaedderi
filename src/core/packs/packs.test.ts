@@ -214,6 +214,20 @@ describe("mounting several packs together", () => {
         }
     });
 
+    it("credits no other pack's source to a pack that names none of its own", () => {
+        // The first pack has sources; the second has none, but its pictures still say index 0.
+        const sourceless = {
+            ...renamed(packs.testing!, "plain"),
+            picSrc: undefined,
+        } as unknown as Mappack;
+        const both = mountPacks([packs.testing!, sourceless]);
+        const plain = both.crags.filter((c) => c.packId === "plain" && c.pics.length);
+        expect(plain.length).toBeGreaterThan(0);
+        for (const crag of plain) {
+            for (const pic of crag.pics) expect(both.picSrc[pic[3]]).toBeUndefined();
+        }
+    });
+
     it("leaves the park keys of a single pack resolvable too", () => {
         const one = mountPacks([packs.testing!]);
         for (const crag of one.crags) {

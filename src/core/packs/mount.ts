@@ -278,24 +278,28 @@ export const mountPacks = (packs: readonly Mappack[]): MountedData => {
                 pk: sector.pk ? (renamed[sector.pk] ?? sector.pk) : sector.pk,
                 pkOff: sector.pkOff ? (renamed[sector.pkOff] ?? sector.pkOff) : sector.pkOff,
                 ap: sector.ap?.map((a) => ({ ...a, pk: renamed[a.pk] ?? a.pk })) ?? sector.ap,
-                pics:
-                    own.length && sector.pics
-                        ? sector.pics.map(
-                              (p) =>
-                                  [
-                                      p[0],
-                                      p[1],
-                                      p[2],
-                                      (p[3] || 0) + picOffset,
-                                      p[4],
-                                      p[5],
-                                      p[6],
-                                      p[7],
-                                      p[8],
-                                      p[9],
-                                  ] as typeof p,
-                          )
-                        : sector.pics,
+                // Every index is moved into the joined list, and one that is not this pack's --
+                // past its own list, or into none at all -- points at no source rather than at
+                // the next pack's: a picture must never be credited to somebody else's source.
+                pics: sector.pics
+                    ? sector.pics.map(
+                          (p) =>
+                              [
+                                  p[0],
+                                  p[1],
+                                  p[2],
+                                  (p[3] || 0) >= 0 && (p[3] || 0) < own.length
+                                      ? (p[3] || 0) + picOffset
+                                      : -1,
+                                  p[4],
+                                  p[5],
+                                  p[6],
+                                  p[7],
+                                  p[8],
+                                  p[9],
+                              ] as typeof p,
+                      )
+                    : sector.pics,
             };
             const crag = toCrag(pointed, pack.id);
             byId[crag.id] = crag;
