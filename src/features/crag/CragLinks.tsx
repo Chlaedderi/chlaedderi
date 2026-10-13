@@ -17,7 +17,7 @@ import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
 
 import { useLang, useRegionOf } from "@app/useAppData";
-import { i18 } from "@core/text";
+import { httpHref, i18 } from "@core/text";
 import type { Crag } from "@domain/model";
 
 /** The keyed links, in the order the original listed them. */
@@ -25,7 +25,7 @@ const ORDER = ["o", "f", "t", "l", "p", "r", "g", "c"] as const;
 
 const Row = ({ url, label, note }: { url: string; label: string; note?: string | undefined }) => (
     <Link
-        href={url}
+        href={httpHref(url)}
         target="_blank"
         rel="noopener noreferrer"
         sx={{ display: "flex", alignItems: "baseline", gap: 1 }}

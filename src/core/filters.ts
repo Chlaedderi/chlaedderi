@@ -160,6 +160,16 @@ export interface CragMatch {
 
 export const gradeActive = (f: Filters): boolean => f.gmin > GRADE_LO || f.gmax < GRADE_HI;
 
+/**
+ * The grade range as a filter applies it. The slider's ends are «and below» and «and above»: the
+ * scale runs past them (9a+, 2c), and a range ending at 9a -- the «8a+» chip -- must not hide the
+ * hardest routes there are.
+ */
+const gradeBounds = (f: Filters): [lo: number, hi: number] => [
+    f.gmin <= GRADE_LO ? -Infinity : f.gmin,
+    f.gmax >= GRADE_HI ? Infinity : f.gmax,
+];
+
 /** True when any filter judges single routes rather than whole crags. */
 export const routeFilterOn = (f: Filters): boolean =>
     gradeActive(f) || f.star !== "any" || f.fav === "routes" || f.log !== "any";
@@ -178,7 +188,8 @@ export const minNeeded = (f: Filters): number =>
 export const routeOk = (route: Route, f: Filters, ctx: FilterContext): boolean => {
     if (gradeActive(f)) {
         if (route.gradeIdx == null) return false;
-        if (route.gradeIdx < f.gmin || route.gradeIdx > f.gmax) return false;
+        const [lo, hi] = gradeBounds(f);
+        if (route.gradeIdx < lo || route.gradeIdx > hi) return false;
     }
     if (f.star !== "any") {
         const stars = route.stars?.[0];
@@ -265,7 +276,8 @@ export const judge = (crag: Crag, f: Filters, ctx: FilterContext): CragMatch | n
             if (f.star !== "any" || f.fav === "routes" || f.log === "done") return null;
             if (gradeActive(f)) {
                 if (crag.gminI == null) return null;
-                if ((crag.gmaxI ?? crag.gminI) < f.gmin || crag.gminI > f.gmax) return null;
+                const [lo, hi] = gradeBounds(f);
+                if ((crag.gmaxI ?? crag.gminI) < lo || crag.gminI > hi) return null;
             }
         }
     }

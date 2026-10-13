@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 
 import { useData } from "@app/dataContext";
 import { useLang, useRegionOf } from "@app/useAppData";
-import { i18 } from "@core/text";
+import { httpHref, i18 } from "@core/text";
 import type { Pic } from "@domain/mappack";
 import type { Crag } from "@domain/model";
 
@@ -81,7 +81,7 @@ const Figure = ({
                             <b>{t("pic.fail")}</b>
                         </Typography>
                         <Typography variant="body2">{t("pic.stays")}</Typography>
-                        <Link href={pic[0]} target="_blank" rel="noopener noreferrer">
+                        <Link href={httpHref(pic[0])} target="_blank" rel="noopener noreferrer">
                             {t("pic.open")}
                         </Link>
                     </Stack>
@@ -109,7 +109,7 @@ const Figure = ({
                 {!author && !licence ? ` · ${t("pic.author")}` : ""}
                 {source && (
                     <Link
-                        href={pic[2]}
+                        href={httpHref(pic[2])}
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{ display: "inline-flex", alignItems: "center", gap: 0.3 }}

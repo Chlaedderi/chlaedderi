@@ -61,6 +61,22 @@ export const Persistence = () => {
     const latestPrefs = useRef(prefs);
     latestPrefs.current = prefs;
 
+    // The favourites and the logbook as they are now, for the read-back below to merge into.
+    const latestFav = useRef({ crags: favCrags, routes: favRoutes });
+    latestFav.current = { crags: favCrags, routes: favRoutes };
+    const latestEntries = useRef(entries);
+    latestEntries.current = entries;
+
+    // What the store holds for each key, as JSON, as far as this tab knows: read back at start,
+    // arrived from another tab, or written from here. A value equal to it is not written again --
+    // otherwise two open tabs answer each other's every write with one of their own, for ever,
+    // and a change made in between is overwritten by the echo of the one before it.
+    const known = useRef<Partial<Record<"fav" | "log" | "prefs", string>>>({});
+    // Nothing is written for a key before it has been read back: favourites and the logbook start
+    // empty, and a write of one new favourite in that window would be newer than everything stored
+    // and replace it, on every layer.
+    const loaded = useRef(false);
+
     // ---- read back once
     useEffect(() => {
         void (async () => {
@@ -70,16 +86,27 @@ export const Persistence = () => {
                 store.get("log"),
                 store.get("prefs"),
             ]);
-            if (fav) {
-                const clean = cleanFavourites(fav);
+            if (fav) known.current.fav = JSON.stringify(fav);
+            if (log) known.current.log = JSON.stringify(log);
+            if (saved) known.current.prefs = JSON.stringify(saved);
+            loaded.current = true;
+
+            // Merged with whatever was added here while the store was still being read.
+            const clean = fav
+                ? cleanFavourites(fav)
+                : { c: new Set<string>(), r: new Set<string>() };
+            const now = latestFav.current;
+            if (fav || now.crags.length || now.routes.length) {
                 dispatch(
                     favouritesActions.restore({
-                        crags: [...clean.c],
-                        routes: [...clean.r],
+                        crags: [...new Set([...clean.c, ...now.crags])],
+                        routes: [...new Set([...clean.r, ...now.routes])],
                     }),
                 );
             }
-            if (log) dispatch(logbookActions.restore(cleanLog(log)));
+            const stored = log ? cleanLog(log) : [];
+            const added = latestEntries.current.filter((e) => !stored.some((s) => s.id === e.id));
+            if (log || added.length) dispatch(logbookActions.restore([...stored, ...added]));
             if (saved) {
                 dispatch(
                     prefsActions.restore(
@@ -91,6 +118,9 @@ export const Persistence = () => {
 
         // Another tab or window wrote something.
         store.subscribe((key, value) => {
+            if (key === "fav" || key === "log" || key === "prefs") {
+                known.current[key] = JSON.stringify(value);
+            }
             if (key === "fav") {
                 const clean = cleanFavourites(value);
                 dispatch(favouritesActions.restore({ crags: [...clean.c], routes: [...clean.r] }));
@@ -106,6 +136,16 @@ export const Persistence = () => {
             }
         });
     }, [dispatch]);
+
+    /** Whether `value` is news to the store under `key`; remembers it if so. */
+    const isNew = (key: "fav" | "log" | "prefs", value: unknown): boolean => {
+        // Settings are read synchronously at start and guarded by keepTouched; the two lists are not.
+        if (key !== "prefs" && !loaded.current) return false;
+        const text = JSON.stringify(value);
+        if (known.current[key] === text) return false;
+        known.current[key] = text;
+        return true;
+    };
 
     // ---- the filters, out of the link or out of plain localStorage, once the data is there to
     // check them against
@@ -162,25 +202,26 @@ export const Persistence = () => {
 
     // ---- write on change
     useDebouncedWrite(favourites, (value) => {
-        void store
-            .set("fav", toStoredFavourites({ c: new Set(value.crags), r: new Set(value.routes) }))
-            .then((result) => {
-                dispatch(
-                    favouritesActions.saveResult({
-                        ok: result.ok,
-                        verified: result.verified,
-                        at: result.t,
-                    }),
-                );
-                // A silent failure here loses somebody's favourites. Say so, and name the page
-                // that explains what this browser can and cannot keep.
-                if (!result.ok) {
-                    dispatch(uiActions.toast({ message: t("save.fail"), severity: "warning" }));
-                }
-            });
+        const stored = toStoredFavourites({ c: new Set(value.crags), r: new Set(value.routes) });
+        if (!isNew("fav", stored)) return;
+        void store.set("fav", stored).then((result) => {
+            dispatch(
+                favouritesActions.saveResult({
+                    ok: result.ok,
+                    verified: result.verified,
+                    at: result.t,
+                }),
+            );
+            // A silent failure here loses somebody's favourites. Say so, and name the page
+            // that explains what this browser can and cannot keep.
+            if (!result.ok) {
+                dispatch(uiActions.toast({ message: t("save.fail"), severity: "warning" }));
+            }
+        });
     });
 
     useDebouncedWrite(entries, (value) => {
+        if (!isNew("log", value)) return;
         void store.set("log", value).then((result) => {
             dispatch(
                 logbookActions.saveResult({
@@ -196,6 +237,7 @@ export const Persistence = () => {
     });
 
     useDebouncedWrite(prefs, (value) => {
+        if (!isNew("prefs", value)) return;
         void store.set("prefs", value);
     });
 

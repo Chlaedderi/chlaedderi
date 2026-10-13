@@ -28,7 +28,7 @@ import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { useMapCovered } from "@app/layout";
 import { uiActions } from "@app/slices/uiSlice";
-import { useFilterContext, useLang, useRegion, useShownCrags } from "@app/useAppData";
+import { useFilterContext, useLang, useRegion, useRegionOf, useShownCrags } from "@app/useAppData";
 import { useWeather } from "@app/weatherContext";
 import { longText } from "@core/dataText";
 import { bboxOf, formatDistance, haversine } from "@core/geo";
@@ -214,9 +214,35 @@ export const MapPane = () => {
     const planning = useAppSelector((s) => s.ui.planning);
     const via = useAppSelector((s) => s.ui.planVia);
     const planner = usePlanner(lang === "de" ? "de" : "en");
-    const [planStart, setPlanStart] = useState("");
+    // Both belong to the crag they were chosen for: another crag starts from its own car park,
+    // not from the last one's, which `parks` would still happily resolve.
+    const [planStartFor, setPlanStartFor] = useState<{ id: string | null; v: string }>({
+        id: null,
+        v: "",
+    });
+    const planStart = planStartFor.id === selectedId ? planStartFor.v : "";
+    const setPlanStart = useCallback(
+        (v: string) => setPlanStartFor({ id: selectedId, v }),
+        [selectedId],
+    );
     /** Where «point on the map» was tapped, once it has been. */
-    const [planFrom, setPlanFrom] = useState<[number, number] | null>(null);
+    const [planFromFor, setPlanFromFor] = useState<{
+        id: string | null;
+        v: [number, number] | null;
+    }>({ id: null, v: null });
+    const planFrom = planFromFor.id === selectedId ? planFromFor.v : null;
+    const setPlanFrom = useCallback(
+        (v: [number, number] | null) => setPlanFromFor({ id: selectedId, v }),
+        [selectedId],
+    );
+    // Never for an invented region: the planner -- and the GPX it offers -- would walk somebody
+    // to a cliff that is not there. The crag page withholds the button; this withholds the panel,
+    // which stays open across a change of crag or region.
+    const selectedRegion = useRegionOf(selected?.crag);
+    const plannable =
+        selectedRegion?.ch === true &&
+        selectedRegion.fictional !== true &&
+        selected?.crag.coord != null;
 
     const parkName = useCallback(
         (key: string) => longText(parks[key], "name", lang) ?? key,
@@ -406,7 +432,7 @@ export const MapPane = () => {
 
     // Plan as soon as the panel is open and there is both a start and a crag to reach.
     useEffect(() => {
-        if (!planning || !selected?.crag.coord) return;
+        if (!planning || !plannable || !selected?.crag.coord) return;
         const from = planStart || plannerStarts[0]?.value;
         if (!from) return;
         if (from !== planStart) {
@@ -441,7 +467,7 @@ export const MapPane = () => {
         // `planner` changes identity whenever its own state does, so depending on it would loop.
         // What should start a new plan is listed instead.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [planning, selected, planStart, plannerStarts, me, parks, via]);
+    }, [planning, plannable, selected, planStart, plannerStarts, me, parks, via]);
 
     /** Ask for a tap on the map, saying why. The original's `pickStart`. */
     const askByHand = (why: string): void => {
@@ -698,7 +724,7 @@ export const MapPane = () => {
                 locateState={locateState}
                 picking={picking}
             />
-            {planning && selected && (
+            {planning && selected && plannable && (
                 <PlannerPanel
                     crag={selected.crag}
                     starts={plannerStarts}

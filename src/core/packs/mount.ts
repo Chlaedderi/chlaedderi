@@ -19,7 +19,9 @@ const RX_MAYBE = /unconfirmed|not confirmed|is said to apply|may apply/i;
 const RX_FAMILY = /famil|children|kids|animals|pets/i;
 const RX_CAUTION =
     /dangerous|abandon|outdated|old (and )?(dangerous|bolt|peg|equipment)|poorly maintained|re-bolt|restyling|dated bolt|not well bolted|sparse|weakness|rockfall|loose/i;
-const RX_NEGATED = /\b(not|un\w+)\b/i;
+// «unsuitable», «unsafe», «unfit» -- but not the un-words that negate nothing: «children under 6
+// need a helmet» or «until noon» used to mark a family crag as not one.
+const RX_NEGATED = /\b(not|(?!under|until|unit|univers|uniqu)un\w+)\b/i;
 
 /** Split a warning into sentences, so that one clause cannot colour the whole text. */
 const sentences = (s: string): string[] => s.match(/[^.!]+[.!]*\s*/g) ?? [];
@@ -253,8 +255,10 @@ export const parkKey = (packId: string, key: string): string => `${packId}/${key
 export const mountPacks = (packs: readonly Mappack[]): MountedData => {
     const crags: Crag[] = [];
     const regions: Region[] = [];
-    const parks: Record<string, Park> = {};
-    const byId: Record<string, Crag> = {};
+    // Without a prototype: these are looked up by ids out of links, backup codes and packs, and
+    // `byId["constructor"]` on a plain object is a function, not «no such crag».
+    const parks: Record<string, Park> = Object.create(null) as Record<string, Park>;
+    const byId: Record<string, Crag> = Object.create(null) as Record<string, Crag>;
     const picSrc: string[] = [];
 
     for (const pack of packs) {
@@ -262,7 +266,7 @@ export const mountPacks = (packs: readonly Mappack[]): MountedData => {
         const own = pack.picSrc ?? [];
         picSrc.push(...own);
 
-        const renamed: Record<string, string> = {};
+        const renamed: Record<string, string> = Object.create(null) as Record<string, string>;
         for (const [key, park] of Object.entries(pack.parks ?? {})) {
             const unique = parkKey(pack.id, key);
             renamed[key] = unique;

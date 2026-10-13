@@ -148,6 +148,16 @@ describe("mounting the mappacks", () => {
         });
     });
 
+    it("reads a warning about children as «not for families» only when it says so", () => {
+        const base = packs.testing!.sectors[0]!;
+        const warned = (warn: string) => toCrag({ ...base, warn }, "testing");
+        expect(warned("Unsuitable for children: the base is a cliff edge.").noFamily).toBe(true);
+        expect(warned("Not for kids, the path is exposed.").noFamily).toBe(true);
+        // «under» and «until» negate nothing.
+        expect(warned("Good for families; children under 6 need a helmet.").noFamily).toBe(false);
+        expect(warned("Kids love the shade at the base until noon.").noFamily).toBe(false);
+    });
+
     it("derives the fields prepCrag used to assign in place", () => {
         const crag = mounted.byId["rocca-di-perti-placca-piotti"] ?? mounted.crags[0]!;
         expect(crag.hay).toBe(crag.hay.toLowerCase());
@@ -225,6 +235,15 @@ describe("mounting several packs together", () => {
         expect(plain.length).toBeGreaterThan(0);
         for (const crag of plain) {
             for (const pic of crag.pics) expect(both.picSrc[pic[3]]).toBeUndefined();
+        }
+    });
+
+    it("answers «no such crag» for the names of Object's own properties", () => {
+        // Ids arrive from links (#/__proto__) and pasted backup codes; a plain object would hand
+        // back a function or the prototype, and the page built on it would crash.
+        const one = mountPacks([packs.testing!]);
+        for (const id of ["__proto__", "constructor", "toString", "hasOwnProperty"]) {
+            expect(one.byId[id], id).toBeUndefined();
         }
     });
 

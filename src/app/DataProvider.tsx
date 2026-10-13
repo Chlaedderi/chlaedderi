@@ -55,8 +55,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         void (async () => {
             const loaded: Mappack[] = [];
             for (const note of installed) {
-                const result = await loadStoredPack(note.id);
-                if (result.ok) loaded.push(result.pack);
+                // One region that cannot be read must not keep the others -- and the app's start
+                // -- from happening.
+                const result = await loadStoredPack(note.id).catch(() => null);
+                if (result?.ok) loaded.push(result.pack);
             }
             if (!cancelled) {
                 // Merge, never replace. A pack installed from a link while this was still reading
@@ -112,9 +114,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 void openStore().persist();
                 setPacks((current) => [...current.filter((p) => p.id !== load.pack.id), load.pack]);
                 const note = packNote(load.pack, source, load.bytes);
-                dispatch(
-                    prefsActions.setPacks([...installed.filter((p) => p.id !== note.id), note]),
-                );
+                dispatch(prefsActions.putPack(note));
                 dispatch(prefsActions.setRegion(load.pack.id));
                 // The region is on the device now, which is the best reason there is to put the
                 // app on the home screen as well.
@@ -124,7 +124,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 setBusy(false);
             }
         },
-        [dispatch, installed],
+        [dispatch],
     );
 
     const installFromUrl = useCallback(
@@ -159,12 +159,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await forgetPack(id);
                 setPacks((current) => current.filter((p) => p.id !== id));
-                dispatch(prefsActions.setPacks(installed.filter((p) => p.id !== id)));
+                dispatch(prefsActions.dropPack(id));
             } finally {
                 setBusy(false);
             }
         },
-        [dispatch, installed],
+        [dispatch],
     );
 
     // Keep the region shown pointing at something that is actually mounted.

@@ -110,7 +110,10 @@ export default defineConfig({
             injectRegister: null,
             manifest: false,
             workbox: {
-                globPatterns: ["**/*.{js,css,html,svg}"],
+                // The fonts too, or an installed app falls back to the system font the moment it
+                // is offline. Latin and Latin Extended only, as woff2: the Vietnamese subsets
+                // and the woff fallbacks are never asked for by a browser this app supports.
+                globPatterns: ["**/*.{js,css,html,svg}", "**/*-latin-*.woff2"],
                 // The share target, above everything Workbox emits. Resolved relative to sw.js,
                 // so it is the right file at / and at /pr-N/ alike. It cannot reach the `workbox`
                 // global -- `inlineWorkboxRuntime` is false, so the runtime is a module-local

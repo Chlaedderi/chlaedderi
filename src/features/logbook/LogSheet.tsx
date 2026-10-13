@@ -98,7 +98,8 @@ export const LogSheet = ({
             s: entry?.s ?? crag?.id ?? "",
             n: name.trim(),
             g: grade,
-            d: date,
+            // A cleared date field gives "", which would be stored and shown as year «0».
+            d: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : todayIso(),
             st: style,
             r: stars,
             t: entry?.t ?? Date.now(),

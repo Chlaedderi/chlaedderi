@@ -22,6 +22,16 @@ import type { WeatherState } from "./markerState";
 const weatherBadge = (state: WeatherState | null): string =>
     state && state !== "dry" ? `<i class="wx ${state}"></i>` : "";
 
+/**
+ * A name as a tooltip's content: a text node, never markup. Leaflet assigns a *string* to
+ * `innerHTML`, and a car park's name comes from a mappack anybody may publish.
+ */
+export const textTip = (text: string): HTMLSpanElement => {
+    const span = document.createElement("span");
+    span.textContent = text;
+    return span;
+};
+
 export interface CragIconState {
     readonly selected: boolean;
     readonly favourite: boolean;

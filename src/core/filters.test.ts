@@ -98,6 +98,28 @@ describe("the grade filter", () => {
         };
         expect(routeOk(unknown, f, ctx)).toBe(false);
     });
+
+    it("reads the slider's ends as «and above» and «and below»", () => {
+        const route = (grade: string) => ({
+            name: grade,
+            grade,
+            pitches: null,
+            gradeIdx: gradeIdx(grade)!,
+            key: grade,
+            stars: null,
+            length: null,
+            ord: 0,
+        });
+        // The «8a+» chip ends at 9a, the top of the slider: 9a+ and 9b are harder, not out.
+        const hard = { ...emptyFilters(), gmin: gradeIdx("8a")!, gmax: GRADE_HI };
+        for (const g of ["8a", "9a", "9a+", "9b"])
+            expect(routeOk(route(g), hard, ctx), g).toBe(true);
+        expect(routeOk(route("7c+"), hard, ctx)).toBe(false);
+        // Likewise below 3a, once the upper end has moved.
+        const easy = { ...emptyFilters(), gmin: GRADE_LO, gmax: gradeIdx("4c+")! };
+        for (const g of ["2c", "3a", "4c+"]) expect(routeOk(route(g), easy, ctx), g).toBe(true);
+        expect(routeOk(route("5a"), easy, ctx)).toBe(false);
+    });
 });
 
 describe("the minimum-matches filter", () => {
