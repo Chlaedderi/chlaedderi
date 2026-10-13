@@ -21,20 +21,49 @@
     background: var(--land);
 }
 
-/* ---------- the control stack, top right */
+/*
+ * ---------- the control stack, top right
+ *
+ * The stack is bounded by the map, because the base-map menu hangs from its second button and is
+ * ten rows and about 500px tall in Switzerland -- taller than the map on a short window, and far
+ * taller than any map in landscape. The menu used to be a Popper portaled to `document.body`, where
+ * nothing bounded it at all: the rows below the fold were drawn past the bottom of the screen, and
+ * `body` is `overflow: hidden` (theme.ts), so no wheel and no drag could reach them. Here the menu
+ * is the only item that may shrink, so this one cap is the whole fix -- 10px at the top, and the
+ * 28px the legend and the planner already leave for Leaflet's attribution. A percentage re-resolves
+ * on every layout: a rotation, a resized window, iOS hiding its address bar. Nothing is measured in
+ * JavaScript, and so nothing can go stale.
+ *
+ * Above `.planbar` (520), because the planner and the menu can be open at once, their boxes overlap
+ * on a phone, and the menu is the thing being pointed at -- which is the order the Popper's 600 had.
+ * Leaflet's own drawing is sealed below all of this: `.leaflet-map-pane` is positioned and carries
+ * `z-index: 400`, so it is a stacking context and the marker, tooltip and popup panes inside it
+ * cannot climb out. A crag call-out could not cover the menu before and cannot now.
+ *
+ * While the menu is open this box is as wide as the menu and nearly as tall as the map, so it must
+ * not take the presses that belong to the map: the controls are targets, the box they sit in is not.
+ */
 .mapctl {
     position: absolute;
     top: 10px;
     right: 10px;
-    z-index: 500;
+    z-index: 530;
     display: flex;
     flex-direction: column;
     gap: 8px;
     align-items: flex-end;
+    max-height: calc(100% - 38px);
+    pointer-events: none;
+}
+
+.mapctl > * {
+    pointer-events: auto;
 }
 
 .mbtn {
     display: grid;
+    /* The buttons keep their 42px when the stack is capped; the shrinking is all the menu's. */
+    flex: none;
     place-items: center;
     width: 42px;
     height: 42px;
@@ -73,12 +102,27 @@
     }
 }
 
-/* ---------- base-map menu */
+/*
+ * ---------- base-map menu
+ *
+ * `min-height: 0` is what lets it shrink: a flex item will not go below its content height without
+ * it, and the menu would hang off the end of the stack again. `flex-grow` stays 0, so a menu that
+ * fits is still its own height and only a menu that does not gives way.
+ */
 .basemenu {
     display: grid;
+    min-height: 0;
     gap: 2px;
     min-width: 170px;
     padding: 5px;
+    overflow-y: auto;
+    /*
+     * A flick that runs out of menu is not a flick on anything else: it stops here rather than
+     * chaining outwards, which on iOS is also what keeps it from starting a pull-to-refresh.
+     * Leaflet's own wheel handlers are bound to the map container, which the menu is not inside,
+     * so the map was never the thing at risk.
+     */
+    overscroll-behavior: contain;
     border: 1px solid var(--line);
     border-radius: 12px;
     background: var(--raise);

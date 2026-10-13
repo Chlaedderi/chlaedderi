@@ -5,15 +5,10 @@
  * a coarse radar picture is still worth looking at when you are deciding whether to drive out.
  */
 
+import type { RadarFrames } from "@core/radar";
+
 export const RAINVIEWER_ATTRIBUTION =
     'Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>';
-
-export interface RadarFrames {
-    /** Tile URL template per frame, oldest first. */
-    readonly urls: readonly string[];
-    /** The time each frame covers, in ms. */
-    readonly times: readonly number[];
-}
 
 interface MapsResponse {
     host?: string;
@@ -32,6 +27,7 @@ export const fetchFrames = async (signal?: AbortSignal): Promise<RadarFrames> =>
     if (!past.length) throw new Error("no frames");
 
     return {
+        kind: "tiles",
         // 2/1_1: the colour scheme with smoothing, which is what the app has always shown.
         urls: past.map((f) => `${json.host ?? ""}${f.path}/256/{z}/{x}/{y}/2/1_1.png`),
         times: past.map((f) => f.time * 1000),

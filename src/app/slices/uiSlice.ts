@@ -56,11 +56,11 @@ export interface UiState {
      */
     radarDown: boolean;
     /**
-     * The Italian radar did not answer, so the map falls back to RainViewer for this session. It
-     * lives here rather than in the hook so that it outlives any one mounting of the map -- a
-     * region switch, say -- instead of being forgotten and toasted all over again.
+     * The radar this region should have did not answer, so the map stands in with RainViewer for
+     * this session. It lives here rather than in the hook so that it outlives any one mounting of
+     * the map -- a region switch, say -- instead of being forgotten and toasted all over again.
      */
-    radarDpcDown: boolean;
+    radarFellBack: boolean;
     /**
      * A region somebody is being offered, from a link or from the address they typed.
      *
@@ -93,7 +93,7 @@ export const initialUiState: UiState = {
     picking: false,
     updateReady: false,
     radarDown: false,
-    radarDpcDown: false,
+    radarFellBack: false,
     packOffer: null,
     installMoment: null,
 };
@@ -160,8 +160,8 @@ const uiSlice = createSlice({
         setRadarDown: (state, action: PayloadAction<boolean>) => {
             state.radarDown = action.payload;
         },
-        setRadarDpcDown: (state, action: PayloadAction<boolean>) => {
-            state.radarDpcDown = action.payload;
+        setRadarFellBack: (state, action: PayloadAction<boolean>) => {
+            state.radarFellBack = action.payload;
         },
         offerPack: (state, action: PayloadAction<NonNullable<UiState["packOffer"]>>) => {
             // First one wins: a link opened while an offer is being read must not replace it.
@@ -174,8 +174,8 @@ const uiSlice = createSlice({
             state.installMoment ??= action.payload;
         },
     },
-    // Picking a radar by hand is the viewer saying «try again»: forget what failed last time, so
-    // the Italian radar is attempted afresh and the bar stops claiming to be broken.
+    // Switching the radar on by hand is the viewer saying «try again»: forget what failed last
+    // time, so the region's own radar is attempted afresh and the bar stops claiming to be broken.
     //
     // Saving a favourite or a logbook entry is a moment for the install hint. Only the viewer's own
     // hand counts: a `restore` from storage or from another tab is not something they just did.
@@ -183,7 +183,7 @@ const uiSlice = createSlice({
         builder
             .addCase(prefsActions.setRadar, (state) => {
                 state.radarDown = false;
-                state.radarDpcDown = false;
+                state.radarFellBack = false;
             })
             .addCase(favouritesActions.toggleCrag, (state) => {
                 state.installMoment ??= "fav";

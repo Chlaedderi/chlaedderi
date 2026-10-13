@@ -182,6 +182,14 @@ const FEATURES: Feature[] = [
         now: "src/features/radar/RadarBar.tsx",
         exports: "RadarBar",
     },
+    {
+        // Newer than the app this table is a parity list for: the Swiss radar arrives as numbers,
+        // so the app reads the files and paints them itself.
+        what: "the Swiss radar, read and drawn here",
+        was: "-",
+        now: "src/features/radar/RainGridLayer.ts",
+        exports: "RainGridLayer",
+    },
 
     // ---- the approach planner
     {
@@ -479,6 +487,7 @@ describe("every feature of the pre-React app", () => {
             expect(
                 source.includes(`export const ${feature.exports}`) ||
                     source.includes(`export function ${feature.exports}`) ||
+                    source.includes(`export class ${feature.exports}`) ||
                     source.includes(`export type ${feature.exports}`),
                 `${feature.now} must export ${feature.exports}`,
             ).toBe(true);

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./fixtures";
+import { E2E_HOST, E2E_ORIGIN, expect, test } from "./fixtures";
 
 /**
  * Installing a region that was published encrypted.
@@ -17,7 +17,7 @@ import { expect, test } from "./fixtures";
  * committed two files away.
  */
 
-const HOST = "http://127.0.0.1:4173";
+const HOST = E2E_ORIGIN;
 const SEALED = `${HOST}/maps/pack.testing.chlpack`;
 const PLAIN = `${HOST}/maps/pack.testing.json`;
 const KEY = readFileSync("maps/pack.testing.key", "utf8").trim();
@@ -27,7 +27,9 @@ const linkTo = (url: string, key?: string): string =>
 
 const offer = async (page: Page) => {
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(/from 127\.0\.0\.1:4173/i)).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toBeVisible({
+        timeout: 15_000,
+    });
     return dialog;
 };
 

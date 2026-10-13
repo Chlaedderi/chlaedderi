@@ -1,4 +1,4 @@
-import { expect, gotoTab, openCallout, serveTiles, test, waitForApp } from "./fixtures";
+import { E2E_ORIGIN, expect, gotoTab, openCallout, serveTiles, test, waitForApp } from "./fixtures";
 
 /**
  * Screenshots of every screen, so the result can be *looked at* rather than assumed.
@@ -48,6 +48,20 @@ for (const theme of ["light", "dark"] as const) {
             await page.keyboard.press("Escape");
         }
 
+        // The layers menu, which is a screen of its own and was not photographed by anything: the
+        // base maps, the Swiss overlays and the radar all live in it, so a change to any of them
+        // was invisible to «look at the result» and to every preview.
+        //
+        // The whole window rather than the menu alone, because the menu is tall enough to need the
+        // room: it once hung off the bottom of the screen with its last rows out of reach, and a
+        // picture of the menu by itself is exactly the picture in which that does not show.
+        const layers = page.getByRole("button", { name: /base map/i });
+        await layers.click();
+        await shot(page, `${tag}-02b-layers`);
+        // The button is the menu's single source of truth, so it is also how it is put away.
+        await layers.click();
+        await expect(page.locator(".basemenu")).toHaveCount(0);
+
         await openCallout(page);
         await shot(page, `${tag}-03-callout`);
 
@@ -88,7 +102,7 @@ for (const theme of ["light", "dark"] as const) {
         // A fresh page first -- an install link arrives with nothing else open -- and a pause
         // after each, because a dialog counts as visible the moment it starts fading in, and a
         // half-faded one photographs as transparent.
-        const pack = "http://127.0.0.1:4173/maps/pack.testing.json";
+        const pack = `${E2E_ORIGIN}/maps/pack.testing.json`;
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog")).toHaveCount(0);
         await page.goto(`/#/pack?url=${encodeURIComponent(pack)}`);

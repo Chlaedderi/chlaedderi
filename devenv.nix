@@ -20,9 +20,12 @@ let
   # The app's own build output used to be in here too -- index.html, sw.js, workbox-*.js, assets/ at
   # the repository root. It is not committed any more (see tools/build.sh), so there is nothing left
   # to exclude: dist/ is not tracked and the hooks never see it.
+  # The radar fixture is a real `.h5` file -- binary, and the hooks that rewrite line endings would
+  # silently corrupt it into a test that fails for reasons nobody could read.
   generated = [
     "^maps/"
     "^pnpm-lock\\.yaml$"
+    "^src/test/fixtures/"
   ];
 
   # What is left in German is the product itself: the interface texts, the page description and the

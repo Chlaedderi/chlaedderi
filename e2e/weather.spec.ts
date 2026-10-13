@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import { expect, openCallout, test, waitForApp } from "./fixtures";
 
 /**
@@ -139,16 +141,79 @@ test.describe("the rain forecast", () => {
 });
 
 test.describe("the rain radar", () => {
-    test("switches on from the map and shows its bar", async ({ page }) => {
+    /**
+     * The region that ships is Swiss, so this is the MeteoSwiss radar: a catalogue of frame names,
+     * and behind each name a real ODIM file, decoded in the browser and painted onto a canvas.
+     * Nothing about that path is mocked except the network.
+     */
+    const swissRadar = async (page: Page, minutesAgo: readonly number[]): Promise<void> => {
+        const assets: Record<string, unknown> = {};
         const now = Date.now();
+        for (const minutes of minutesAgo) {
+            const at = new Date(now - minutes * 60_000);
+            const yy = String(at.getUTCFullYear() % 100).padStart(2, "0");
+            const start = Date.UTC(at.getUTCFullYear(), 0, 1);
+            const doy = Math.floor((at.getTime() - start) / 86_400_000) + 1;
+            const hh = String(at.getUTCHours()).padStart(2, "0");
+            // Frames land on five-minute marks, as the service publishes them.
+            const mm = String(Math.floor(at.getUTCMinutes() / 5) * 5).padStart(2, "0");
+            assets[`rzc${yy}${String(doy).padStart(3, "0")}${hh}${mm}vl.001.h5`] = {};
+        }
+        await page.route("**/data.geo.admin.ch/api/stac/**", (route) =>
+            route.fulfill({ json: { assets } }),
+        );
+    };
+
+    test("switches on from the map and shows its bar", async ({ page }) => {
+        await swissRadar(page, [10, 5, 0]);
+
+        await page.goto("/");
+        await waitForApp(page);
+        await page.getByRole("button", { name: /base map/i }).click();
+        // One switch: the region is Swiss, so the map asks MeteoSwiss without being told to.
+        await page.getByRole("checkbox", { name: /rain radar on the map/i }).check();
+
+        const bar = page.locator(".radarbar");
+        await expect(bar).toBeVisible();
+        // The frame's own time, so you know how old the picture is.
+        await expect(bar.getByText(/radar \d{2}:\d{2}/i)).toBeVisible({ timeout: 15_000 });
+        await expect(bar.getByRole("button", { name: /pause|play/i })).toBeVisible();
+
+        // And it is actually painted. «A canvas exists» is not the claim -- a blank canvas in the
+        // right place is exactly what a misread file, a wrong grid or a north/south flip produce.
+        // The fixture is a wet morning, so there must be lit pixels over this region.
+        await expect
+            .poll(
+                () =>
+                    page.evaluate(() => {
+                        let lit = 0;
+                        for (const canvas of document.querySelectorAll(
+                            ".leaflet-radar-pane canvas",
+                        )) {
+                            const box = canvas as HTMLCanvasElement;
+                            const pixels = box
+                                .getContext("2d")
+                                ?.getImageData(0, 0, box.width, box.height).data;
+                            if (!pixels) continue;
+                            for (let i = 3; i < pixels.length; i += 4) if (pixels[i]! > 0) lit++;
+                        }
+                        return lit;
+                    }),
+                { timeout: 20_000, message: "the radar paints rain where the fixture has rain" },
+            )
+            .toBeGreaterThan(10_000);
+    });
+
+    test("stands RainViewer in when MeteoSwiss has nothing to give", async ({ page }) => {
+        const now = Math.floor(Date.now() / 1000);
         await page.route("**/api.rainviewer.com/**", (route) =>
             route.fulfill({
                 json: {
                     host: "https://tilecache.rainviewer.com",
                     radar: {
                         past: [
-                            { time: Math.floor(now / 1000) - 600, path: "/v2/radar/a" },
-                            { time: Math.floor(now / 1000), path: "/v2/radar/b" },
+                            { time: now - 600, path: "/v2/radar/a" },
+                            { time: now, path: "/v2/radar/b" },
                         ],
                     },
                 },
@@ -157,18 +222,21 @@ test.describe("the rain radar", () => {
         await page.route("**/tilecache.rainviewer.com/**", (route) =>
             route.fulfill({ contentType: "image/png", path: "favicon-32.png" }),
         );
+        // The default stub publishes no frames at all, which is what a region outside the Swiss
+        // radar's fourteen-day window looks like.
 
         await page.goto("/");
         await waitForApp(page);
         await page.getByRole("button", { name: /base map/i }).click();
-        const radar = page.getByRole("group", { name: /rain radar on the map/i });
-        await radar.getByRole("menuitemradio", { name: /last 2 hours/i }).click();
+        await page.getByRole("checkbox", { name: /rain radar on the map/i }).check();
 
-        const bar = page.locator(".radarbar");
-        await expect(bar).toBeVisible();
-        // The frame's own time, so you know how old the picture is.
-        await expect(bar.getByText(/radar \d{2}:\d{2}/i)).toBeVisible({ timeout: 10_000 });
-        await expect(bar.getByRole("button", { name: /pause|play/i })).toBeVisible();
+        await expect(page.getByText(/meteoswiss radar could not be loaded/i)).toBeVisible({
+            timeout: 15_000,
+        });
+        // And what the viewer gets instead is a working radar, with its own frame times.
+        await expect(page.locator(".radarbar").getByText(/radar \d{2}:\d{2}/i)).toBeVisible({
+            timeout: 15_000,
+        });
     });
 
     /**
@@ -177,24 +245,21 @@ test.describe("the rain radar", () => {
      * switched the radar off for good, which is what «the radar is always off» turned out to be.
      * Saying so is right; forgetting what the viewer chose is not.
      */
-    test("says so but keeps the viewer's choice when the radar cannot be loaded", async ({
-        page,
-    }) => {
+    test("says so but keeps the viewer's choice when no radar can be loaded", async ({ page }) => {
         await page.route("**/api.rainviewer.com/**", (route) => route.abort());
         await page.goto("/");
         await waitForApp(page);
         await page.getByRole("button", { name: /base map/i }).click();
-        const radar = page.getByRole("group", { name: /rain radar on the map/i });
-        await radar.getByRole("menuitemradio", { name: /last 2 hours/i }).click();
+        const radar = page.getByRole("checkbox", { name: /rain radar on the map/i });
+        await radar.check();
 
-        await expect(page.getByText(/radar could not be loaded/i)).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText(/radar could not be loaded/i).first()).toBeVisible({
+            timeout: 15_000,
+        });
 
         // The bar stays, saying it is still trying, and the choice is still the viewer's.
-        // The menu is still open -- picking a radar does not dismiss it.
+        // The menu is still open -- switching the radar on does not dismiss it.
         await expect(page.locator(".radarbar")).toContainText(/still trying/i);
-        await expect(radar.getByRole("menuitemradio", { name: /last 2 hours/i })).toHaveAttribute(
-            "aria-checked",
-            "true",
-        );
+        await expect(radar).toBeChecked();
     });
 });

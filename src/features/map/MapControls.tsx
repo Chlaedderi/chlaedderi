@@ -5,15 +5,20 @@
  * fix (pulsing), and on. The base-map menu lives here rather than only in the settings, because
  * switching to the satellite image or the swisstopo map is something you do while looking at the
  * map, not something you go to a settings page for.
+ *
+ * The menu is a plain child of the stack rather than a Popper. A Popper hangs on the viewport and
+ * cannot be made to fit it -- `flip` only moves a box that is too tall from one overflowing edge to
+ * the other, and `preventOverflow` leaves the vertical axis alone for a `bottom-end` placement --
+ * so the whole menu ran off the bottom of any screen too short to hold it. The page itself does not
+ * scroll, so the rows that fell off could not be reached at all. In the stack the map's own height
+ * bounds it and the overflow scrolls; see `.mapctl` in mapchrome.css.
  */
 
 import LayersIcon from "@mui/icons-material/Layers";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
-import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Popper from "@mui/material/Popper";
 import Typography from "@mui/material/Typography";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,12 +30,6 @@ import type { Prefs } from "@core/prefs";
 import { BASES, BASES_CH } from "./baseMaps";
 
 export type LocateState = "off" | "waiting" | "on";
-
-const RADARS: { key: Prefs["radar"]; label: string }[] = [
-    { key: "off", label: "rd.off" },
-    { key: "rv", label: "rd.rv" },
-    { key: "dpc", label: "rd.dpc" },
-];
 
 export const MapControls = ({
     inSwitzerland,
@@ -81,12 +80,7 @@ export const MapControls = ({
                 <LayersIcon fontSize="small" />
             </button>
 
-            <Popper
-                open={open}
-                anchorEl={anchor.current}
-                placement="bottom-end"
-                style={{ zIndex: 600 }}
-            >
+            {open && (
                 <ClickAwayListener
                     onClickAway={(event) => {
                         // Both of this listener's handlers sit on `document`, and on a touch screen
@@ -188,30 +182,22 @@ export const MapControls = ({
                             label={t("rd.marks")}
                         />
 
-                        <Box
-                            role="group"
-                            aria-label={t("wx.radar")}
-                            sx={{ borderTop: 1, borderColor: "divider", pt: 0.5, mt: 0.5 }}
-                        >
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block", px: 1.25 }}
-                            >
-                                {t("wx.radar")}
-                            </Typography>
-                            {RADARS.map((radar) => (
-                                <button
-                                    key={radar.key}
-                                    type="button"
-                                    role="menuitemradio"
-                                    aria-checked={prefs.radar === radar.key}
-                                    onClick={() => dispatch(prefsActions.setRadar(radar.key))}
-                                >
-                                    {t(radar.label)}
-                                </button>
-                            ))}
-                        </Box>
+                        {/*
+                         * One switch, not a choice of services: which radar covers this region is
+                         * a fact about where it is, and the map works it out (core/radar.ts).
+                         */}
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={prefs.radar}
+                                    onChange={(e) =>
+                                        dispatch(prefsActions.setRadar(e.target.checked))
+                                    }
+                                />
+                            }
+                            label={t("wx.radar")}
+                        />
 
                         <FormControlLabel
                             control={
@@ -249,7 +235,7 @@ export const MapControls = ({
                         />
                     </div>
                 </ClickAwayListener>
-            </Popper>
+            )}
         </div>
     );
 };
