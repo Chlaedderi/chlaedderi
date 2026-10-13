@@ -66,6 +66,8 @@ export interface Prefs {
     chWrz: boolean;
     /** The map legend is unfolded. Off to start with: it is reference, not furniture. */
     legend: boolean;
+    /** The «these crags are invented» dialog has been read. It is shown once, not every visit. */
+    demoSeen: boolean;
     logStyle: LogStyle;
     packs: InstalledPack[];
     /** When the app last said it can be installed, and what came of it: see installHint.ts. */
@@ -92,6 +94,7 @@ export const defaultPrefs = (): Prefs => ({
     chTrails: true,
     chWrz: false,
     legend: false,
+    demoSeen: false,
     logStyle: "rp",
     packs: [],
     install: defaultInstallHint(),
@@ -104,7 +107,7 @@ const ONE_OF = {
     radar: ["off", "rv", "dpc"],
 } as const;
 
-const FLAGS = ["allPaths", "wx", "allParks", "chTrails", "chWrz", "legend"] as const;
+const FLAGS = ["allPaths", "wx", "allParks", "chTrails", "chWrz", "legend", "demoSeen"] as const;
 
 /** Read stored settings back, checking every value so an older version cannot break the app. */
 export const cleanPrefs = (v: unknown): Prefs => {

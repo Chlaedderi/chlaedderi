@@ -39,7 +39,7 @@ test.describe("the app bar", () => {
         const before = await page.locator(".MuiCard-root").count();
         expect(before).toBeGreaterThan(1);
 
-        await page.getByRole("searchbox", { name: /search crags/i }).fill("rocca");
+        await page.getByRole("searchbox", { name: /search crags/i }).fill("beispiel");
         await expect(page.locator(".MuiCard-root")).not.toHaveCount(before);
 
         // The search box's own clear button: other «Close» buttons can be on screen.

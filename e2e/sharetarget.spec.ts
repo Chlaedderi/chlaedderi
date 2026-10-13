@@ -87,12 +87,12 @@ test.describe("a link shared to the installed app", () => {
         await workerReady(page);
 
         const link = `${HOST}/#/pack?url=${encodeURIComponent(SEALED)}&k=${encodeURIComponent(KEY)}`;
-        await share(page, `Chalchofe Süd\n${link}`);
+        await share(page, `Demofels\n${link}`);
 
         const dialog = await offer(page);
         await dialog.getByRole("button", { name: /check this region/i }).click();
         // The figures are proof the key arrived whole: nothing else opens these bytes.
-        await expect(dialog.getByText(/10 crags · 51 routes/i)).toBeVisible({ timeout: 30_000 });
+        await expect(dialog.getByText(/15 crags · 310 routes/i)).toBeVisible({ timeout: 30_000 });
 
         // Nothing the browser fetched carried the key: the shared text went up in a POST body,
         // and came back in a fragment. This is the whole reason the target is not a GET.
@@ -117,7 +117,7 @@ test.describe("a link shared to the installed app", () => {
 
         const dialog = await offer(page);
         await dialog.getByRole("button", { name: /check this region/i }).click();
-        await expect(dialog.getByText(/10 crags · 51 routes/i)).toBeVisible({ timeout: 30_000 });
+        await expect(dialog.getByText(/15 crags · 310 routes/i)).toBeVisible({ timeout: 30_000 });
     });
 
     test("opens the app and says so when the message held no link", async ({ page }) => {

@@ -101,6 +101,8 @@ export const CragMore = ({ crag }: { crag: Crag }) => {
         crag.boltC ? t(`bolt.c.${crag.boltC}`) : null,
     ].filter(Boolean);
 
+    // An invented crag is not handed to a maps app, however the reader got here.
+    const invented = region?.fictional === true;
     const gm = coord
         ? `https://www.google.com/maps/search/?api=1&query=${coord.lat},${coord.lon}`
         : null;
@@ -223,15 +225,19 @@ export const CragMore = ({ crag }: { crag: Crag }) => {
                                     <b>{t(crag.anchor ? "d.prec.anchor" : "d.prec.approx")}</b>
                                 )}
                             </Row>
-                            <Row label={t("d.openIn")}>
-                                <Link href={gm!} target="_blank" rel="noopener">
-                                    Google Maps
-                                </Link>
-                                {" · "}
-                                <Link href={osm!} target="_blank" rel="noopener">
-                                    OpenStreetMap
-                                </Link>
-                            </Row>
+                            {invented ? (
+                                <Row label={t("d.openIn")}>{t("demo.nav")}</Row>
+                            ) : (
+                                <Row label={t("d.openIn")}>
+                                    <Link href={gm!} target="_blank" rel="noopener">
+                                        Google Maps
+                                    </Link>
+                                    {" · "}
+                                    <Link href={osm!} target="_blank" rel="noopener">
+                                        OpenStreetMap
+                                    </Link>
+                                </Row>
+                            )}
                         </>
                     )}
                     <Row label={t("d.locality")}>{shortText(crag.locality, lang, de) ?? "–"}</Row>

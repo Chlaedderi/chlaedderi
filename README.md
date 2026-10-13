@@ -47,7 +47,7 @@ The format is described in [`mappack.schema.json`](mappack.schema.json) (JSON Sc
 
 - **Required:** `format`, `formatVersion`, `id` (which becomes the region key), `name` in German and English, `version`, and the crags in `sectors`.
 - **Data:** `areas`, `parks` (car parks), `picSrc` (picture sources), `labels` (place names for the map), `outline` (GeoJSON beneath the tiles), `stats`, `counts`, `view` and `bbox`.
-- **Switches:** `ch` (Switzerland: swisstopo maps and hiking trails, MeteoSwiss, the approach planner), `partial` (showcase).
+- **Switches:** `ch` (Switzerland: swisstopo maps and hiking trails, MeteoSwiss, the approach planner), `partial` (showcase), `fictional` (the crags are invented: the app says so on every screen and offers no way to navigate to them).
 - **Texts** in `text`: `rock` (the region's rock), `guide` (the guidebook line), `guideRef`, `noPics`, `links` (what a crag's links are called), `licence`, `pages` (your own pages under *More*), `facts` and `glossary`. Inside these texts `**bold**` and `[text](https://…)` apply, and nothing else.
 - A pack may bring unknown fields with it – an older app passes over them.
 

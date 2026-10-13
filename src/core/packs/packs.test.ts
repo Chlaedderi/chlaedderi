@@ -77,25 +77,44 @@ describe("checkPack against the real mappacks", () => {
     });
 });
 
+/**
+ * A second region, made by renaming the testing one. The showcase is cut *out of* the testing pack
+ * and so shares its id and its crag ids; in the app the two never meet, because `DataProvider`
+ * drops the showcase the moment a real pack is installed. Mounting several regions at once still
+ * has to be covered, so here is a region that genuinely differs.
+ */
+const renamed = (pack: Mappack, id: string): Mappack => ({
+    ...pack,
+    id,
+    name: { en: id, de: id },
+    sectors: pack.sectors.map((s) => ({ ...s, id: `${id}-${s.id}` })),
+});
+
 describe("mounting the mappacks", () => {
-    const mounted = mountPacks([packs.showcase!, packs.testing!]);
+    const second = renamed(packs.testing!, "other");
+    const mounted = mountPacks([packs.showcase!, second]);
 
     it("mounts every crag of every pack exactly once", () => {
-        const expected = packs.showcase!.sectors.length + packs.testing!.sectors.length;
+        const expected = packs.showcase!.sectors.length + second.sectors.length;
         expect(mounted.crags).toHaveLength(expected);
         expect(Object.keys(mounted.byId)).toHaveLength(expected);
-        // The showcase is a part of Finale and carries that region's id.
-        expect(mounted.regions.map((r) => r.key)).toEqual(["finale", "testing"]);
+        // The showcase is a slice of the testing region and carries that region's id.
+        expect(mounted.regions.map((r) => r.key)).toEqual(["testing", "other"]);
     });
 
     it("agrees with the counts the packs state", () => {
-        for (const pack of [packs.showcase!, packs.testing!]) {
-            const region = mounted.regions.find((r) => r.key === pack.id);
-            expect(region?.n).toBe(pack.counts?.crags);
-        }
+        const region = mounted.regions.find((r) => r.key === packs.showcase!.id);
+        expect(region?.n).toBe(packs.showcase!.counts?.crags);
         const routes = mounted.crags.reduce((n, c) => n + c.routes.length, 0);
-        const stated = (packs.showcase!.counts?.routes ?? 0) + (packs.testing!.counts?.routes ?? 0);
+        const stated = (packs.showcase!.counts?.routes ?? 0) + (second.counts?.routes ?? 0);
         expect(routes).toBe(stated);
+    });
+
+    it("keeps the showcase a slice of the region it was cut from", () => {
+        const whole = new Set(packs.testing!.sectors.map((s) => s.id));
+        expect(packs.showcase!.id).toBe(packs.testing!.id);
+        for (const s of packs.showcase!.sectors) expect(whole.has(s.id), s.id).toBe(true);
+        expect(packs.showcase!.sectors.length).toBeLessThan(packs.testing!.sectors.length);
     });
 
     it("gives every route a unique, stable key", () => {

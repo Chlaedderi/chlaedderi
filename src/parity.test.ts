@@ -347,6 +347,12 @@ const FEATURES: Feature[] = [
 
     // ---- regions and the app itself
     {
+        what: "saying that a region's crags are invented, and withholding the way to them",
+        was: "nothing: the app used to ship a slice of a real region, with real photographs",
+        now: "src/features/shell/DemoNotice.tsx",
+        exports: "DemoNotice",
+    },
+    {
         what: "loading and removing a region",
         was: "packInstall",
         now: "src/features/packs/PacksDialog.tsx",

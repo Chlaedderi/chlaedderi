@@ -181,6 +181,8 @@ export interface Region {
     readonly partial: boolean;
     /** Switzerland: swisstopo maps and trails, MeteoSwiss weather. */
     readonly ch: boolean;
+    /** The crags are invented: say so everywhere, and send nobody to a coordinate. */
+    readonly fictional: boolean;
     readonly text: PackText;
     readonly view: { readonly center: readonly [number, number]; readonly zoom: number } | null;
     readonly bbox: readonly number[] | null;

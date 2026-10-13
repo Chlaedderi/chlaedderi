@@ -18,6 +18,7 @@ import Typography from "@mui/material/Typography";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
+import { useData } from "@app/dataContext";
 import { useLang } from "@app/useAppData";
 import { longText } from "@core/dataText";
 import { fold } from "@core/text";
@@ -42,8 +43,11 @@ export const ParkCallout = ({
 }) => {
     const { t } = useTranslation();
     const lang = useLang();
+    const { regions } = useData();
 
     const park = parkKey ? parks[parkKey] : null;
+    // A car park key is `<packId>/<key>`, so the region it belongs to is in the key itself.
+    const invented = regions.find((r) => r.key === parkKey?.split("/")[0])?.fictional === true;
 
     const host = useCallout({
         at: park ? [park.lat, park.lon] : null,
@@ -110,24 +114,26 @@ export const ParkCallout = ({
             )}
 
             <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                {t("nav.t")}
+                {invented ? t("demo.nav") : t("nav.t")}
             </Typography>
-            <div className="poprow">
-                <Button
-                    variant="contained"
-                    sx={{ flex: 1 }}
-                    href={navUrl(park)}
-                    target="_blank"
-                    rel="noopener"
-                >
-                    {t("nav.gmaps")}
-                </Button>
-                {isApple() && (
-                    <Button href={appleUrl(park)} target="_blank" rel="noopener">
-                        {t("nav.apple")}
+            {!invented && (
+                <div className="poprow">
+                    <Button
+                        variant="contained"
+                        sx={{ flex: 1 }}
+                        href={navUrl(park)}
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        {t("nav.gmaps")}
                     </Button>
-                )}
-            </div>
+                    {isApple() && (
+                        <Button href={appleUrl(park)} target="_blank" rel="noopener">
+                            {t("nav.apple")}
+                        </Button>
+                    )}
+                </div>
+            )}
         </>,
         host,
     );

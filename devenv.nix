@@ -467,6 +467,22 @@ in
     '';
   };
 
+  # The showcase the build compiles into the app. Written down here because it is the only record
+  # of which crags the cut takes -- and because the one thing that must never happen is somebody
+  # re-cutting it out of a real region, whose route lists and photographs are not ours to ship.
+  scripts.make-showcase = {
+    description = "Cut the showcase in the app out of the invented testing region";
+    exec = ''
+      (
+        set -euo pipefail
+        ${cdRepo}
+
+        ./tools/make-packs.sh --showcase-from maps/pack.testing.json --ids \
+          testing-musterwand,testing-musterwand-nord,testing-beispielplatte,testing-gesperrte-attrappe,testing-attrappengrat-westgrat,testing-beispielwand
+      )
+    '';
+  };
+
   scripts.packs = {
     description = "Fetch the real regions from the private Chlaedderi/maps (needs access)";
     exec = ''

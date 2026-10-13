@@ -144,7 +144,9 @@ test.describe("the seven-day forecast", () => {
         await expect(section.getByText(/^Today$/)).toBeVisible({ timeout: 10_000 });
 
         await expect(section.getByText(/as of \d\d:\d\d/i)).toBeVisible();
-        await expect(section.getByRole("link", { name: "Open-Meteo" })).toBeVisible();
+        // The demo region is in Switzerland, so the forecast comes from the MeteoSwiss model and
+        // names MeteoSwiss. Outside Switzerland the same line names Open-Meteo.
+        await expect(section.getByRole("link", { name: /MeteoSwiss|MeteoSchweiz/ })).toBeVisible();
     });
 
     /**

@@ -24,6 +24,9 @@ const TILE_HOSTS = [
     "**/wms.geo.admin.ch/**",
     "**/server.arcgisonline.com/**",
     "**/radar-geowebcache.protezionecivile.it/**",
+    // The showcase gallery points at Wikimedia Commons. Answering it from disk keeps the browser
+    // suite off the network and still draws a picture where a picture belongs.
+    "**/upload.wikimedia.org/**",
 ];
 
 /** Stub every host the app talks to. Individual tests override what they need. */
@@ -43,9 +46,32 @@ export const stubNetwork = async (page: Page): Promise<void> => {
     await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
 };
 
+/**
+ * The showcase is an invented region, so the app puts its «these crags are invented» dialog in
+ * front of everything on a first visit. That is the point of it, and it would stand in front of
+ * every test too -- so a test starts as a reader who has already read it. `e2e/demo.spec.ts` drops
+ * this again, and is where the dialog itself is checked.
+ */
+export const seenTheDemoDialog = async (page: Page): Promise<void> => {
+    await page.addInitScript(() => {
+        try {
+            // The shape `readPrefsSync` expects: the settings under `v`.
+            const item = "chlaedderi:prefs";
+            // Only when nothing is stored yet. An init script runs on every navigation, and a
+            // test that wants the dialog back writes its own settings and reloads.
+            if (!window.localStorage.getItem(item)) {
+                window.localStorage.setItem(item, JSON.stringify({ v: { demoSeen: true } }));
+            }
+        } catch {
+            // A browser that will not hand over localStorage shows the dialog; that is no worse.
+        }
+    });
+};
+
 export const test = base.extend({
     page: async ({ page }, use) => {
         await stubNetwork(page);
+        await seenTheDemoDialog(page);
         await use(page);
     },
 });
@@ -115,9 +141,9 @@ export const gotoTab = async (page: Page, name: RegExp): Promise<void> => {
  * `.leaflet-popup` rather than `.pop`, because the popup shell is what carries the `below` class
  * that says which side of the marker the card ended up on.
  */
-export const openCallout = async (page: Page): Promise<void> => {
+export const openCallout = async (page: Page, marker = ".leaflet-container .mk"): Promise<void> => {
     await expect(async () => {
-        await page.locator(".leaflet-container .mk").first().click();
+        await page.locator(marker).first().click();
         await expect(page.locator(".leaflet-popup")).toBeVisible({ timeout: 3000 });
         await expect(page.locator(".pop")).toBeVisible({ timeout: 1000 });
     }).toPass({ timeout: 15_000 });
@@ -142,8 +168,12 @@ export const view = async (
         return {
             x: Math.round(Number(m?.[1] ?? 0)),
             y: Math.round(Number(m?.[2] ?? 0)),
-            // The tile's own z, which only changes when the zoom does.
-            zoom: Number(/\/(\d+)\//.exec(tile?.getAttribute("src") ?? "")?.[1] ?? -1),
+            // The tile's own z, which only changes when the zoom does. Taken from the `z/x/y`
+            // at the end of the address rather than the first number in it: swisstopo's tiles
+            // carry `/3857/` -- the projection -- in front of the zoom, and that never moves.
+            zoom: Number(
+                /\/(\d+)\/\d+\/\d+\.\w+(?:$|\?)/.exec(tile?.getAttribute("src") ?? "")?.[1] ?? -1,
+            ),
             layers: tiles?.style.transform ?? "",
         };
     });

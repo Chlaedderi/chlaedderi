@@ -52,7 +52,7 @@ test.describe("the More page", () => {
 
     test("opens the coverage page, which says what is missing", async ({ page }) => {
         await page.getByText(/^Coverage$/).click();
-        await expect(page.getByRole("heading", { level: 2 })).toContainText(/finale/i);
+        await expect(page.getByRole("heading", { level: 2 })).toContainText(/demo|testgebiet/i);
         // The figures, and the honest part: which crags have no route list.
         await expect(page.getByText(/crags with a route list|route lists/i).first()).toBeVisible();
     });

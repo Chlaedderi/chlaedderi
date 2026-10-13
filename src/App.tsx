@@ -34,6 +34,7 @@ import { FiltersDrawer } from "./features/list/FiltersDrawer";
 import { MapPane } from "./features/map/MapPane";
 import { RevealRoute } from "./features/map/RevealRoute";
 import { AppBarTop } from "./features/shell/AppBarTop";
+import { DemoNotice } from "./features/shell/DemoNotice";
 import { InstallHint } from "./features/shell/InstallHint";
 import { LegacyLink } from "./features/shell/LegacyLink";
 import { PackLink } from "./features/shell/PackLink";
@@ -357,6 +358,8 @@ export const App = () => (
         <FilterUrl />
         <RevealRoute />
         <AppBarTop />
+        {/* An invented region says so under the bar, on every screen. */}
+        <DemoNotice />
         <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>
             <Routes>
                 {/*
