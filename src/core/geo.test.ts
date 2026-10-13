@@ -84,19 +84,32 @@ describe("decodePolyline", () => {
         expect(decodePolyline("")).toEqual([]);
     });
 
-    it("decodes every approach line in the showcase pack", async () => {
+    /**
+     * Measured against the pack's own `bbox` rather than a box written out here. This used to
+     * name northern Italy, because the showcase was a slice of Finale; when the showcase became
+     * an invented Swiss region the assertion went on passing -- the new coordinates happen to fall
+     * inside the old box -- while guarding the wrong country. Asking the pack where it is cannot
+     * go stale that way.
+     *
+     * The margin is for the line itself: `bbox` is drawn round the crags and the car parks, and a
+     * path between two of them may wander a little outside that. A tenth of a degree is roughly
+     * ten kilometres -- wide enough for any real approach, narrow enough that a decoder returning
+     * nonsense, or swapping latitude for longitude, still fails.
+     */
+    it("decodes every approach line inside the region the showcase says it covers", async () => {
         const pack = await import("../../maps/pack.showcase.json");
+        const [west, south, east, north] = pack.default.bbox as number[];
+        const margin = 0.1;
         let lines = 0;
         for (const sector of pack.default.sectors as { ap?: { line: string }[] }[]) {
             for (const approach of sector.ap ?? []) {
                 const points = decodePolyline(approach.line);
                 expect(points.length).toBeGreaterThan(1);
                 for (const [lat, lon] of points) {
-                    // Finale Ligure: northern Italy, not the middle of the ocean.
-                    expect(lat).toBeGreaterThan(43);
-                    expect(lat).toBeLessThan(47);
-                    expect(lon).toBeGreaterThan(7);
-                    expect(lon).toBeLessThan(9);
+                    expect(lat).toBeGreaterThan(south! - margin);
+                    expect(lat).toBeLessThan(north! + margin);
+                    expect(lon).toBeGreaterThan(west! - margin);
+                    expect(lon).toBeLessThan(east! + margin);
                 }
                 lines++;
             }
