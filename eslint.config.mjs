@@ -20,7 +20,25 @@ export default defineConfig([
     // commit simply never finishes.
     // .packs/ is the clone of the private Chlaedderi/maps that `packs` makes: somebody else's
     // repository, checked where it lives.
-    globalIgnores(["dist/", "maps/", ".packs/", ".devenv/", ".claude/"]),
+    //
+    // `playwright-report/` and `.playwright/` are what the browser suite leaves behind. The report
+    // is a bare `index.html` while everything passes -- but the moment one test has to be retried,
+    // Playwright copies its trace viewer in beside it: seven minified bundles, a megabyte of them,
+    // which `eslint .` then reads as source. That cost an hour a run in CI and nothing at all on a
+    // laptop, because the HTML reporter only runs where `CI` is set.
+    //
+    // Everything in this list is also in .gitignore. ESLint does not read .gitignore, so the two
+    // have to be kept in step by hand, and twice now something has slipped through: whatever lands
+    // in the working tree and is not named here is linted, however little sense that makes.
+    globalIgnores([
+        "dist/",
+        "maps/",
+        ".packs/",
+        ".devenv/",
+        ".claude/",
+        "playwright-report/",
+        ".playwright/",
+    ]),
 
     js.configs.recommended,
     ...tseslint.configs.recommended,
