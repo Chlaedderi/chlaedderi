@@ -154,11 +154,11 @@ test.describe("the crag call-out", () => {
 
     /**
      * The last assertion here was red for a while, and not for the reason it looked like: nothing
-     * was wrong with the selection. Every tile in the suite was being aborted -- see
-     * `stubNetwork` -- so the map's «the base map is not drawing» warning lay across the top of
-     * it in every test, and with this region's geometry the marker ended up underneath. The tap
-     * went down on the marker and up on the warning, which is a click on neither. See
-     * https://github.com/Chlaedderi/chlaedderi/issues/30.
+     * was wrong with the selection. The suite draws no base map, so the map warns about it, and
+     * that warning lies across the top of the map -- where this region's geometry happens to
+     * leave this marker. The tap went down on the marker and up on the warning, which is a click
+     * on neither, and Leaflet never heard it. The warning lets the map have its taps now; see
+     * `e2e/tiles.spec.ts` and https://github.com/Chlaedderi/chlaedderi/issues/30.
      */
     test("closes from its own button, without letting the crag go", async ({ page }) => {
         await page

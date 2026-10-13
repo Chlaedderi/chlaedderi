@@ -1,4 +1,4 @@
-import { expect, gotoTab, openCallout, test, waitForApp } from "./fixtures";
+import { expect, gotoTab, openCallout, serveTiles, test, waitForApp } from "./fixtures";
 
 /**
  * Screenshots of every screen, so the result can be *looked at* rather than assumed.
@@ -25,11 +25,14 @@ const shotOf = async (locator: import("@playwright/test").Locator, name: string)
 for (const theme of ["light", "dark"] as const) {
     test(`every screen, ${theme}`, async ({ page }, info) => {
         // By far the longest test in the suite: fifteen screens, each of them waited for and
-        // photographed, and every map among them now drawing tiles rather than nothing at all.
-        // It ran at around twenty seconds against a thirty-second limit, which is a timeout
-        // waiting for a busy machine rather than a measurement of anything.
+        // photographed, and the only one that draws real tiles. It ran at around twenty seconds
+        // against a thirty-second limit, which is a timeout waiting for a busy machine rather
+        // than a measurement of anything.
         test.slow();
         const tag = `${info.project.name}-${theme}`;
+        // A map rather than «the base map is not drawing», which is what these pictures had
+        // across the top of them for as long as the suite refused its own tiles.
+        await serveTiles(page);
         await page.emulateMedia({ colorScheme: theme });
         await page.goto("/");
         await waitForApp(page);

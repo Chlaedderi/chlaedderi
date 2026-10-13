@@ -6,20 +6,34 @@
  * moved. And **the app starts empty**, with only the showcase, unless a test loads a pack.
  */
 
+import { readFileSync } from "node:fs";
+
 import { test as base, expect, type Page } from "@playwright/test";
 
 /**
- * Every tile request is answered with one flat square, written here rather than read off disk.
+ * Stub every host the app talks to. Individual tests override what they need.
  *
- * It has to be a real image -- a map that decodes nothing is a map that says its base layer is
- * broken, and puts a warning over itself to say so. Beyond that the tests are not about what the
- * tiles show, so the quietest thing that draws wins: plain paper-grey, which leaves the markers,
- * the approach lines and the cards legible in `.screens/`, and which a screenshot of a whole map
- * compresses to a few kilobytes. A photograph tiled across the screen did neither.
+ * The catch-all goes on **first**, and the order is the whole of it: Playwright consults route
+ * handlers in the reverse order they were added, so the last one registered is the first one
+ * asked. Registered last, as it was, the catch-all answered for everything and every stub above
+ * it was dead code -- the weather, the radar, swisstopo's search and the router all failed in
+ * every test, silently, and so did the map tiles. That last one is what
+ * https://github.com/Chlaedderi/chlaedderi/issues/30 came down to: a map that decodes no tile at
+ * all raises its «the base map is not drawing» warning, which is a real element with real
+ * hit-testing, lying across the top of the map where the markers are.
+ *
+ * The tiles are *still* refused, on purpose -- see `serveTiles`. Everything else is answered.
  */
-const TILE_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">' +
-    '<rect width="256" height="256" fill="#e9e5dd"/></svg>';
+export const stubNetwork = async (page: Page): Promise<void> => {
+    // Anything external that nothing else answers for is a mistake the test should notice.
+    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+    await page.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api.rainviewer.com/**", (route) =>
+        route.fulfill({ json: { radar: { past: [], nowcast: [] }, host: "" } }),
+    );
+    await page.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
+    await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
+};
 
 const TILE_HOSTS = [
     "**/*.tile.openstreetmap.org/**",
@@ -30,37 +44,29 @@ const TILE_HOSTS = [
     "**/wms.geo.admin.ch/**",
     "**/server.arcgisonline.com/**",
     "**/radar-geowebcache.protezionecivile.it/**",
-    // The showcase gallery points at Wikimedia Commons. Answering it here keeps the browser
-    // suite off the network and still draws something where a picture belongs.
+    // The showcase gallery points at Wikimedia Commons, and is answered here for the same reason.
     "**/upload.wikimedia.org/**",
 ];
 
+/** One paper-grey pixel, which the browser stretches over a whole tile. Read once, into memory. */
+const TILE_PNG = readFileSync("e2e/tile.png");
+
 /**
- * Stub every host the app talks to. Individual tests override what they need.
+ * Draw a map rather than a warning, for a test that wants one. Call it before `page.goto`.
  *
- * The catch-all goes on **first**, and that order is the whole point: Playwright consults route
- * handlers in the reverse order they were added, so the last one registered is the first one
- * asked. Registered last, the catch-all answered for everything -- every tile in the suite was
- * aborted, the stubs below never ran, and the map put its «the base map is not drawing» warning
- * over the top-left corner of itself in every browser test. That warning is a real element with
- * real hit-testing, so a marker that happened to sit under it could not be tapped; which marker
- * that is depends on where the region's crags are, which is why swapping the showcase's data was
- * enough to turn a passing test red -- see https://github.com/Chlaedderi/chlaedderi/issues/30.
+ * Not the default, and that is a measurement rather than a taste: a map screen asks for hundreds
+ * of tiles, every one of them through the interceptor and then decoded and painted, and answering
+ * them throughout cost the phone suite about a third of its running time again on two cores --
+ * and took a test or two over their limit with it. Nothing here is about what the tiles show, so
+ * only the tests that are about the tiles themselves, and the screenshots, which exist to be
+ * looked at, pay for them.
  */
-export const stubNetwork = async (page: Page): Promise<void> => {
-    // Anything external that nothing below answers for is a mistake the test should notice.
-    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+export const serveTiles = async (page: Page): Promise<void> => {
     for (const pattern of TILE_HOSTS) {
         await page.route(pattern, (route) =>
-            route.fulfill({ contentType: "image/svg+xml", body: TILE_SVG }),
+            route.fulfill({ contentType: "image/png", body: TILE_PNG }),
         );
     }
-    await page.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
-    await page.route("**/api.rainviewer.com/**", (route) =>
-        route.fulfill({ json: { radar: { past: [], nowcast: [] }, host: "" } }),
-    );
-    await page.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
-    await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
 };
 
 /**
