@@ -226,10 +226,23 @@ const Home = () => {
     }
 
     return (
-        // `overflow: hidden` matters: the list pane below is parked with `translateY(100%)`, and a
-        // transform still counts towards the scrollable area -- without this the document grew to
-        // twice the viewport and the tab bar could be scrolled off the screen.
-        <Box sx={{ position: "relative", height: "100%", overflow: "hidden" }}>
+        // The list pane below is parked with `translateY(100%)`, and a transform still counts
+        // towards the scrollable area -- so this box is twice as tall as it looks. `hidden` takes
+        // the scrollbar away but leaves a scroll *container*: nothing can drag it, and the browser
+        // still scrolls it whenever something inside takes focus. It did, half a screen at a time,
+        // under a thumb that was in the middle of tapping a marker -- the map slid out from under
+        // the finger between going down and coming up, the tap landed on open country, and the
+        // crag it was meant to open was let go instead. `clip` is the same picture and not a
+        // scroll container at all, so there is nothing left to scroll; `hidden` stays underneath
+        // it for a browser too old to know the word.
+        <Box
+            sx={{
+                position: "relative",
+                height: "100%",
+                overflow: "hidden",
+                "@supports (overflow: clip)": { overflow: "clip" },
+            }}
+        >
             <MapPane />
             {/*
              * The list is parked off the bottom rather than unmounted, so sliding it up is a

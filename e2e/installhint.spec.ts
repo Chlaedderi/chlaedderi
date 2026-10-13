@@ -1,4 +1,4 @@
-import { expect, test, waitForApp } from "./fixtures";
+import { expect, openList, test, waitForApp } from "./fixtures";
 
 /**
  * «You can also install this», at the moment a favourite is saved.
@@ -18,6 +18,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 const saveAFavourite = async (page: import("@playwright/test").Page): Promise<void> => {
+    await openList(page);
     await page
         .locator(".MuiCard-root")
         .first()

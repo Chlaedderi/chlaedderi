@@ -6,6 +6,8 @@
  * moved. And **the app starts empty**, with only the showcase, unless a test loads a pack.
  */
 
+import { readFileSync } from "node:fs";
+
 import { test as base, expect, type Page } from "@playwright/test";
 
 // Several tests put the suite's own address in front of the viewer as «somebody else's host», so
@@ -13,11 +15,54 @@ import { test as base, expect, type Page } from "@playwright/test";
 export { E2E_HOST, E2E_ORIGIN, E2E_PORT } from "./port";
 
 /**
- * Every tile request is answered with a PNG from the repository itself. Any small image does --
- * the tests are about the app, not about what the tiles show -- and taking one off disk keeps a
- * long base64 blob out of the source, where it only reads like a leaked credential.
+ * Stub every host the app talks to. Individual tests override what they need.
+ *
+ * The catch-all goes on **first**, and the order is the whole of it: Playwright consults route
+ * handlers in the reverse order they were added, so the last one registered is the first one
+ * asked. Registered last, as it was, the catch-all answered for everything and every stub above
+ * it was dead code -- the weather, the radar, swisstopo's search and the router all failed in
+ * every test, silently, and so did the map tiles. That last one is what
+ * https://github.com/Chlaedderi/chlaedderi/issues/30 came down to: a map that decodes no tile at
+ * all raises its «the base map is not drawing» warning, which is a real element with real
+ * hit-testing, lying across the top of the map where the markers are.
+ *
+ * The tiles are *still* refused, on purpose -- see `serveTiles`. Everything else is answered.
+ *
+ * And it is all registered on the **context**, not on the page, which is the difference between
+ * meaning «nothing reaches the network» and only saying it. `page.route` never sees a request a
+ * service worker makes, and this app ships one that runtime-caches exactly the tile hosts
+ * (`chlaedderi-tiles-v1`) -- so from the moment the worker took over a page, every tile went
+ * straight out to the real swisstopo. On a laptop that is fast enough to pass unnoticed. On a
+ * runner it is not: the browser job, which never gets that far, finished in four minutes while
+ * the one that runs the whole suite sat for forty. A test override still goes on the page, where
+ * it outranks everything here.
  */
-const TILE_FILE = "favicon-32.png";
+export const stubNetwork = async (page: Page): Promise<void> => {
+    const context = page.context();
+    // Anything external that nothing else answers for is a mistake the test should notice.
+    await context.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+    await context.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
+    await context.route("**/api.rainviewer.com/**", (route) =>
+        route.fulfill({ json: { radar: { past: [], nowcast: [] }, host: "" } }),
+    );
+    await context.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
+    await context.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
+
+    // The Swiss radar. The catalogue is empty by default, so the app finds no frames, says so and
+    // stands RainViewer in -- the cheap path for every test that is not about the radar. A test
+    // that wants rain on the map answers the catalogue itself with a frame name in it; behind the
+    // name is the real 41 KB file the unit tests read, so a browser genuinely decodes and paints
+    // a radar frame rather than being shown a picture of one.
+    await context.route("**/data.geo.admin.ch/ch.meteoschweiz.ogd-radar-precip/**", (route) =>
+        route.fulfill({
+            contentType: "application/x-hdf5",
+            path: "src/test/fixtures/rzc262830400vl.001.h5",
+        }),
+    );
+    await context.route("**/data.geo.admin.ch/api/stac/**", (route) =>
+        route.fulfill({ json: { assets: {} } }),
+    );
+};
 
 const TILE_HOSTS = [
     "**/*.tile.openstreetmap.org/**",
@@ -28,44 +73,32 @@ const TILE_HOSTS = [
     "**/wms.geo.admin.ch/**",
     "**/server.arcgisonline.com/**",
     "**/radar-geowebcache.protezionecivile.it/**",
-    // The showcase gallery points at Wikimedia Commons. Answering it from disk keeps the browser
-    // suite off the network and still draws a picture where a picture belongs.
+    // The showcase gallery points at Wikimedia Commons, and is answered here for the same reason.
     "**/upload.wikimedia.org/**",
 ];
 
-/** Stub every host the app talks to. Individual tests override what they need. */
-export const stubNetwork = async (page: Page): Promise<void> => {
-    for (const pattern of TILE_HOSTS) {
-        await page.route(pattern, (route) =>
-            route.fulfill({ contentType: "image/png", path: TILE_FILE }),
-        );
-    }
-    await page.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
-    await page.route("**/api.rainviewer.com/**", (route) =>
-        route.fulfill({ json: { radar: { past: [], nowcast: [] }, host: "" } }),
-    );
-    await page.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
-    await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
-    // Anything else external is a mistake the test should notice, not silently allow.
-    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+/** One paper-grey pixel, which the browser stretches over a whole tile. Read once, into memory. */
+const TILE_PNG = readFileSync("e2e/tile.png");
 
-    // **After** the catch-all on purpose: Playwright tries the most recently added route first,
-    // so anything registered before that line never sees a request.
-    //
-    // The Swiss radar. The catalogue is empty by default, so the app finds no frames, says so and
-    // stands RainViewer in -- the cheap path for every test that is not about the radar. A test
-    // that wants rain on the map answers the catalogue itself with a frame name in it; behind the
-    // name is the real 41 KB file the unit tests read, so a browser genuinely decodes and paints
-    // a radar frame rather than being shown a picture of one.
-    await page.route("**/data.geo.admin.ch/ch.meteoschweiz.ogd-radar-precip/**", (route) =>
-        route.fulfill({
-            contentType: "application/x-hdf5",
-            path: "src/test/fixtures/rzc262830400vl.001.h5",
-        }),
-    );
-    await page.route("**/data.geo.admin.ch/api/stac/**", (route) =>
-        route.fulfill({ json: { assets: {} } }),
-    );
+/**
+ * Draw a map rather than a warning, for a test that wants one. Call it before `page.goto`.
+ *
+ * Not the default, and that is a measurement rather than a taste: a map screen asks for hundreds
+ * of tiles, every one of them through the interceptor and then decoded and painted, and answering
+ * them throughout cost the phone suite about a third of its running time again on two cores --
+ * and took a test or two over their limit with it. Nothing here is about what the tiles show, so
+ * only the tests that are about the tiles themselves, and the screenshots, which exist to be
+ * looked at, pay for them.
+ *
+ * On the context, like `stubNetwork` and for the same reason: the service worker is what fetches
+ * a tile once it has taken a page over, and a page route never sees that.
+ */
+export const serveTiles = async (page: Page): Promise<void> => {
+    for (const pattern of TILE_HOSTS) {
+        await page
+            .context()
+            .route(pattern, (route) => route.fulfill({ contentType: "image/png", body: TILE_PNG }));
+    }
 };
 
 /**
@@ -148,6 +181,23 @@ export const gotoTab = async (page: Page, name: RegExp): Promise<void> => {
     const bar = page.locator(".MuiBottomNavigation-root");
     const nav = (await bar.isVisible()) ? bar : page.locator("header");
     await nav.getByRole("button", { name }).click();
+};
+
+/**
+ * Bring the crag list within reach, whichever layout is on screen.
+ *
+ * On a wide screen it is a column that is always there, so this does nothing. On a phone it is
+ * parked below the map with a transform and slides up when «List» is pressed -- and until it
+ * does, nothing in it can be tapped. Tests used to reach into it anyway, and it worked: the pane
+ * was off the screen, but the box holding it could still be scrolled by a script, so Playwright
+ * scrolled a card up and clicked it. That hole is the one a stray focus used to fall through
+ * (see https://github.com/Chlaedderi/chlaedderi/issues/30) and it is closed now, so a test asks
+ * for the list the way a thumb does.
+ */
+export const openList = async (page: Page): Promise<void> => {
+    const toggle = page.getByRole("button", { name: /^(list|liste)$/i });
+    if (await toggle.isVisible().catch(() => false)) await toggle.click();
+    await expect(page.locator(".MuiCard-root").first()).toBeInViewport();
 };
 
 /**

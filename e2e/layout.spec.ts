@@ -212,6 +212,35 @@ test.describe("the phone layout", () => {
         await expect(page).toHaveURL(/#\/(\?|$)/);
     });
 
+    /**
+     * The list is parked below the map with `translateY(100%)`, and a transform still counts
+     * towards the scrollable area, so the box the map sits in is twice as tall as it looks.
+     * `overflow: hidden` takes the scrollbar away and leaves a scroll *container*: nothing can
+     * drag it, and the browser still scrolls it whenever something inside takes focus. It did,
+     * half a screen at a time, with a thumb in the middle of tapping a marker -- the map slid out
+     * from under the finger between the finger going down and coming up, the tap landed on open
+     * country, and the crag it was meant to open was let go instead.
+     * See https://github.com/Chlaedderi/chlaedderi/issues/30.
+     */
+    test("has nothing under the map that a script can scroll", async ({ page }) => {
+        await page.goto("/");
+        await waitForApp(page);
+
+        // Asked the way the browser asks: told to scroll, does it move? A box that cannot be
+        // moved this way cannot be moved by focus either, which is the gesture that broke.
+        const moved = await page.evaluate(() => {
+            const out: string[] = [];
+            let el = document.querySelector<HTMLElement>(".leaflet-container");
+            for (; el; el = el.parentElement) {
+                el.scrollTop = 500;
+                if (el.scrollTop !== 0) out.push(`${el.tagName}.${String(el.className)}`);
+                el.scrollTop = 0;
+            }
+            return out;
+        });
+        expect(moved, "nothing the map sits in may scroll").toEqual([]);
+    });
+
     test("goes to the map from a crag opened by a shared link", async ({ page }) => {
         // Nothing of the app before it: history back would leave the app, or do nothing at all
         // in the installed one.

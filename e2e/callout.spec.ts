@@ -153,16 +153,14 @@ test.describe("the crag call-out", () => {
     });
 
     /**
-     * Known broken on the phone viewport, and not by this test's doing: tapping the marker of the
-     * crag that is already chosen does not bring its card back. The click reaches the marker and no
-     * popup is built at all, so the selection is never dispatched -- see
-     * https://github.com/Chlaedderi/chlaedderi/issues/30.
-     *
-     * It is geometry, not code: pristine `main` built with only this region's data swapped in
-     * reproduces it, and this branch's code with the old data does not. Left standing rather than
-     * deleted, because it is the guard for a bug that is now real.
+     * The last assertion here was red for a while, and not for the reason it looked like: nothing
+     * was wrong with the selection. The suite draws no base map, so the map warns about it, and
+     * that warning lies across the top of the map -- where this region's geometry happens to
+     * leave this marker. The tap went down on the marker and up on the warning, which is a click
+     * on neither, and Leaflet never heard it. The warning lets the map have its taps now; see
+     * `e2e/tiles.spec.ts` and https://github.com/Chlaedderi/chlaedderi/issues/30.
      */
-    test.fixme("closes from its own button, without letting the crag go", async ({ page }) => {
+    test("closes from its own button, without letting the crag go", async ({ page }) => {
         await page
             .locator(".pop")
             .getByRole("button", { name: /close|schliessen/i })

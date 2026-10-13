@@ -1,4 +1,4 @@
-import { expect, openCallout, test, waitForApp } from "./fixtures";
+import { expect, openCallout, openList, test, waitForApp } from "./fixtures";
 
 /**
  * The crag page: the long tail of features the first React pass left out.
@@ -78,6 +78,7 @@ test.describe("favourites and the logbook", () => {
         await page.goto("/");
         await waitForApp(page);
         // A favourite to back up.
+        await openList(page);
         await page
             .locator(".MuiCard-root")
             .first()
