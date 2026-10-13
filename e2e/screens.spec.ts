@@ -1,4 +1,4 @@
-import { expect, gotoTab, openCallout, test, waitForApp } from "./fixtures";
+import { E2E_ORIGIN, expect, gotoTab, openCallout, test, waitForApp } from "./fixtures";
 
 /**
  * Screenshots of every screen, so the result can be *looked at* rather than assumed.
@@ -90,7 +90,7 @@ for (const theme of ["light", "dark"] as const) {
         // A fresh page first -- an install link arrives with nothing else open -- and a pause
         // after each, because a dialog counts as visible the moment it starts fading in, and a
         // half-faded one photographs as transparent.
-        const pack = "http://127.0.0.1:4173/maps/pack.testing.json";
+        const pack = `${E2E_ORIGIN}/maps/pack.testing.json`;
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog")).toHaveCount(0);
         await page.goto(`/#/pack?url=${encodeURIComponent(pack)}`);

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import type { Page } from "@playwright/test";
 
-import { expect, test, waitForApp } from "./fixtures";
+import { E2E_HOST, E2E_ORIGIN, expect, test, waitForApp } from "./fixtures";
 
 /**
  * The app in the share sheet.
@@ -17,10 +17,10 @@ import { expect, test, waitForApp } from "./fixtures";
  * e2e hook builds before it runs, so that is what happens here.
  *
  * maps/pack.testing.chlpack and the key beside it are the same public fixtures chlpack.spec.ts
- * uses; 127.0.0.1:4173 stands in for somebody else's host, as it does there.
+ * uses; the suite's own host stands in for somebody else's host, as it does there.
  */
 
-const HOST = "http://127.0.0.1:4173";
+const HOST = E2E_ORIGIN;
 const SEALED = `${HOST}/maps/pack.testing.chlpack`;
 const PLAIN = `${HOST}/maps/pack.testing.json`;
 const KEY = readFileSync("maps/pack.testing.key", "utf8").trim();
@@ -67,7 +67,9 @@ const share = async (page: Page, text: string): Promise<void> => {
 /** The offer, once it is on screen. An open dialog hides the rest of the app from the tree. */
 const offer = async (page: Page) => {
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(/from 127\.0\.0\.1:4173/i)).toBeVisible({ timeout: 30_000 });
+    await expect(dialog.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toBeVisible({
+        timeout: 30_000,
+    });
     return dialog;
 };
 

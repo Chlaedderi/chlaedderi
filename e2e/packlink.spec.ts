@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { confirmPack, expect, loadPack, test, waitForApp } from "./fixtures";
+import { E2E_HOST, E2E_ORIGIN, confirmPack, expect, loadPack, test, waitForApp } from "./fixtures";
 
 /**
  * Sharing a region, not just a crag.
@@ -10,12 +10,12 @@ import { confirmPack, expect, loadPack, test, waitForApp } from "./fixtures";
  * it came from, and `#/pack?url=…` names a region and nothing else -- but nothing is installed
  * without being asked, because the address in such a link was chosen by whoever sent it.
  *
- * tools/serve.pl serves maps/ next to the app, so 127.0.0.1:4173 stands in for somebody's host.
+ * tools/serve.pl serves maps/ next to the app, so the suite's own host stands in for somebody's host.
  * fixtures.ts aborts every request that does not go there, which is also why the address has to
  * be the absolute one: that is what a link carries.
  */
 
-const HOST = "http://127.0.0.1:4173";
+const HOST = E2E_ORIGIN;
 const PACK = `${HOST}/maps/pack.testing.json`;
 
 /**
@@ -26,7 +26,9 @@ const PACK = `${HOST}/maps/pack.testing.json`;
  */
 const offer = async (page: Page) => {
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(/from 127\.0\.0\.1:4173/i)).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toBeVisible({
+        timeout: 15_000,
+    });
     return dialog;
 };
 

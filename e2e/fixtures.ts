@@ -8,6 +8,10 @@
 
 import { test as base, expect, type Page } from "@playwright/test";
 
+// Several tests put the suite's own address in front of the viewer as «somebody else's host», so
+// they read it from here rather than writing it out. See port.ts for why it moves.
+export { E2E_HOST, E2E_ORIGIN, E2E_PORT } from "./port";
+
 /**
  * Every tile request is answered with a PNG from the repository itself. Any small image does --
  * the tests are about the app, not about what the tiles show -- and taking one off disk keeps a
@@ -44,6 +48,24 @@ export const stubNetwork = async (page: Page): Promise<void> => {
     await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
     // Anything else external is a mistake the test should notice, not silently allow.
     await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+
+    // **After** the catch-all on purpose: Playwright tries the most recently added route first,
+    // so anything registered before that line never sees a request.
+    //
+    // The Swiss radar. The catalogue is empty by default, so the app finds no frames, says so and
+    // stands RainViewer in -- the cheap path for every test that is not about the radar. A test
+    // that wants rain on the map answers the catalogue itself with a frame name in it; behind the
+    // name is the real 41 KB file the unit tests read, so a browser genuinely decodes and paints
+    // a radar frame rather than being shown a picture of one.
+    await page.route("**/data.geo.admin.ch/ch.meteoschweiz.ogd-radar-precip/**", (route) =>
+        route.fulfill({
+            contentType: "application/x-hdf5",
+            path: "src/test/fixtures/rzc262830400vl.001.h5",
+        }),
+    );
+    await page.route("**/data.geo.admin.ch/api/stac/**", (route) =>
+        route.fulfill({ json: { assets: {} } }),
+    );
 };
 
 /**

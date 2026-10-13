@@ -27,6 +27,7 @@ export const fetchFrames = async (signal?: AbortSignal): Promise<RadarFrames> =>
     if (!past.length) throw new Error("no frames");
 
     return {
+        kind: "tiles",
         // 2/1_1: the colour scheme with smoothing, which is what the app has always shown.
         urls: past.map((f) => `${json.host ?? ""}${f.path}/256/{z}/{x}/{y}/2/1_1.png`),
         times: past.map((f) => f.time * 1000),
