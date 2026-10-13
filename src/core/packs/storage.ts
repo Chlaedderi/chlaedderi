@@ -56,6 +56,28 @@ export const readStoredPack = async (id: string): Promise<unknown> => {
     }
 };
 
+/**
+ * The pack's JSON exactly as it was stored, to be saved as a file and passed on.
+ *
+ * A region that arrived sealed is stored opened, so this would hand out in the clear what its
+ * publisher only ever sent under a key. The dialog therefore offers it only for a pack with no
+ * key; a sealed one is passed on by its link.
+ */
+export const storedPackText = async (id: string): Promise<string | null> => {
+    const cache = await openCache();
+    if (!cache) return null;
+    try {
+        const hit = await cache.match(cacheKey(id));
+        return hit ? await hit.text() : null;
+    } catch {
+        return null;
+    }
+};
+
+/** `<id>.json`, with anything a file system might choke on replaced. */
+export const packFileName = (id: string): string =>
+    `${id.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[.-]+/, "") || "mappack"}.json`;
+
 export const forgetPack = async (id: string): Promise<void> => {
     const cache = await openCache();
     if (!cache) return;

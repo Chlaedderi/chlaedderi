@@ -5,6 +5,7 @@
  * a crag name comes from a mappack and must not be able to close a tag.
  */
 
+import { downloadFile } from "./download";
 import { APP_NAME } from "./name";
 
 /** XML needs these five escaped; `&` first, or it would escape its own replacements. */
@@ -33,15 +34,5 @@ export const toGpx = ({ name, points }: GpxOptions): string =>
     "\n</trkseg></trk>\n</gpx>\n";
 
 /** Hand the file to the browser. */
-export const downloadGpx = (filename: string, gpx: string): void => {
-    const url = URL.createObjectURL(new Blob([gpx], { type: "application/gpx+xml" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.remove();
-    }, 1000);
-};
+export const downloadGpx = (filename: string, gpx: string): void =>
+    downloadFile(filename, gpx, "application/gpx+xml");

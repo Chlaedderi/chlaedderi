@@ -523,6 +523,8 @@
     "pk.added": "{0} geladen: {1} Gebiete.",
     "pk.bad": "Nicht geladen. {0}",
     "pk.builtin": "Kommt mit der App",
+    "pk.download": "Als Datei speichern",
+    "pk.download.fail": "Die Region liess sich in diesem Browser nicht als Datei speichern.",
     "pk.empty": "Keine Region geladen, darum gibt es nichts zu zeigen.",
     "pk.err.aborted": "Das Laden wurde abgebrochen.",
     "pk.err.badblob": "Diese Gebietsdatei ist beschädigt oder in einem neueren Format, als diese App lesen kann.",
