@@ -112,9 +112,20 @@ const decode = async (name: string, signal?: AbortSignal): Promise<Uint8Array> =
     if (held) return held;
 
     const day = name.slice(3, 8);
-    const response = await fetch(`${FILES}/${dayOf(day)}-ch/${name}`, signal ? { signal } : {});
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const cells = await decodeFrame(await response.arrayBuffer());
+    const bytes = async (): Promise<ArrayBuffer> => {
+        const response = await fetch(`${FILES}/${dayOf(day)}-ch/${name}`, signal ? { signal } : {});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.arrayBuffer();
+    };
+    let cells: Uint8Array;
+    try {
+        cells = await decodeFrame(await bytes());
+    } catch (problem) {
+        // The worker never started. Its bytes went with it, so this frame is fetched again and
+        // decoded here, as every frame after it will be.
+        if (!(problem instanceof WorkerFailed)) throw problem;
+        cells = await decodeFrame(await bytes());
+    }
 
     decoded.set(name, cells);
     // Keep a little more than the window; the oldest insertion goes first.
@@ -272,11 +283,11 @@ const decodeFrame = async (file: ArrayBuffer): Promise<Uint8Array> => {
         };
         // The worker never started (its chunk did not load, say). Without this the promise would
         // never settle and the radar would wait for this frame for the rest of the session. The
-        // frame's bytes went to the worker and are gone; the frames after it decode here.
+        // frame's bytes went to the worker and are gone; `decode` fetches them again for here.
         const failed = (): void => {
             stop();
             retire(worker);
-            reject(new RadarUnavailable("the decoder did not start"));
+            reject(new WorkerFailed());
         };
         const done = (event: MessageEvent<DecodeReply>): void => {
             if (event.data.id !== id) return;
@@ -300,6 +311,9 @@ const decodeFrame = async (file: ArrayBuffer): Promise<Uint8Array> => {
         worker.postMessage(request, [file]);
     });
 };
+
+/** The decoding worker failed to start; the frame is to be decoded on the main thread instead. */
+class WorkerFailed extends Error {}
 
 /**
  * The grid has to be the one the map is drawn against.

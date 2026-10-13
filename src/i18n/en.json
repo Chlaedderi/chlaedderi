@@ -789,7 +789,7 @@
     "walk.gt": "Over 30 min",
     "walk.le": "≤ {0} min",
     "wall": "wall {0}",
-    "wx.ago.d": "{0} days",
+    "wx.ago.d": "day|days",
     "wx.ago.h": "{0} h",
     "wx.ax.next": "+24 h",
     "wx.ax.now": "now",

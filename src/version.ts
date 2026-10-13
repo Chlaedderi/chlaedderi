@@ -107,7 +107,22 @@ export const ownShell = (name: string, scope: string): boolean => {
  * the user's data and the downloaded tiles all survive this. Only the app shell is dropped -- and
  * only this deployment's own, see above.
  */
-export const refreshApp = async (): Promise<void> => {
+export const refreshApp = async (): Promise<boolean> => {
+    // First make sure the network answers. Dropping the shell and the worker with no way to fetch
+    // them again -- offline, or a signal that shows bars and carries nothing, under a cliff --
+    // leaves an app that will not open at all until it is online again. `version.json` is kept
+    // out of the precache, so only the network can answer it.
+    try {
+        const probe = new AbortController();
+        const timer = setTimeout(() => probe.abort(), 8000);
+        try {
+            await fetch("version.json", { cache: "no-store", signal: probe.signal });
+        } finally {
+            clearTimeout(timer);
+        }
+    } catch {
+        return false;
+    }
     try {
         const scope = here();
         const names = await caches.keys();
@@ -120,6 +135,7 @@ export const refreshApp = async (): Promise<void> => {
         // Even if none of that worked, the reload below still fetches what it can.
     }
     location.reload();
+    return true;
 };
 
 /** Running as an installed app rather than in a browser tab. */

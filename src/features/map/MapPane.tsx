@@ -194,6 +194,12 @@ export const MapPane = () => {
     const base = inSwitzerland
         ? (CH_LAYERS[prefs.baseCH] ?? CH_LAYERS.ch!)
         : (BASE_LAYERS[prefs.base] ?? BASE_LAYERS.topo!);
+    // Counted per base map: one that loaded says nothing about the one the viewer switched to.
+    useEffect(() => {
+        tileErrors.current = 0;
+        tileOk.current = false;
+        setTileTrouble(false);
+    }, [base.url]);
 
     const baseName =
         (inSwitzerland
@@ -238,11 +244,13 @@ export const MapPane = () => {
     // Never for an invented region: the planner -- and the GPX it offers -- would walk somebody
     // to a cliff that is not there. The crag page withholds the button; this withholds the panel,
     // which stays open across a change of crag or region.
-    const selectedRegion = useRegionOf(selected?.crag);
+    //
+    // The crag is taken from all of them, not from the filtered list: «plan the approach» on a crag
+    // the filters hide (opened from the favourites, say) used to open the map and do nothing.
+    const planCrag = selectedId ? (byId[selectedId] ?? null) : null;
+    const planRegion = useRegionOf(planCrag);
     const plannable =
-        selectedRegion?.ch === true &&
-        selectedRegion.fictional !== true &&
-        selected?.crag.coord != null;
+        planRegion?.ch === true && planRegion.fictional !== true && planCrag?.coord != null;
 
     const parkName = useCallback(
         (key: string) => longText(parks[key], "name", lang) ?? key,
@@ -412,7 +420,7 @@ export const MapPane = () => {
 
     /** Where an approach may start: this crag's car parks first, then the viewer's own position. */
     const plannerStarts = useMemo(() => {
-        const crag = selected?.crag;
+        const crag = planCrag;
         if (!crag) return [];
         const keys = [...new Set([crag.pk, ...(crag.ap ?? []).map((a) => a.pk)])].filter(
             (k): k is string => Boolean(k),
@@ -428,11 +436,11 @@ export const MapPane = () => {
             label: planFrom ? t("pl.point") : t("pl.from.map"),
         });
         return out;
-    }, [selected, me, parkName, planFrom, t]);
+    }, [planCrag, me, parkName, planFrom, t]);
 
     // Plan as soon as the panel is open and there is both a start and a crag to reach.
     useEffect(() => {
-        if (!planning || !plannable || !selected?.crag.coord) return;
+        if (!planning || !plannable || !planCrag?.coord) return;
         const from = planStart || plannerStarts[0]?.value;
         if (!from) return;
         if (from !== planStart) {
@@ -462,12 +470,12 @@ export const MapPane = () => {
             return;
         }
 
-        const wall: [number, number] = [selected.crag.coord.lat, selected.crag.coord.lon];
+        const wall: [number, number] = [planCrag.coord.lat, planCrag.coord.lon];
         planner.plan([origin, ...via, wall]);
         // `planner` changes identity whenever its own state does, so depending on it would loop.
         // What should start a new plan is listed instead.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [planning, plannable, selected, planStart, plannerStarts, me, parks, via]);
+    }, [planning, plannable, planCrag, planStart, plannerStarts, me, parks, via]);
 
     /** Ask for a tap on the map, saying why. The original's `pickStart`. */
     const askByHand = (why: string): void => {
@@ -646,7 +654,9 @@ export const MapPane = () => {
                     />
 
                     <PlannedRoute
-                        result={planner.result}
+                        // Only with its panel: a crag that cannot be planned for must not keep the
+                        // last one's route on the map with nothing left to close it.
+                        result={planning && plannable ? planner.result : null}
                         via={via}
                         onViaRemove={() => dispatch(uiActions.clearVia())}
                         viaTitle={t("pl.via.t")}
@@ -724,9 +734,9 @@ export const MapPane = () => {
                 locateState={locateState}
                 picking={picking}
             />
-            {planning && selected && plannable && (
+            {planning && planCrag && plannable && (
                 <PlannerPanel
-                    crag={selected.crag}
+                    crag={planCrag}
                     starts={plannerStarts}
                     start={planStart}
                     onStart={setPlanStart}
@@ -742,7 +752,7 @@ export const MapPane = () => {
                         setPlanFrom(null);
                         planner.clear();
                     }}
-                    onOpenCrag={() => void navigate(`/crag/${selected.crag.id}`)}
+                    onOpenCrag={() => void navigate(`/crag/${planCrag.id}`)}
                 />
             )}
             <MapLegend />

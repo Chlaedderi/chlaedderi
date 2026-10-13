@@ -17,10 +17,11 @@ import { useTranslation } from "react-i18next";
 import { useAppSelector } from "@app/hooks";
 import { useLang, useRegionOf } from "@app/useAppData";
 import { useWeather } from "@app/weatherContext";
+import { todayIso } from "@core/logbook";
 import { formatMm, rainChart, readWeather } from "@core/weather";
 import type { Crag } from "@domain/model";
 import { SectionTitle } from "@features/crag/SectionTitle";
-import { formatDate } from "@i18n/index";
+import { countOf, formatDate } from "@i18n/index";
 
 import { RainChart } from "./RainChart";
 import { useAutoRefresh } from "./useAutoRefresh";
@@ -101,9 +102,12 @@ export const WeatherCard = ({ crag }: { crag: Crag }) => {
                                         0:
                                             reading.since < 24
                                                 ? t("wx.ago.h", { 0: Math.round(reading.since) })
-                                                : t("wx.ago.d", {
-                                                      0: Math.round(reading.since / 24),
-                                                  }),
+                                                : countOf(
+                                                      t,
+                                                      "wx.ago.d",
+                                                      Math.round(reading.since / 24),
+                                                      lang,
+                                                  ),
                                     })}
                                 />
                             )}
@@ -141,7 +145,7 @@ export const WeatherCard = ({ crag }: { crag: Crag }) => {
                         sx={{ display: "block", mt: 1 }}
                     >
                         {t("wx.note", {
-                            0: formatDate(new Date(at).toISOString().slice(0, 10), lang),
+                            0: formatDate(todayIso(new Date(at)), lang),
                         })}
                         {/* In Switzerland the rain comes from a far finer model, which is
                             worth saying where it applies. */}
@@ -152,7 +156,7 @@ export const WeatherCard = ({ crag }: { crag: Crag }) => {
                 {at && (
                     <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
                         {t("wx.hint", {
-                            0: formatDate(new Date(at).toISOString().slice(0, 10), lang),
+                            0: formatDate(todayIso(new Date(at)), lang),
                         })}
                     </Typography>
                 )}

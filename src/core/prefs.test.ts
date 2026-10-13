@@ -94,6 +94,15 @@ describe("keepTouched", () => {
         expect(merged.theme).toBe("dark");
     });
 
+    it("does not count a new list holding the same packs as a change", () => {
+        // A read-back replaces `packs` with a new array. Counted as the viewer's own change, it
+        // made two tabs keep answering each other's install with their own list, for ever.
+        const start = { ...defaultPrefs(), packs: [{ id: "a" }] };
+        const current = { ...start, packs: [{ id: "a" }] };
+        const stored = { ...defaultPrefs(), packs: [{ id: "a" }, { id: "b" }] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "a" }, { id: "b" }]);
+    });
+
     it("keeps a touched list by reference", () => {
         const start = defaultPrefs();
         const packs = [{ id: "ow" }];

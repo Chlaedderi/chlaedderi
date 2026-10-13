@@ -81,6 +81,26 @@ describe("buildGraph", () => {
         expect(lengthOf(leg)).toBeLessThan(115);
     });
 
+    it("walks along one segment when start and end both lie beside it", () => {
+        // ──────────  one long segment; the start and the end snap onto it 400 m apart
+        const g = buildGraph([line(0, 0, 1000, 0)]);
+        const leg = findLeg(g, [300, 10], [700, 10]);
+        expect(lengthOf(leg)).toBeLessThan(430);
+    });
+
+    it("goes straight between two trails that end on the same segment", () => {
+        //      │
+        // ─────┴──┬─────  two spurs stopping 3 m short of the line, from opposite sides
+        //         │
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(400, 300, 400, 3),
+            line(600, -300, 600, -3),
+        ]);
+        const leg = findLeg(g, [400, 300], [600, -300]);
+        expect(lengthOf(leg)).toBeLessThan(820);
+    });
+
     it("goes straight from one crossing to the next on the same segment", () => {
         //   │ │    two paths crossing one long segment 20 m apart
         // ──┼─┼──────────

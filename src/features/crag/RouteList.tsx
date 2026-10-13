@@ -26,8 +26,9 @@ import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 
 import { useAppSelector } from "@app/hooks";
 import { useAppDispatch } from "@app/hooks";
@@ -182,12 +183,31 @@ export const RouteList = ({ crag, onLog }: { crag: Crag; onLog: (route: Route) =
     const ctx = useFilterContext();
     const [sort, setSort] = useState<SortKey>("list");
     const [onlyMatching, setOnlyMatching] = useState(true);
+    // A link to one route (`#<crag>~<route>`) arrives with that route in the navigation state.
+    const { state } = useLocation();
+    const linked = (state as { route?: unknown } | null)?.route;
+    const linkedKey = typeof linked === "string" ? linked : null;
 
     const filtered = routeFilterOn(filters);
     const matching = useMemo(
         () => (filtered ? crag.routes.filter((r) => routeOk(r, filters, ctx)) : crag.routes),
         [crag.routes, filters, ctx, filtered],
     );
+
+    // Show the linked route, and once: the link is for it, so the list must not hide it behind
+    // the viewer's filters, and the page goes to it rather than staying at the top.
+    const shownLink = useRef<string | null>(null);
+    useEffect(() => {
+        if (!linkedKey || shownLink.current === linkedKey) return;
+        if (filtered && !matching.some((r) => r.key === linkedKey)) setOnlyMatching(false);
+        shownLink.current = linkedKey;
+        const frame = requestAnimationFrame(() => {
+            document
+                .querySelector(`[data-route="${CSS.escape(linkedKey)}"]`)
+                ?.scrollIntoView({ block: "center" });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [linkedKey, filtered, matching]);
     // «Matching» is only offered -- and only chosen -- when it would actually show something.
     const useMatch = filtered && onlyMatching && matching.length > 0;
 
@@ -315,7 +335,15 @@ export const RouteList = ({ crag, onLog }: { crag: Crag; onLog: (route: Route) =
                               : route.ord + 1;
 
                     return (
-                        <Box key={route.key}>
+                        <Box
+                            key={route.key}
+                            data-route={route.key}
+                            sx={
+                                route.key === linkedKey
+                                    ? { bgcolor: "action.selected", borderRadius: 1 }
+                                    : undefined
+                            }
+                        >
                             {head}
                             <RouteRow
                                 crag={crag}

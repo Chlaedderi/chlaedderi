@@ -30,6 +30,7 @@ import {
     type ForecastData,
     type ForecastDay,
 } from "@core/forecast";
+import { todayIso } from "@core/logbook";
 import { positionOf } from "@core/weather";
 import { formatMm } from "@core/weather";
 import type { Crag } from "@domain/model";
@@ -166,12 +167,7 @@ export const ForecastSection = ({
         data.model === "ch"
             ? t("fc.src.ch", {
                   0: data.chUntil
-                      ? dayLabel(
-                            new Date(data.chUntil * 1000).toISOString().slice(0, 10),
-                            -1,
-                            lang,
-                            t,
-                        )
+                      ? dayLabel(todayIso(new Date(data.chUntil * 1000)), -1, lang, t)
                       : "",
               })
             : t(ch ? "fc.src.chfail" : "fc.src.om");

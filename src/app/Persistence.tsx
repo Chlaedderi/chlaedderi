@@ -20,7 +20,7 @@ import { FILTER_PARAM, decodeFilterCode } from "@core/filterCode";
 import { FILTER_KEY, type StoredFilters, fromStored, toStored } from "@core/filters";
 import { activeCount } from "@core/filters";
 import { cleanLog } from "@core/logbook";
-import { cleanPrefs, keepTouched } from "@core/prefs";
+import { type Prefs, cleanPrefs, keepTouched } from "@core/prefs";
 import { openStore } from "@core/store";
 
 import { useData } from "./dataContext";
@@ -60,6 +60,12 @@ export const Persistence = () => {
     // against in the first place.
     const latestPrefs = useRef(prefs);
     latestPrefs.current = prefs;
+    // The settings as the store holds them, as far as this tab knows: what was read at the first
+    // paint, then whatever was read back, arrived from another tab, or written from here. A key is
+    // the viewer's own change only while it differs from this -- measured against the first paint
+    // instead, every key a read-back had replaced stayed «touched» for the whole session, and two
+    // tabs answered each other's settings with their own, for ever.
+    const storedPrefs = useRef<Prefs>(initialPrefsState);
 
     // The favourites and the logbook as they are now, for the read-back below to merge into.
     const latestFav = useRef({ crags: favCrags, routes: favRoutes });
@@ -108,11 +114,13 @@ export const Persistence = () => {
             const added = latestEntries.current.filter((e) => !stored.some((s) => s.id === e.id));
             if (log || added.length) dispatch(logbookActions.restore([...stored, ...added]));
             if (saved) {
+                const clean = cleanPrefs(saved);
                 dispatch(
                     prefsActions.restore(
-                        keepTouched(cleanPrefs(saved), latestPrefs.current, initialPrefsState),
+                        keepTouched(clean, latestPrefs.current, storedPrefs.current),
                     ),
                 );
+                storedPrefs.current = clean;
             }
         })();
 
@@ -128,11 +136,13 @@ export const Persistence = () => {
             if (key === "log") dispatch(logbookActions.restore(cleanLog(value)));
             // Another tab's settings must not undo a switch flipped here a moment ago either.
             if (key === "prefs") {
+                const clean = cleanPrefs(value);
                 dispatch(
                     prefsActions.restore(
-                        keepTouched(cleanPrefs(value), latestPrefs.current, initialPrefsState),
+                        keepTouched(clean, latestPrefs.current, storedPrefs.current),
                     ),
                 );
+                storedPrefs.current = clean;
             }
         });
     }, [dispatch]);
@@ -238,6 +248,7 @@ export const Persistence = () => {
 
     useDebouncedWrite(prefs, (value) => {
         if (!isNew("prefs", value)) return;
+        storedPrefs.current = value;
         void store.set("prefs", value);
     });
 

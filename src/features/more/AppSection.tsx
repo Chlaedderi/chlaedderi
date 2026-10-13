@@ -72,10 +72,12 @@ export const AppSection = () => {
                         <Button
                             color="inherit"
                             size="small"
-                            disabled={refreshing}
+                            disabled={!online || refreshing}
                             onClick={() => {
                                 setRefreshing(true);
-                                void refreshApp();
+                                void refreshApp().then((went) => {
+                                    if (!went) setRefreshing(false);
+                                });
                             }}
                         >
                             {t("m.reload")}
@@ -136,7 +138,10 @@ export const AppSection = () => {
                 disabled={!online || refreshing}
                 onClick={() => {
                     setRefreshing(true);
-                    void refreshApp();
+                    // Nothing is dropped unless the network answered; then the button is back.
+                    void refreshApp().then((went) => {
+                        if (!went) setRefreshing(false);
+                    });
                 }}
             >
                 {t(refreshing ? "m.refreshing" : "m.refresh")}
