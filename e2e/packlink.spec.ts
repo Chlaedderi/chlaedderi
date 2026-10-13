@@ -60,6 +60,18 @@ test.describe("a link that carries a region", () => {
         await expect(page.getByText(/region loaded/i)).toHaveCount(0);
     });
 
+    test("reads this site's own domain back into the name it is served under", async ({ page }) => {
+        // The suite is served from an IP, so this is the only place the real string is seen in a
+        // real browser. Nothing is fetched from there: the dialog names the host and then waits.
+        const own = "https://xn--chldderi-2za.ch/maps/pack.testing.json";
+        await page.goto(`/#/pack?url=${encodeURIComponent(own)}`);
+
+        const dialog = page.getByRole("dialog");
+        await expect(dialog.getByText(/from chlädderi\.ch/i)).toBeVisible({ timeout: 15_000 });
+        // And the address underneath is still the one the machine would really go to.
+        await expect(dialog.getByText(own)).toBeVisible();
+    });
+
     test("refuses a link whose address could not be a region", async ({ page }) => {
         // `fetch` really does read a data: URL -- a pack from a stranger, with no host to name.
         await page.goto(`/#/pack?url=${encodeURIComponent("data:application/json,%7B%7D")}`);

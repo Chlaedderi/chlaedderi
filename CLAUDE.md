@@ -121,6 +121,14 @@ redirects there.
   every pack anybody else published; the pack format string and the storage names are in the same
   boat.
 
+  The one place that reads it back is `src/core/idn.ts`, and only for the eyes: the install
+  confirmation says «chlädderi.ch» where a reader is being asked to recognise something. It decodes
+  a host only where it can vouch for the name — lower-case Latin letters, one script, and not this
+  app's own name spelled any other way — and otherwise hands the punycode straight back, because
+  `xn--80ak6aa92e.com` reads as «аррӏе.com» in Cyrillic and a region may be hosted by anybody. That
+  is a security control like `src/core/text.ts`, and the vectors beside it are the control. What is
+  compared, remembered or fetched is never what it returns.
+
 - **The custom domain lives in `tools/make-site.sh`, not in Settings.** Setting it in Settings makes
   GitHub commit a `CNAME` file to the publishing branch, and the next deploy throws it away:
   `publish-pages.sh` force-pushes a fresh tree and keeps nothing at the top level but `pr-*/` and

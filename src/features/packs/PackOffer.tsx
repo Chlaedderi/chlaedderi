@@ -16,9 +16,14 @@
  * Everything shown out of the pack goes through `oneLine`. Nothing from a pack ever becomes HTML
  * -- React escapes these as text, as everywhere else -- but a name is unbounded in the schema,
  * and this is the one dialog where a name that reshapes the buttons around it would matter.
+ *
+ * The host is named twice over, and on purpose: `shownHost` reads it back into a name where it can
+ * vouch for one, and the address underneath stays exactly what the machine will go and fetch. One
+ * line is for recognising and the other is for checking, so neither has to be both.
  */
 
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -34,6 +39,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { prefsActions } from "@app/slices/prefsSlice";
 import { uiActions } from "@app/slices/uiSlice";
 import { useLang } from "@app/useAppData";
+import { shownHost } from "@core/idn";
 import { type PackLoad, fetchPack } from "@core/packs/storage";
 import { packAddress } from "@core/packs/url";
 import { i18, oneLine } from "@core/text";
@@ -172,9 +178,10 @@ export const PackOffer = () => {
     const name = pack ? oneLine(i18(pack.name, lang), NAME_MAX) : "";
     const notes = pack?.notes ? oneLine(i18(pack.notes, lang), NOTES_MAX) : "";
     const replaced = pack ? installed.find((p) => p.id === pack.id) : undefined;
-    const elsewhere = replaced?.src?.url
-        ? packAddress(replaced.src.url)?.host !== address.host
-        : false;
+    const replacedAt = replaced?.src?.url ? packAddress(replaced.src.url) : null;
+    // «Is this the same place the bytes came from last time?» is a machine's question, so it is
+    // asked of the host itself. Two names that read alike are not one host.
+    const elsewhere = replaced?.src?.url ? replacedAt?.host !== address.host : false;
 
     const confirm = async () => {
         if (!result?.ok || !result.text) return;
@@ -209,16 +216,46 @@ export const PackOffer = () => {
                     {t("po.title")}
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary">
-                    {t("po.from", { 0: address.host })}
-                </Typography>
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", overflowWrap: "anywhere", mb: 1 }}
+                {/*
+                 * The address, in a box of its own. A host is as long as whoever registered it
+                 * cared to make it, and this dialog is `xs` wide: left to run, it would push the
+                 * part of the host that decides off the edge, or grow the dialog around its own
+                 * buttons. So it wraps, it is bounded, and it scrolls inside its border rather
+                 * than reshaping anything around it. `unicode-bidi: isolate` keeps whatever is in
+                 * here from reordering what is not -- `new URL()` already drops a byte-order mark
+                 * out of a host and refuses a bidi override, and nothing `shownHost` hands back
+                 * carries one either, but this line is worth two locks.
+                 */}
+                <Box
+                    sx={{
+                        border: 1,
+                        borderColor: "divider",
+                        borderRadius: 1,
+                        bgcolor: "action.hover",
+                        px: 1,
+                        py: 0.75,
+                        mb: 1,
+                        maxHeight: 120,
+                        overflowY: "auto",
+                        direction: "ltr",
+                        unicodeBidi: "isolate",
+                    }}
                 >
-                    {address.url}
-                </Typography>
+                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                        {t("po.from", { 0: shownHost(address.host) })}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                            display: "block",
+                            overflowWrap: "anywhere",
+                            fontFamily: "monospace",
+                        }}
+                    >
+                        {address.url}
+                    </Typography>
+                </Box>
 
                 {checking && <Typography variant="body2">{t("po.checking")}</Typography>}
 
@@ -259,9 +296,10 @@ export const PackOffer = () => {
                                     ),
                                     1: replaced.version ?? "",
                                     2: replaced.crags ?? 0,
-                                    3: replaced.src?.url
-                                        ? (packAddress(replaced.src.url)?.host ?? "")
-                                        : "",
+                                    // Read the same way as the host above it: the dialog is asking
+                                    // for a comparison, and two spellings of one host would read
+                                    // as an alarm that is not there.
+                                    3: replacedAt ? shownHost(replacedAt.host) : "",
                                 })}
                             </Alert>
                         )}
