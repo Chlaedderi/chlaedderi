@@ -37,9 +37,10 @@ cd "${ROOT}"
 # Everything in OUTDIR is deleted below. Refuse a folder that holds this checkout (`.`, a parent,
 # a typo that resolved to $HOME) and dist/, which the build empties before it is copied from.
 root_real="$(cd -- "${ROOT}" && pwd)"
-case "${root_real}/" in
-  "${out%/}/"*) echo "error: OUTDIR ${out} holds this checkout; refusing to empty it" >&2; exit 2 ;;
-esac
+if [[ "${root_real}/" == "${out%/}/"* ]]; then
+  echo "error: OUTDIR ${out} holds this checkout; refusing to empty it" >&2
+  exit 2
+fi
 if [[ "${out}" == "${root_real}/dist" ]]; then
   echo "error: OUTDIR cannot be dist/, which the build writes" >&2
   exit 2
