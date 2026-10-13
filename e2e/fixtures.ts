@@ -27,29 +27,39 @@ export { E2E_HOST, E2E_ORIGIN, E2E_PORT } from "./port";
  * hit-testing, lying across the top of the map where the markers are.
  *
  * The tiles are *still* refused, on purpose -- see `serveTiles`. Everything else is answered.
+ *
+ * And it is all registered on the **context**, not on the page, which is the difference between
+ * meaning «nothing reaches the network» and only saying it. `page.route` never sees a request a
+ * service worker makes, and this app ships one that runtime-caches exactly the tile hosts
+ * (`chlaedderi-tiles-v1`) -- so from the moment the worker took over a page, every tile went
+ * straight out to the real swisstopo. On a laptop that is fast enough to pass unnoticed. On a
+ * runner it is not: the browser job, which never gets that far, finished in four minutes while
+ * the one that runs the whole suite sat for forty. A test override still goes on the page, where
+ * it outranks everything here.
  */
 export const stubNetwork = async (page: Page): Promise<void> => {
+    const context = page.context();
     // Anything external that nothing else answers for is a mistake the test should notice.
-    await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
-    await page.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
-    await page.route("**/api.rainviewer.com/**", (route) =>
+    await context.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) => route.abort());
+    await context.route("**/api.open-meteo.com/**", (route) => route.fulfill({ json: [] }));
+    await context.route("**/api.rainviewer.com/**", (route) =>
         route.fulfill({ json: { radar: { past: [], nowcast: [] }, host: "" } }),
     );
-    await page.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
-    await page.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
+    await context.route("**/api3.geo.admin.ch/**", (route) => route.fulfill({ json: {} }));
+    await context.route("**/brouter.de/**", (route) => route.fulfill({ json: {} }));
 
     // The Swiss radar. The catalogue is empty by default, so the app finds no frames, says so and
     // stands RainViewer in -- the cheap path for every test that is not about the radar. A test
     // that wants rain on the map answers the catalogue itself with a frame name in it; behind the
     // name is the real 41 KB file the unit tests read, so a browser genuinely decodes and paints
     // a radar frame rather than being shown a picture of one.
-    await page.route("**/data.geo.admin.ch/ch.meteoschweiz.ogd-radar-precip/**", (route) =>
+    await context.route("**/data.geo.admin.ch/ch.meteoschweiz.ogd-radar-precip/**", (route) =>
         route.fulfill({
             contentType: "application/x-hdf5",
             path: "src/test/fixtures/rzc262830400vl.001.h5",
         }),
     );
-    await page.route("**/data.geo.admin.ch/api/stac/**", (route) =>
+    await context.route("**/data.geo.admin.ch/api/stac/**", (route) =>
         route.fulfill({ json: { assets: {} } }),
     );
 };
@@ -79,12 +89,15 @@ const TILE_PNG = readFileSync("e2e/tile.png");
  * and took a test or two over their limit with it. Nothing here is about what the tiles show, so
  * only the tests that are about the tiles themselves, and the screenshots, which exist to be
  * looked at, pay for them.
+ *
+ * On the context, like `stubNetwork` and for the same reason: the service worker is what fetches
+ * a tile once it has taken a page over, and a page route never sees that.
  */
 export const serveTiles = async (page: Page): Promise<void> => {
     for (const pattern of TILE_HOSTS) {
-        await page.route(pattern, (route) =>
-            route.fulfill({ contentType: "image/png", body: TILE_PNG }),
-        );
+        await page
+            .context()
+            .route(pattern, (route) => route.fulfill({ contentType: "image/png", body: TILE_PNG }));
     }
 };
 
