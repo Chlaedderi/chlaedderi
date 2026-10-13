@@ -21,7 +21,6 @@ import { PREVIEW_SUFFIX } from "./preview";
 export type Theme = "auto" | "light" | "dark";
 export type BaseMap = "topo" | "osm" | "sat";
 export type BaseMapCh = "ch" | "chsat" | "topo";
-export type RadarMode = "off" | "rv" | "dpc";
 
 /** Where a pack came from, so that «fetch again» knows what to ask for. */
 export interface PackSource {
@@ -59,7 +58,8 @@ export interface Prefs {
     baseCH: BaseMapCh;
     region: string | null;
     allPaths: boolean;
-    radar: RadarMode;
+    /** The rain radar is on. Which service draws it follows the region: see core/radar.ts. */
+    radar: boolean;
     wx: boolean;
     allParks: boolean;
     chTrails: boolean;
@@ -88,7 +88,7 @@ export const defaultPrefs = (): Prefs => ({
     baseCH: "ch",
     region: null,
     allPaths: false,
-    radar: "off",
+    radar: false,
     wx: true,
     allParks: false,
     chTrails: true,
@@ -104,7 +104,6 @@ const ONE_OF = {
     theme: ["auto", "light", "dark"],
     base: ["topo", "osm", "sat"],
     baseCH: ["ch", "chsat", "topo"],
-    radar: ["off", "rv", "dpc"],
 } as const;
 
 const FLAGS = ["allPaths", "wx", "allParks", "chTrails", "chWrz", "legend", "demoSeen"] as const;
@@ -125,6 +124,11 @@ export const cleanPrefs = (v: unknown): Prefs => {
     for (const key of FLAGS) {
         if (typeof x[key] === "boolean") prefs[key] = x[key];
     }
+    // The radar was «off» | «rv» | «dpc» until the source stopped being a choice. Somebody who had
+    // picked a radar goes on having one; only «off» ever meant off. Without this arm their stored
+    // string fails the boolean check below and their radar switches itself off, silently.
+    if (typeof x.radar === "boolean") prefs.radar = x.radar;
+    else if (typeof x.radar === "string") prefs.radar = x.radar !== "off";
     if (typeof x.region === "string") prefs.region = x.region;
     if (isLogStyle(x.logStyle)) prefs.logStyle = x.logStyle;
     else if (x.logStyle != null && !LOG_STYLES.includes(x.logStyle as LogStyle))

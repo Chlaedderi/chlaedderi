@@ -16,7 +16,7 @@ describe("cleanPrefs", () => {
             base: "osm",
             baseCH: "chsat",
             region: "ow",
-            radar: "rv",
+            radar: true,
             wx: false,
             chWrz: true,
             logStyle: "os",
@@ -26,7 +26,7 @@ describe("cleanPrefs", () => {
         expect(prefs.base).toBe("osm");
         expect(prefs.baseCH).toBe("chsat");
         expect(prefs.region).toBe("ow");
-        expect(prefs.radar).toBe("rv");
+        expect(prefs.radar).toBe(true);
         expect(prefs.wx).toBe(false);
         expect(prefs.chWrz).toBe(true);
         expect(prefs.logStyle).toBe("os");
@@ -50,6 +50,17 @@ describe("cleanPrefs", () => {
         expect(prefs.logStyle).toBe("rp");
     });
 
+    /**
+     * The radar was «off» | «rv» | «dpc» until the source stopped being a choice. Everybody who
+     * had chosen a radar has one of those strings on their device, and dropping it would switch
+     * their radar off without a word.
+     */
+    it("reads a radar chosen before the source became automatic", () => {
+        expect(cleanPrefs({ radar: "rv" }).radar).toBe(true);
+        expect(cleanPrefs({ radar: "dpc" }).radar).toBe(true);
+        expect(cleanPrefs({ radar: "off" }).radar).toBe(false);
+    });
+
     it("keeps only pack descriptions that have an id", () => {
         const prefs = cleanPrefs({
             packs: [{ id: "ow", version: "1" }, null, 42, { version: "no id" }],
@@ -66,19 +77,19 @@ describe("keepTouched", () => {
      */
     it("takes the stored settings when nothing has been touched", () => {
         const start = defaultPrefs();
-        const stored = { ...defaultPrefs(), radar: "dpc" as const, theme: "dark" as const };
+        const stored = { ...defaultPrefs(), radar: true, theme: "dark" as const };
         expect(keepTouched(stored, start, start)).toEqual(stored);
     });
 
     it("keeps a value the viewer changed while the store was still answering", () => {
         const start = defaultPrefs();
         // Immer hands out a new object on any change; the app does the same here.
-        const current = { ...start, radar: "rv" as const };
-        const stored = { ...defaultPrefs(), radar: "off" as const, theme: "dark" as const };
+        const current = { ...start, radar: true };
+        const stored = { ...defaultPrefs(), radar: false, theme: "dark" as const };
 
         const merged = keepTouched(stored, current, start);
 
-        expect(merged.radar).toBe("rv");
+        expect(merged.radar).toBe(true);
         // Everything untouched still comes from storage.
         expect(merged.theme).toBe("dark");
     });

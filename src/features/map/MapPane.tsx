@@ -32,6 +32,7 @@ import { useFilterContext, useLang, useRegion, useShownCrags } from "@app/useApp
 import { useWeather } from "@app/weatherContext";
 import { longText } from "@core/dataText";
 import { bboxOf, formatDistance, haversine } from "@core/geo";
+import { radarSource } from "@core/radar";
 import type { Crag } from "@domain/model";
 
 import { PlannedRoute } from "../approach/PlannedRoute";
@@ -208,7 +209,8 @@ export const MapPane = () => {
 
     const { stateOf } = useWeather();
     const calm = useMediaQuery("(prefers-reduced-motion: reduce)");
-    const radar = useRadar(prefs.radar, calm);
+    // The viewer says whether; where they are says which.
+    const radar = useRadar(prefs.radar ? radarSource(region) : null, calm);
     const planning = useAppSelector((s) => s.ui.planning);
     const via = useAppSelector((s) => s.ui.planVia);
     const planner = usePlanner(lang === "de" ? "de" : "en");
@@ -544,12 +546,14 @@ export const MapPane = () => {
                         />
                     )}
 
-                    <RadarLayer
-                        kind={radar.kind}
-                        frames={radar.frames}
-                        index={radar.index}
-                        onError={radar.onLayerError}
-                    />
+                    {radar.source && (
+                        <RadarLayer
+                            source={radar.source}
+                            frames={radar.frames}
+                            index={radar.index}
+                            onError={radar.onLayerError}
+                        />
+                    )}
 
                     <AllPathsLayer shown={shown} selectedId={selectedId} enabled={prefs.allPaths} />
                     {region && <MapLabels labels={region.labels} />}
@@ -662,15 +666,17 @@ export const MapPane = () => {
                 </Alert>
             )}
 
-            <RadarBar
-                kind={radar.kind}
-                frames={radar.frames}
-                index={radar.index}
-                playing={radar.playing}
-                onPlay={radar.setPlaying}
-                loading={radar.loading}
-                failed={radar.failed}
-            />
+            {radar.source && (
+                <RadarBar
+                    source={radar.source}
+                    frames={radar.frames}
+                    index={radar.index}
+                    playing={radar.playing}
+                    onPlay={radar.setPlaying}
+                    loading={radar.loading}
+                    failed={radar.failed}
+                />
+            )}
             <MapControls
                 inSwitzerland={inSwitzerland}
                 locate={locate}
