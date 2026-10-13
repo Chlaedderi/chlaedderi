@@ -68,7 +68,10 @@ for (const theme of ["light", "dark"] as const) {
         await waitForApp(page);
         await page.getByRole("button", { name: /load a region/i }).click();
         await expect(page.getByRole("dialog")).toBeVisible();
-        await shot(page, `${tag}-09-packs`);
+        // The dialog alone, for the reason `shotOf` exists: now that the region that ships is in
+        // Switzerland, the map behind this one is a swisstopo raster, and the whole screen came to
+        // over a megabyte of PNG -- which `publish-pages.sh` refuses to carry.
+        await shotOf(page.getByRole("dialog"), `${tag}-09-packs`);
 
         // The offer, in both of its steps. This is the one dialog where somebody decides whether
         // to trust a stranger, so what it looks like is the whole of it: the host has to be
