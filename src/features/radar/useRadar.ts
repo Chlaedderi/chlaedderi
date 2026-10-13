@@ -5,8 +5,8 @@
  * dispatch `setRadar("off")` whenever `weather-maps.json` did not answer, and because the settings
  * are persisted, one bad moment of reception at a crag switched the radar off for good. What the
  * viewer chose and what the map can draw right now are two different things, so they are two
- * different pieces of state: `prefs.radar` is the choice, `ui.radarDown` / `ui.radarDpcDown` say
- * what is wrong this session, and the `kind` returned here is what the map actually shows.
+ * different pieces of state: `prefs.radar` is the choice, `ui.radarDown` / `ui.radarFellBack` say
+ * what is wrong this session, and the `source` returned here is what the map actually shows.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,9 +14,8 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { uiActions } from "@app/slices/uiSlice";
-import { type RadarFrames, fetchFrames } from "@services/rainviewer";
-
-import type { RadarKind } from "./RadarLayer";
+import type { RadarFrames, RadarSource } from "@core/radar";
+import { fetchFrames } from "@services/rainviewer";
 
 /** How long a frame shows. */
 const STEP_MS = 650;
@@ -30,22 +29,23 @@ const RETRY_MS = 30 * 1000;
 const TICK_MS = 10 * 1000;
 
 export const useRadar = (
-    chosen: RadarKind,
+    /** The region's radar, or null while the viewer has it switched off. */
+    chosen: RadarSource | null,
     reducedMotion: boolean,
 ): {
-    /** What the map should draw -- the choice, unless it is failing and something else can stand in. */
-    kind: RadarKind;
+    /** What the map should draw -- the region's source, unless it is failing and RainViewer can stand in. */
+    source: RadarSource | null;
     frames: RadarFrames | null;
     index: number;
     playing: boolean;
     loading: boolean;
     failed: boolean;
     setPlaying: (playing: boolean) => void;
-    onLayerError: (kind: RadarKind) => void;
+    onLayerError: (source: RadarSource) => void;
 } => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-    const dpcDown = useAppSelector((s) => s.ui.radarDpcDown);
+    const fellBack = useAppSelector((s) => s.ui.radarFellBack);
     const failed = useAppSelector((s) => s.ui.radarDown);
     const [frames, setFrames] = useState<RadarFrames | null>(null);
     const [index, setIndex] = useState(0);
@@ -55,8 +55,8 @@ export const useRadar = (
 
     // The Italian radar is only over Italy and is sometimes simply unreachable. Standing in for it
     // with RainViewer is a better answer than an empty map -- but only for this session, so the
-    // choice is tried again next time rather than quietly rewritten.
-    const kind: RadarKind = chosen === "dpc" && dpcDown ? "rv" : chosen;
+    // region's own radar is tried again next time rather than quietly written off.
+    const source: RadarSource | null = chosen && chosen !== "rv" && fellBack ? "rv" : chosen;
 
     // Held in a ref so that changing language does not tear down the polling and start it again.
     const tRef = useRef(t);
@@ -66,7 +66,7 @@ export const useRadar = (
     framesRef.current = frames;
 
     useEffect(() => {
-        if (kind !== "rv") {
+        if (source !== "rv") {
             setFrames(null);
             return;
         }
@@ -88,7 +88,7 @@ export const useRadar = (
                 .then((found) => {
                     if (!alive) return;
                     setFrames(found);
-                    setIndex(found.urls.length - 1);
+                    setIndex(found.times.length - 1);
                     told = false;
                     dispatch(uiActions.setRadarDown(false));
                 })
@@ -142,11 +142,11 @@ export const useRadar = (
             document.removeEventListener("visibilitychange", check);
             window.removeEventListener("online", onOnline);
         };
-    }, [kind, dispatch]);
+    }, [source, dispatch]);
 
     useEffect(() => {
-        if (kind !== "rv" || !playing || reducedMotion) return;
-        const count = frames?.urls.length ?? 0;
+        if (!playing || reducedMotion) return;
+        const count = frames?.times.length ?? 0;
         if (count < 2) return;
 
         const timer = setInterval(() => {
@@ -157,17 +157,17 @@ export const useRadar = (
             });
         }, STEP_MS);
         return () => clearInterval(timer);
-    }, [kind, playing, reducedMotion, frames]);
+    }, [source, playing, reducedMotion, frames]);
 
-    /** The Italian radar did not answer: stand in with the one that works everywhere. */
+    /** The region's own radar did not answer: stand in with the one that works everywhere. */
     const onLayerError = useCallback(
-        (which: RadarKind) => {
-            if (which !== "dpc" || dpcDown) return;
+        (which: RadarSource) => {
+            if (which === "rv" || fellBack) return;
             dispatch(uiActions.toast({ message: t("rd.dpcFail"), severity: "warning" }));
-            dispatch(uiActions.setRadarDpcDown(true));
+            dispatch(uiActions.setRadarFellBack(true));
         },
-        [dispatch, t, dpcDown],
+        [dispatch, t, fellBack],
     );
 
-    return { kind, frames, index, playing, loading, failed, setPlaying, onLayerError };
+    return { source, frames, index, playing, loading, failed, setPlaying, onLayerError };
 };

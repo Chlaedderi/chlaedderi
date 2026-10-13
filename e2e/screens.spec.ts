@@ -52,6 +52,16 @@ for (const theme of ["light", "dark"] as const) {
             await page.keyboard.press("Escape");
         }
 
+        // The layers menu, which is a screen of its own and was not photographed by anything: the
+        // base maps, the Swiss overlays and the radar all live in it, so a change to any of them
+        // was invisible to «look at the result» and to every preview.
+        const layers = page.getByRole("button", { name: /base map/i });
+        await layers.click();
+        await shotOf(page.locator(".basemenu"), `${tag}-02b-layers`);
+        // The button is the menu's single source of truth, so it is also how it is put away.
+        await layers.click();
+        await expect(page.locator(".basemenu")).toHaveCount(0);
+
         await openCallout(page);
         await shot(page, `${tag}-03-callout`);
 

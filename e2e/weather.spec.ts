@@ -161,8 +161,8 @@ test.describe("the rain radar", () => {
         await page.goto("/");
         await waitForApp(page);
         await page.getByRole("button", { name: /base map/i }).click();
-        const radar = page.getByRole("group", { name: /rain radar on the map/i });
-        await radar.getByRole("menuitemradio", { name: /last 2 hours/i }).click();
+        // One switch: the showcase is Swiss, so the map asks RainViewer without being told to.
+        await page.getByRole("checkbox", { name: /rain radar on the map/i }).check();
 
         const bar = page.locator(".radarbar");
         await expect(bar).toBeVisible();
@@ -184,17 +184,14 @@ test.describe("the rain radar", () => {
         await page.goto("/");
         await waitForApp(page);
         await page.getByRole("button", { name: /base map/i }).click();
-        const radar = page.getByRole("group", { name: /rain radar on the map/i });
-        await radar.getByRole("menuitemradio", { name: /last 2 hours/i }).click();
+        const radar = page.getByRole("checkbox", { name: /rain radar on the map/i });
+        await radar.check();
 
         await expect(page.getByText(/radar could not be loaded/i)).toBeVisible({ timeout: 10_000 });
 
         // The bar stays, saying it is still trying, and the choice is still the viewer's.
-        // The menu is still open -- picking a radar does not dismiss it.
+        // The menu is still open -- switching the radar on does not dismiss it.
         await expect(page.locator(".radarbar")).toContainText(/still trying/i);
-        await expect(radar.getByRole("menuitemradio", { name: /last 2 hours/i })).toHaveAttribute(
-            "aria-checked",
-            "true",
-        );
+        await expect(radar).toBeChecked();
     });
 });

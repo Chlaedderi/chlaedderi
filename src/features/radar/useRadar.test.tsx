@@ -14,11 +14,11 @@ import { act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prefsActions } from "@app/slices/prefsSlice";
+import type { RadarSource } from "@core/radar";
 import { fetchFrames } from "@services/rainviewer";
 
 import { makeStore, renderApp } from "../../test/harness";
 
-import type { RadarKind } from "./RadarLayer";
 import { useRadar } from "./useRadar";
 
 vi.mock("@services/rainviewer", async (importOriginal) => ({
@@ -33,8 +33,8 @@ const frames = { urls: ["a/{z}/{x}/{y}.png", "b/{z}/{x}/{y}.png"], times: [1, 2]
 /** The hook's result, so a test can read what the map would draw. */
 let seen: ReturnType<typeof useRadar> | null = null;
 
-const Probe = ({ kind = "rv" }: { readonly kind?: RadarKind }) => {
-    seen = useRadar(kind, true);
+const Probe = ({ source = "rv" }: { readonly source?: RadarSource }) => {
+    seen = useRadar(source, true);
     return null;
 };
 
@@ -50,21 +50,21 @@ afterEach(() => {
 describe("a radar that cannot be fetched", () => {
     it("leaves the viewer's choice alone", async () => {
         mockFetchFrames.mockRejectedValue(new Error("offline"));
-        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: "rv" } });
+        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: true } });
 
         await act(async () => {
             renderApp(<Probe />, { store });
         });
 
         // The whole point: the choice is still what it was.
-        expect(store.getState().prefs.radar).toBe("rv");
+        expect(store.getState().prefs.radar).toBe(true);
         expect(store.getState().ui.radarDown).toBe(true);
         expect(seen?.failed).toBe(true);
     });
 
     it("says so once, not once per retry", async () => {
         mockFetchFrames.mockRejectedValue(new Error("offline"));
-        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: "rv" } });
+        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: true } });
 
         await act(async () => {
             renderApp(<Probe />, { store });
@@ -81,7 +81,7 @@ describe("a radar that cannot be fetched", () => {
 
     it("clears the failure once a retry succeeds", async () => {
         mockFetchFrames.mockRejectedValueOnce(new Error("offline")).mockResolvedValue(frames);
-        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: "rv" } });
+        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: true } });
 
         await act(async () => {
             renderApp(<Probe />, { store });
@@ -93,7 +93,7 @@ describe("a radar that cannot be fetched", () => {
             window.dispatchEvent(new Event("online"));
             await vi.waitFor(() => expect(store.getState().ui.radarDown).toBe(false));
         });
-        expect(store.getState().prefs.radar).toBe("rv");
+        expect(store.getState().prefs.radar).toBe(true);
         expect(seen?.frames).toEqual(frames);
     });
 });
@@ -101,28 +101,28 @@ describe("a radar that cannot be fetched", () => {
 describe("the Italian radar falling over", () => {
     it("stands RainViewer in without rewriting the choice", async () => {
         mockFetchFrames.mockResolvedValue(frames);
-        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: "dpc" } });
+        const store = makeStore({ prefs: { ...makeStore().getState().prefs, radar: true } });
 
         await act(async () => {
-            renderApp(<Probe kind="dpc" />, { store });
+            renderApp(<Probe source="dpc" />, { store });
         });
 
         await act(async () => {
             seen?.onLayerError("dpc");
         });
 
-        expect(store.getState().prefs.radar).toBe("dpc");
-        expect(store.getState().ui.radarDpcDown).toBe(true);
+        expect(store.getState().prefs.radar).toBe(true);
+        expect(store.getState().ui.radarFellBack).toBe(true);
     });
 
-    it("is forgotten when the viewer picks a radar again", () => {
+    it("is forgotten when the viewer switches the radar on again", () => {
         const store = makeStore();
-        store.dispatch({ type: "ui/setRadarDpcDown", payload: true });
+        store.dispatch({ type: "ui/setRadarFellBack", payload: true });
         store.dispatch({ type: "ui/setRadarDown", payload: true });
 
-        store.dispatch(prefsActions.setRadar("dpc"));
+        store.dispatch(prefsActions.setRadar(true));
 
-        expect(store.getState().ui.radarDpcDown).toBe(false);
+        expect(store.getState().ui.radarFellBack).toBe(false);
         expect(store.getState().ui.radarDown).toBe(false);
     });
 });

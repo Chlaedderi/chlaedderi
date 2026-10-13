@@ -16,7 +16,6 @@
 
 import LayersIcon from "@mui/icons-material/Layers";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
-import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -31,12 +30,6 @@ import type { Prefs } from "@core/prefs";
 import { BASES, BASES_CH } from "./baseMaps";
 
 export type LocateState = "off" | "waiting" | "on";
-
-const RADARS: { key: Prefs["radar"]; label: string }[] = [
-    { key: "off", label: "rd.off" },
-    { key: "rv", label: "rd.rv" },
-    { key: "dpc", label: "rd.dpc" },
-];
 
 export const MapControls = ({
     inSwitzerland,
@@ -189,30 +182,22 @@ export const MapControls = ({
                             label={t("rd.marks")}
                         />
 
-                        <Box
-                            role="group"
-                            aria-label={t("wx.radar")}
-                            sx={{ borderTop: 1, borderColor: "divider", pt: 0.5, mt: 0.5 }}
-                        >
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block", px: 1.25 }}
-                            >
-                                {t("wx.radar")}
-                            </Typography>
-                            {RADARS.map((radar) => (
-                                <button
-                                    key={radar.key}
-                                    type="button"
-                                    role="menuitemradio"
-                                    aria-checked={prefs.radar === radar.key}
-                                    onClick={() => dispatch(prefsActions.setRadar(radar.key))}
-                                >
-                                    {t(radar.label)}
-                                </button>
-                            ))}
-                        </Box>
+                        {/*
+                         * One switch, not a choice of services: which radar covers this region is
+                         * a fact about where it is, and the map works it out (core/radar.ts).
+                         */}
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={prefs.radar}
+                                    onChange={(e) =>
+                                        dispatch(prefsActions.setRadar(e.target.checked))
+                                    }
+                                />
+                            }
+                            label={t("wx.radar")}
+                        />
 
                         <FormControlLabel
                             control={
