@@ -5,6 +5,13 @@
  * fix (pulsing), and on. The base-map menu lives here rather than only in the settings, because
  * switching to the satellite image or the swisstopo map is something you do while looking at the
  * map, not something you go to a settings page for.
+ *
+ * The menu is a plain child of the stack rather than a Popper. A Popper hangs on the viewport and
+ * cannot be made to fit it -- `flip` only moves a box that is too tall from one overflowing edge to
+ * the other, and `preventOverflow` leaves the vertical axis alone for a `bottom-end` placement --
+ * so all ten rows of it, 608px in Switzerland, ran off the bottom of any screen shorter than about
+ * 844px. The page itself does not scroll, so those rows could not be reached at all. In the stack
+ * the map's own height bounds it and the overflow scrolls; see `.mapctl` in mapchrome.css.
  */
 
 import LayersIcon from "@mui/icons-material/Layers";
@@ -13,7 +20,6 @@ import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Popper from "@mui/material/Popper";
 import Typography from "@mui/material/Typography";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -81,12 +87,7 @@ export const MapControls = ({
                 <LayersIcon fontSize="small" />
             </button>
 
-            <Popper
-                open={open}
-                anchorEl={anchor.current}
-                placement="bottom-end"
-                style={{ zIndex: 600 }}
-            >
+            {open && (
                 <ClickAwayListener
                     onClickAway={(event) => {
                         // Both of this listener's handlers sit on `document`, and on a touch screen
@@ -249,7 +250,7 @@ export const MapControls = ({
                         />
                     </div>
                 </ClickAwayListener>
-            </Popper>
+            )}
         </div>
     );
 };

@@ -30,6 +30,18 @@ for (const theme of ["light", "dark"] as const) {
         await waitForApp(page);
         await shot(page, `${tag}-01-map`);
 
+        // The base-map menu. Nothing photographed it until it was found hanging off the bottom of
+        // the screen with its last rows out of reach -- which is the sort of thing these pictures
+        // exist to catch. The whole window rather than the menu alone, because fitting *in* the
+        // window is what there is to look at. Taken here, over the map as it first appears, rather
+        // than at the end of the run where the map has collected enough detail to make a megabyte.
+        const layers = page.getByRole("button", { name: /base map/i });
+        await layers.click();
+        await expect(page.locator(".basemenu")).toBeVisible();
+        await shot(page, `${tag}-01b-basemenu`);
+        await layers.click();
+        await expect(page.locator(".basemenu")).toBeHidden();
+
         // On a wide screen the filters are a permanent column, as they were in the original, so
         // there is no button to open them -- the first screenshot already shows them.
         const filterButton = page.getByRole("button", { name: "Filters" });
