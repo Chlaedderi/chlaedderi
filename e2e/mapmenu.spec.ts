@@ -3,12 +3,13 @@ import { expect, test, waitForApp } from "./fixtures";
 /**
  * The base-map menu has to fit the map it hangs in.
  *
- * It did not. All ten rows of it -- 608px in Switzerland, which is where the showcase region is, so
- * it is what every first visitor gets -- hung from a Popper on the viewport and ran off the bottom
- * of any screen shorter than about 844px. The page itself does not scroll: `body` is
- * `overflow: hidden` and `html` is `visible`, so that propagates to the viewport. «All approaches»
- * and «All car parks» could therefore not be reached by any gesture at all -- a real wheel over
- * them moved nothing, and only a programmatic `scrollTo` could bring them back.
+ * It did not. All ten rows of it -- about 500px in Switzerland, which is where the showcase region
+ * is, so it is what every first visitor gets -- hung from a Popper on the viewport and ran off the
+ * bottom of any window shorter than roughly 750px: 86px of it at 412x667, 57px at 1280x720, 417px
+ * in landscape. The page itself does not scroll: `body` is `overflow: hidden` and `html` is
+ * `visible`, so that propagates to the viewport. «All approaches» and «All car parks» could
+ * therefore not be reached by any gesture at all -- a real wheel over them moved nothing, and only
+ * a programmatic `scrollTo` could bring them back.
  *
  * A Popper cannot be made to fit: `flip` moves a box that is too tall from one overflowing edge to
  * the other, and `preventOverflow` leaves the vertical axis alone for a `bottom-end` placement. So
@@ -21,6 +22,13 @@ import { expect, test, waitForApp } from "./fixtures";
 type Page = import("@playwright/test").Page;
 
 const SHORT = { width: 412, height: 667 };
+
+/**
+ * Harsher than a real phone on its side (a Pixel 7 rotated is 915x412, and leaves the menu about
+ * 114px), and chosen for that: the app's own bars take 166px off the top whatever the width, so
+ * this is where «bounded by the map» is worth proving. What is left of the menu here is a couple of
+ * rows -- cramped, but every row is reachable, which is the thing that was not true before.
+ */
 const LANDSCAPE = { width: 740, height: 360 };
 
 const openMenu = async (page: Page) => {

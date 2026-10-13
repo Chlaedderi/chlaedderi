@@ -9,9 +9,9 @@
  * The menu is a plain child of the stack rather than a Popper. A Popper hangs on the viewport and
  * cannot be made to fit it -- `flip` only moves a box that is too tall from one overflowing edge to
  * the other, and `preventOverflow` leaves the vertical axis alone for a `bottom-end` placement --
- * so all ten rows of it, 608px in Switzerland, ran off the bottom of any screen shorter than about
- * 844px. The page itself does not scroll, so those rows could not be reached at all. In the stack
- * the map's own height bounds it and the overflow scrolls; see `.mapctl` in mapchrome.css.
+ * so the whole menu ran off the bottom of any screen too short to hold it. The page itself does not
+ * scroll, so the rows that fell off could not be reached at all. In the stack the map's own height
+ * bounds it and the overflow scrolls; see `.mapctl` in mapchrome.css.
  */
 
 import LayersIcon from "@mui/icons-material/Layers";

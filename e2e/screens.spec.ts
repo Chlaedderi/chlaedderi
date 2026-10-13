@@ -30,18 +30,6 @@ for (const theme of ["light", "dark"] as const) {
         await waitForApp(page);
         await shot(page, `${tag}-01-map`);
 
-        // The base-map menu. Nothing photographed it until it was found hanging off the bottom of
-        // the screen with its last rows out of reach -- which is the sort of thing these pictures
-        // exist to catch. The whole window rather than the menu alone, because fitting *in* the
-        // window is what there is to look at. Taken here, over the map as it first appears, rather
-        // than at the end of the run where the map has collected enough detail to make a megabyte.
-        const layers = page.getByRole("button", { name: /base map/i });
-        await layers.click();
-        await expect(page.locator(".basemenu")).toBeVisible();
-        await shot(page, `${tag}-01b-basemenu`);
-        await layers.click();
-        await expect(page.locator(".basemenu")).toBeHidden();
-
         // On a wide screen the filters are a permanent column, as they were in the original, so
         // there is no button to open them -- the first screenshot already shows them.
         const filterButton = page.getByRole("button", { name: "Filters" });
@@ -55,9 +43,13 @@ for (const theme of ["light", "dark"] as const) {
         // The layers menu, which is a screen of its own and was not photographed by anything: the
         // base maps, the Swiss overlays and the radar all live in it, so a change to any of them
         // was invisible to «look at the result» and to every preview.
+        //
+        // The whole window rather than the menu alone, because the menu is tall enough to need the
+        // room: it once hung off the bottom of the screen with its last rows out of reach, and a
+        // picture of the menu by itself is exactly the picture in which that does not show.
         const layers = page.getByRole("button", { name: /base map/i });
         await layers.click();
-        await shotOf(page.locator(".basemenu"), `${tag}-02b-layers`);
+        await shot(page, `${tag}-02b-layers`);
         // The button is the menu's single source of truth, so it is also how it is put away.
         await layers.click();
         await expect(page.locator(".basemenu")).toHaveCount(0);

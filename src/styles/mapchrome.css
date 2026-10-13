@@ -25,13 +25,13 @@
  * ---------- the control stack, top right
  *
  * The stack is bounded by the map, because the base-map menu hangs from its second button and is
- * 608px tall in Switzerland -- taller than the map on a phone, and far taller than any map in
- * landscape. The menu used to be a Popper portaled to `document.body`, where nothing bounded it at
- * all: the rows below the fold were drawn past the bottom of the screen, and `body` is
- * `overflow: hidden` (theme.ts), so no wheel and no drag could reach them. Here the menu is the
- * only item that may shrink, so this one cap is the whole fix -- 10px at the top, and the 28px the
- * legend and the planner already leave for Leaflet's attribution. A percentage re-resolves on every
- * layout: a rotation, a resized window, iOS hiding its address bar. Nothing is measured in
+ * ten rows and about 500px tall in Switzerland -- taller than the map on a short window, and far
+ * taller than any map in landscape. The menu used to be a Popper portaled to `document.body`, where
+ * nothing bounded it at all: the rows below the fold were drawn past the bottom of the screen, and
+ * `body` is `overflow: hidden` (theme.ts), so no wheel and no drag could reach them. Here the menu
+ * is the only item that may shrink, so this one cap is the whole fix -- 10px at the top, and the
+ * 28px the legend and the planner already leave for Leaflet's attribution. A percentage re-resolves
+ * on every layout: a rotation, a resized window, iOS hiding its address bar. Nothing is measured in
  * JavaScript, and so nothing can go stale.
  *
  * Above `.planbar` (520), because the planner and the menu can be open at once, their boxes overlap
