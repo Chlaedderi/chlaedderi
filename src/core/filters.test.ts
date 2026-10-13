@@ -178,6 +178,35 @@ describe("the safety filters", () => {
         }
     });
 
+    it("drop a crag the warning marks, for each of the three filters", () => {
+        // The testing pack derives a closure but no caution and no «not for families», so the test
+        // above holds for those two even if they did nothing. Here each one has a crag to hide.
+        const pack = testing as unknown as Mappack;
+        const warned = mountPacks([
+            {
+                ...pack,
+                sectors: pack.sectors.map((s, i) =>
+                    i === 0
+                        ? { ...s, warn: "Dangerous: old bolts and loose rock." }
+                        : i === 1
+                          ? { ...s, warn: "Not for children: the base is a cliff edge." }
+                          : s,
+                ),
+            },
+        ]).crags;
+        for (const [key, field] of [
+            ["hideCaution", "caution"],
+            ["hideNoFamily", "noFamily"],
+            ["hideClosure", "closure"],
+        ] as const) {
+            const flagged = warned.filter((c) => c[field]);
+            expect(flagged.length, field).toBeGreaterThan(0);
+            const shown = applyFilters(warned, { ...emptyFilters(), [key]: true }, "area", 1, ctx);
+            const ids = new Set(shown.map((m) => m.crag.id));
+            for (const c of flagged) expect(ids.has(c.id), `${key} ${c.id}`).toBe(false);
+        }
+    });
+
     it("onlyMapped drops crags with no position and those pinned to a car park", () => {
         const shown = applyFilters(crags, { ...emptyFilters(), onlyMapped: true }, "area", 1, ctx);
         expect(shown.every((m) => m.crag.coord && !m.crag.anchor)).toBe(true);
