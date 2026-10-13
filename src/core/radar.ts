@@ -4,22 +4,46 @@
  * Whether the radar is on is the viewer's choice. *Which service answers* is not a choice worth
  * offering, because the right answer is a fact about where the region is: the Protezione Civile
  * composite is finer than anything else over Italy and draws nothing whatsoever outside its own
- * domain, while RainViewer draws something everywhere. Offering both as radio buttons meant the
- * Swiss region that ships could be shown a radar that is simply blank, with nothing on screen to
- * say why.
+ * domain, MeteoSwiss covers Switzerland and a little of the Alps around it, and RainViewer draws
+ * something everywhere. Offering them as radio buttons meant the Swiss region that ships could be
+ * shown a radar that is simply blank, with nothing on screen to say why.
  */
 
 import type { Region } from "@domain/model";
 
-/** The services the map can draw. `off` is not one of them -- then there is no layer at all. */
-export type RadarSource = "rv" | "dpc";
+import type { RadarGrid } from "./radarGrid";
 
-export interface RadarFrames {
-    /** Tile URL template per frame, oldest first. */
-    readonly urls: readonly string[];
+/** The services the map can draw. `off` is not one of them -- then there is no layer at all. */
+export type RadarSource = "rv" | "dpc" | "ch";
+
+/** What every source hands over: one entry per frame, oldest first. */
+interface Timeline {
     /** The time each frame covers, in ms. One per frame, so `times.length` is the frame count. */
     readonly times: readonly number[];
 }
+
+/** A source that is already a picture: the map just stacks the tiles. */
+export interface TileFrames extends Timeline {
+    readonly kind: "tiles";
+    /** Tile URL template per frame, oldest first. */
+    readonly urls: readonly string[];
+}
+
+/** A source that is numbers: the map colours them itself. */
+export interface GridFrames extends Timeline {
+    readonly kind: "grids";
+    readonly grid: RadarGrid;
+    /** Ramp indices per frame, `row * grid.nx + col`. See core/rainRamp.ts. */
+    readonly cells: readonly Uint8Array[];
+}
+
+export type RadarFrames = TileFrames | GridFrames;
+
+/**
+ * This source cannot answer here at all -- not a dropped request but a wrong one, so retrying is
+ * pointless and standing another radar in is the only sensible answer.
+ */
+export class RadarUnavailable extends Error {}
 
 /**
  * Where the Italian radar is worth asking: roughly the peninsula, deliberately drawn inside its
@@ -44,11 +68,12 @@ const centreOf = (region: Region): readonly [number, number] | null => {
 
 /**
  * The radar for this region. RainViewer is the answer wherever nothing finer is known to cover the
- * ground, including Switzerland -- the Italian radar reaches the southern valleys only across the
- * Alpine crest, where its beam is kilometres above the rain.
+ * ground. Switzerland gets MeteoSwiss rather than the Italian radar, which reaches the southern
+ * valleys only across the Alpine crest, where its beam is kilometres above the rain.
  */
 export const radarSource = (region: Region | null): RadarSource => {
-    if (!region || region.ch) return "rv";
+    if (!region) return "rv";
+    if (region.ch) return "ch";
     const centre = centreOf(region);
     if (!centre) return "rv";
     const [lat, lon] = centre;

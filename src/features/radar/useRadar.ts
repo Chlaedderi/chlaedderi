@@ -14,7 +14,8 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { uiActions } from "@app/slices/uiSlice";
-import type { RadarFrames, RadarSource } from "@core/radar";
+import { type RadarFrames, type RadarSource, RadarUnavailable } from "@core/radar";
+import { fetchChFrames, forgetChFrames } from "@services/meteoswissRadar";
 import { fetchFrames } from "@services/rainviewer";
 
 /** How long a frame shows. */
@@ -58,6 +59,7 @@ export const useRadar = (
     // region's own radar is tried again next time rather than quietly written off.
     const source: RadarSource | null = chosen && chosen !== "rv" && fellBack ? "rv" : chosen;
 
+    const onLayerErrorRef = useRef<(which: RadarSource) => void>(() => {});
     // Held in a ref so that changing language does not tear down the polling and start it again.
     const tRef = useRef(t);
     tRef.current = t;
@@ -66,10 +68,12 @@ export const useRadar = (
     framesRef.current = frames;
 
     useEffect(() => {
-        if (source !== "rv") {
+        // The Italian radar is a live tile service with nothing to fetch; the other two are frames.
+        if (source !== "rv" && source !== "ch") {
             setFrames(null);
             return;
         }
+        const load = source === "ch" ? fetchChFrames : fetchFrames;
 
         const controller = new AbortController();
         let alive = true;
@@ -84,7 +88,14 @@ export const useRadar = (
             inFlight = true;
             last = Date.now();
             setLoading(true);
-            void fetchFrames(controller.signal)
+            void load(controller.signal, (partial) => {
+                // The Swiss radar decodes twenty-four frames, newest first. Showing the newest the
+                // moment it lands means the picture somebody is waiting for is not behind the
+                // other twenty-three.
+                if (!alive) return;
+                setFrames(partial);
+                setIndex(partial.times.length - 1);
+            })
                 .then((found) => {
                     if (!alive) return;
                     setFrames(found);
@@ -92,8 +103,14 @@ export const useRadar = (
                     told = false;
                     dispatch(uiActions.setRadarDown(false));
                 })
-                .catch(() => {
+                .catch((problem: unknown) => {
                     if (!alive) return;
+                    // Not a dropped request but a wrong one: this source cannot answer here, so
+                    // stand another in rather than retrying every half minute for ever.
+                    if (problem instanceof RadarUnavailable) {
+                        onLayerErrorRef.current(source);
+                        return;
+                    }
                     // Say it once per streak: the timer below retries every half minute, and a
                     // toast per retry would stack up a column of them.
                     if (!told) {
@@ -163,11 +180,21 @@ export const useRadar = (
     const onLayerError = useCallback(
         (which: RadarSource) => {
             if (which === "rv" || fellBack) return;
-            dispatch(uiActions.toast({ message: t("rd.dpcFail"), severity: "warning" }));
+            if (which === "ch") forgetChFrames();
+
+            dispatch(
+                uiActions.toast({
+                    message: t(which === "ch" ? "rd.chFail" : "rd.dpcFail"),
+                    severity: "warning",
+                }),
+            );
             dispatch(uiActions.setRadarFellBack(true));
         },
         [dispatch, t, fellBack],
     );
+
+    // Read inside the fetch loop without making the loop depend on it.
+    onLayerErrorRef.current = onLayerError;
 
     return { source, frames, index, playing, loading, failed, setPlaying, onLayerError };
 };

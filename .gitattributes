@@ -1,3 +1,2 @@
-# The mappacks are minified single-line JSON: a textual diff of them is noise, and the pack checks
-# (tools/make-packs.sh --check, tools/validate-packs.sh) are what actually guards their content.
-maps/pack.*.json -diff
+# A real radar frame, kept as a test fixture: binary, so no end-of-line translation and no diff.
+src/test/fixtures/*.h5 binary

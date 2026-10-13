@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test, waitForApp } from "./fixtures";
+import { E2E_HOST, E2E_ORIGIN, expect, test, waitForApp } from "./fixtures";
 
 /**
  * Pasting a link into the packs dialog.
@@ -14,10 +14,10 @@ import { expect, test, waitForApp } from "./fixtures";
  * test and is not what an iPhone does either; a stubbed `readText` exercises every line the app
  * owns, from the button being there to the offer coming up.
  *
- * tools/serve.pl serves maps/ next to the app, so 127.0.0.1:4173 stands in for somebody's host.
+ * tools/serve.pl serves maps/ next to the app, so the suite's own host stands in for somebody's host.
  */
 
-const HOST = "http://127.0.0.1:4173";
+const HOST = E2E_ORIGIN;
 const PACK = `${HOST}/maps/pack.testing.json`;
 
 /** A clipboard holding exactly this, or refusing to be read when `text` is null. */
@@ -58,7 +58,9 @@ test.describe("a link pasted into the packs dialog", () => {
         // One dialog on screen, and it is the offer: two modals whose lives overlap leave a
         // backdrop above the buttons, which is a question that cannot be answered.
         const dialog = page.getByRole("dialog");
-        await expect(dialog.getByText(/from 127\.0\.0\.1:4173/i)).toBeVisible({ timeout: 15_000 });
+        await expect(dialog.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toBeVisible({
+            timeout: 15_000,
+        });
         await expect(dialog).toHaveCount(1);
 
         await dialog.getByRole("button", { name: /check this region|gebiet prüfen/i }).click();
@@ -73,7 +75,9 @@ test.describe("a link pasted into the packs dialog", () => {
 
         await pasteIt(page);
 
-        await expect(page.getByText(/from 127\.0\.0\.1:4173/i)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toBeVisible({
+            timeout: 15_000,
+        });
     });
 
     test("says so when the clipboard holds no link, and stays where it is", async ({ page }) => {
@@ -85,7 +89,7 @@ test.describe("a link pasted into the packs dialog", () => {
         await expect(
             page.getByText(/no link to a region|kein link zu einer region/i),
         ).toBeVisible();
-        await expect(page.getByText(/from 127\.0\.0\.1:4173/i)).toHaveCount(0);
+        await expect(page.getByText(new RegExp(`from ${E2E_HOST}`, "i"))).toHaveCount(0);
         // Still the packs dialog, so the viewer can try the address field instead.
         await expect(
             page.getByRole("button", { name: /paste a link|link einfügen/i }),

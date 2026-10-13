@@ -92,6 +92,10 @@ export default defineConfig({
         // deterministic and `build && git diff --exit-code` is a meaningful check.
         sourcemap: false,
     },
+    // The radar decoder runs in a module worker. Vite's default worker output is an IIFE, which
+    // contradicts `{ type: "module" }` and fails to construct in a *build* while working perfectly
+    // in dev -- so it is set here, once, where it cannot be forgotten.
+    worker: { format: "es" },
     plugins: [
         react(),
         svgr(),
@@ -171,6 +175,12 @@ export default defineConfig({
     server: { host: "127.0.0.1", port: 5173 },
     test: {
         globals: true,
+        // A screen that arrives through React.lazy, rendered in jsdom, on a machine that is also
+        // running the browser suite and a build -- which is what `git commit` does -- can take
+        // longer than vitest's default five seconds to get as far as its first assertion. That
+        // showed up as two of the app tests failing in the hook and passing on their own. This is
+        // only ever how long a *failing* test takes.
+        testTimeout: 20_000,
         environment: "jsdom",
         setupFiles: "./src/test/setup.ts",
         root: ".",

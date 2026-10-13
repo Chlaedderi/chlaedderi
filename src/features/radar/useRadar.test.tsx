@@ -28,7 +28,11 @@ vi.mock("@services/rainviewer", async (importOriginal) => ({
 
 const mockFetchFrames = vi.mocked(fetchFrames);
 
-const frames = { urls: ["a/{z}/{x}/{y}.png", "b/{z}/{x}/{y}.png"], times: [1, 2] };
+const frames = {
+    kind: "tiles",
+    urls: ["a/{z}/{x}/{y}.png", "b/{z}/{x}/{y}.png"],
+    times: [1, 2],
+} as const;
 
 /** The hook's result, so a test can read what the map would draw. */
 let seen: ReturnType<typeof useRadar> | null = null;

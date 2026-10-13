@@ -665,6 +665,7 @@
     "rain.no": "Nicht regensicher",
     "rain.yes": "Regensicher",
     "rd.at": "Radar {0}",
+    "rd.chFail": "Das Radar der MeteoSchweiz konnte nicht geladen werden; stattdessen das 2-Stunden-Radar.",
     "rd.down": "Radar nicht erreichbar – wird weiter versucht.",
     "rd.dpcFail": "Das italienische Radar konnte nicht geladen werden; stattdessen das 2-Stunden-Radar.",
     "rd.fail": "Das Regenradar konnte nicht geladen werden.",

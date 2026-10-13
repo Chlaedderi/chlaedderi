@@ -665,6 +665,7 @@
     "rain.no": "Not rainproof",
     "rain.yes": "Rainproof",
     "rd.at": "Radar {0}",
+    "rd.chFail": "The MeteoSwiss radar could not be loaded; showing the 2-hour radar instead.",
     "rd.down": "Radar unavailable – still trying.",
     "rd.dpcFail": "The Italian radar could not be loaded; showing the 2-hour radar instead.",
     "rd.fail": "The rain radar could not be loaded.",

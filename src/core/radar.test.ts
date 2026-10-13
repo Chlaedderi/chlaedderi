@@ -20,8 +20,8 @@ const at = (lat: number, lon: number, over: Partial<Region> = {}): Region => ({
 });
 
 describe("the radar a region gets", () => {
-    it("is RainViewer in Switzerland", () => {
-        expect(radarSource(swiss)).toBe("rv");
+    it("is the Swiss radar in Switzerland", () => {
+        expect(radarSource(swiss)).toBe("ch");
     });
 
     /*
@@ -29,8 +29,8 @@ describe("the radar a region gets", () => {
      * edge of the sites' range and across the Alpine crest, where the beam is kilometres above the
      * ground. A Swiss region is answered by a source that is looking at it.
      */
-    it("is RainViewer in Switzerland even where the Italian radar nominally reaches", () => {
-        expect(radarSource(at(46.17, 8.8, { ch: true }))).toBe("rv");
+    it("is the Swiss radar even where the Italian one nominally reaches", () => {
+        expect(radarSource(at(46.17, 8.8, { ch: true }))).toBe("ch");
     });
 
     it("is the Italian radar in Italy", () => {
