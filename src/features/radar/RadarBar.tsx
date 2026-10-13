@@ -15,9 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
 import { prefsActions } from "@app/slices/prefsSlice";
-import type { RadarFrames } from "@services/rainviewer";
-
-import type { RadarKind } from "./RadarLayer";
+import type { RadarFrames, RadarSource } from "@core/radar";
 
 const clock = (ms: number): string => {
     const d = new Date(ms);
@@ -25,7 +23,7 @@ const clock = (ms: number): string => {
 };
 
 export const RadarBar = ({
-    kind,
+    source,
     frames,
     index,
     playing,
@@ -33,7 +31,7 @@ export const RadarBar = ({
     loading,
     failed = false,
 }: {
-    readonly kind: RadarKind;
+    readonly source: RadarSource;
     readonly frames: RadarFrames | null;
     readonly index: number;
     readonly playing: boolean;
@@ -46,8 +44,6 @@ export const RadarBar = ({
     const dispatch = useAppDispatch();
     const calm = useMediaQuery("(prefers-reduced-motion: reduce)");
 
-    if (kind === "off") return null;
-
     const at = frames?.times[index];
     // A failure with frames already on screen keeps showing their time: a radar picture a few
     // minutes old is still worth reading, and the toast already said the refresh did not work.
@@ -58,7 +54,7 @@ export const RadarBar = ({
               ? // Not `rd.fail`: that whole sentence is what the toast said once. The bar carries
                 // the standing state, which is shorter and says that it has not given up.
                 t("rd.down")
-              : kind === "dpc"
+              : source === "dpc"
                 ? t("rd.latest")
                 : at
                   ? t("rd.at", { 0: clock(at) })
@@ -70,7 +66,7 @@ export const RadarBar = ({
                 {title}
             </span>
             <span className="scale" aria-hidden="true" />
-            {kind === "rv" && frames && frames.urls.length > 1 && !calm && (
+            {frames && frames.times.length > 1 && !calm && (
                 <IconButton
                     size="small"
                     aria-label={t(playing ? "rd.pause" : "rd.play")}
@@ -82,7 +78,7 @@ export const RadarBar = ({
             <IconButton
                 size="small"
                 aria-label={t("rd.off")}
-                onClick={() => dispatch(prefsActions.setRadar("off"))}
+                onClick={() => dispatch(prefsActions.setRadar(false))}
             >
                 <CloseIcon fontSize="small" />
             </IconButton>

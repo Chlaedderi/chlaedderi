@@ -5,15 +5,10 @@
  * a coarse radar picture is still worth looking at when you are deciding whether to drive out.
  */
 
+import type { RadarFrames } from "@core/radar";
+
 export const RAINVIEWER_ATTRIBUTION =
     'Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>';
-
-export interface RadarFrames {
-    /** Tile URL template per frame, oldest first. */
-    readonly urls: readonly string[];
-    /** The time each frame covers, in ms. */
-    readonly times: readonly number[];
-}
 
 interface MapsResponse {
     host?: string;

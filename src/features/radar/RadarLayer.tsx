@@ -1,9 +1,9 @@
 /**
  * The rain radar on the map.
  *
- * Two sources. **RainViewer** gives the last two hours as frames, which animate -- seeing where a
- * band of rain is moving is the whole point of a radar. **Protezione Civile** is a single, much
- * finer image over Italy, which is where most of this atlas is.
+ * Two sources, and the region decides which (`core/radar.ts`). **RainViewer** gives the last two
+ * hours as frames, which animate -- seeing where a band of rain is moving is the whole point of a
+ * radar. **Protezione Civile** is a single, much finer image, over Italy and nowhere else.
  *
  * All the frames are added as layers at once and switched by opacity rather than being added and
  * removed: a tile layer that has to load on every step flickers.
@@ -13,6 +13,7 @@ import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 
+import type { RadarFrames, RadarSource } from "@core/radar";
 import {
     CRS_900913,
     DPC_ATTRIBUTION,
@@ -20,27 +21,21 @@ import {
     DPC_MAX_NATIVE_ZOOM,
     DPC_URL,
 } from "@services/dpcRadar";
-import {
-    RADAR_MAX_NATIVE_ZOOM,
-    RAINVIEWER_ATTRIBUTION,
-    type RadarFrames,
-} from "@services/rainviewer";
-
-export type RadarKind = "off" | "rv" | "dpc";
+import { RADAR_MAX_NATIVE_ZOOM, RAINVIEWER_ATTRIBUTION } from "@services/rainviewer";
 
 /** The frame that is showing is drawn at this opacity; the rest at zero. */
 const SHOWN = 0.65;
 
 export const RadarLayer = ({
-    kind,
+    source,
     frames,
     index,
     onError,
 }: {
-    readonly kind: RadarKind;
+    readonly source: RadarSource;
     readonly frames: RadarFrames | null;
     readonly index: number;
-    readonly onError: (kind: RadarKind) => void;
+    readonly onError: (source: RadarSource) => void;
 }) => {
     const map = useMap();
     const layers = useRef<L.TileLayer[]>([]);
@@ -61,7 +56,7 @@ export const RadarLayer = ({
         // taken down -- which happens on a phone every time a crag is opened.
         const added: L.TileLayer[] = [];
 
-        if (kind === "dpc") {
+        if (source === "dpc") {
             const layer = L.tileLayer.wms(DPC_URL, {
                 layers: DPC_LAYER,
                 styles: "",
@@ -87,7 +82,7 @@ export const RadarLayer = ({
             });
             layer.addTo(map);
             added.push(layer);
-        } else if (kind === "rv" && frames?.urls.length) {
+        } else if (source === "rv" && frames?.urls.length) {
             for (const [n, url] of frames.urls.entries()) {
                 added.push(
                     L.tileLayer(url, {
@@ -116,13 +111,13 @@ export const RadarLayer = ({
         // the effect below moves the opacity. Rebuilding every tile layer on each frame would make
         // the animation reload its tiles and flicker.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map, kind, frames]);
+    }, [map, source, frames]);
 
     // Stepping through the frames: only the opacity changes.
     useEffect(() => {
-        if (kind !== "rv") return;
+        if (source !== "rv") return;
         layers.current.forEach((layer, n) => layer.setOpacity(n === index ? SHOWN : 0));
-    }, [kind, index]);
+    }, [source, index]);
 
     return null;
 };
