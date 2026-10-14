@@ -128,12 +128,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const installFromUrl = useCallback(
-        async (url: string, key?: string) => {
+        async (url: string, key?: string, expect?: string): Promise<PackLoad> => {
             // Busy from the first byte, not only once the download is in: «unload» pressed while
             // «fetch again» was still downloading was undone the moment the download finished.
             setBusy(true);
             try {
                 const load = await fetchPack(url, undefined, key);
+                // «Fetch again» is for the region it sits beside. An address that now serves some
+                // other id would overwrite that region unasked -- the warning that says so lives
+                // in the offer dialog, which this path never passes through.
+                if (load.ok && expect !== undefined && load.pack.id !== expect) {
+                    const problem = {
+                        where: "",
+                        message: `the address now serves ${load.pack.id}, not ${expect}`,
+                        code: "otherid",
+                        detail: load.pack.id,
+                    } as const;
+                    return { ok: false, problems: [problem] };
+                }
                 // What is remembered is the address that answered, not the one that was pasted: it
                 // is what «fetch again» asks for, and what a link to this region will carry -- with
                 // the key beside it, for a region that arrived locked.

@@ -213,10 +213,39 @@ describe("PackOffer", () => {
             },
         });
 
-        renderApp(<PackOffer />, { store, data: mountedShowcase() });
+        const data = mountedShowcase();
+        renderApp(<PackOffer />, {
+            store,
+            data: { ...data, regions: [...data.regions, { ...data.regions[0]!, key: "ow" }] },
+        });
 
         await waitFor(() => expect(store.getState().ui.packOffer).toBeNull());
         expect(fetched).not.toHaveBeenCalled();
         expect(store.getState().prefs.region).toBe("ow");
+    });
+
+    it("fetches a listed region again when its stored copy did not mount", async () => {
+        const fetched = vi.fn(() => Promise.resolve(answer(pack())));
+        globalThis.fetch = fetched as unknown as typeof fetch;
+        const base = makeStore().getState();
+        const store = makeStore({
+            ui: {
+                ...base.ui,
+                packOffer: { url: "https://example.org/pack.ow.json", fetchNow: true },
+            },
+            prefs: {
+                ...base.prefs,
+                packs: [
+                    { id: "ow", src: { type: "url", url: "https://example.org/pack.ow.json" } },
+                ],
+            },
+        });
+
+        // Listed, but evicted by the browser: only the showcase is mounted. Switching to it would
+        // bounce straight back off, so the link has to bring it in again.
+        renderApp(<PackOffer />, { store, data: mountedShowcase() });
+
+        await waitFor(() => expect(fetched).toHaveBeenCalledOnce());
+        expect(store.getState().ui.packOffer).not.toBeNull();
     });
 });

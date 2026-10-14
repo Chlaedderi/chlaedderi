@@ -527,6 +527,7 @@
     "pk.empty": "Keine Region geladen, darum gibt es nichts zu zeigen.",
     "pk.err.aborted": "Das Laden wurde abgebrochen.",
     "pk.err.badblob": "Diese Gebietsdatei ist beschädigt oder in einem neueren Format, als diese App lesen kann.",
+    "pk.err.otherid": "Die Adresse liefert jetzt ein anderes Gebiet ({0}), deshalb wurde nichts ersetzt. Über «Adresse eines Mappacks» geladen, zeigt sich, was es ersetzen würde.",
     "pk.err.badkey": "Dieser Schlüssel öffnet dieses Gebiet nicht. Beim Absender nach dem aktuellen Link fragen.",
     "pk.err.cors": "Die Adresse ist nicht erreichbar: entweder fehlt die Verbindung, oder der Server erlaubt den Zugriff von hier nicht (CORS).",
     "pk.err.html": "Die Adresse liefert eine Webseite, kein Mappack. Auf GitHub braucht es die «Raw»-Adresse der Datei.",

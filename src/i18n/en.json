@@ -527,6 +527,7 @@
     "pk.empty": "No region loaded, so there is nothing to show.",
     "pk.err.aborted": "Loading was stopped.",
     "pk.err.badblob": "This region file is damaged, or written in a newer format than this app can read.",
+    "pk.err.otherid": "The address now answers with a different region ({0}), so nothing was replaced. Load it from «Address of a mappack» to see what it would replace.",
     "pk.err.badkey": "This key does not open this region. Ask whoever shared it for the current link.",
     "pk.err.cors": "The address cannot be reached: either there is no connection, or the host does not allow access from here (CORS).",
     "pk.err.html": "The address answers with a web page, not a mappack. On GitHub it is the «Raw» address of the file that is needed.",

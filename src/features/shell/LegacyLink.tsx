@@ -59,7 +59,10 @@ export const LegacyLink = () => {
         // A locked region travels with its key in the fragment, never in a request.
         const offeredKey = params.get("k") ?? undefined;
         const theirs = crag ? regions.find((r) => r.key === crag.packId) : null;
-        const haveIt = offered ? installed.some((p) => p.src?.url === offered) : true;
+        // Mounted, not merely listed: an evicted region is still in the list and has no crags.
+        const haveIt = offered
+            ? installed.some((p) => p.src?.url === offered && regions.some((r) => r.key === p.id))
+            : true;
         if (offered && !haveIt && (!crag || theirs?.partial === true)) {
             dispatch(uiActions.offerPack({ url: offered, key: offeredKey, then: token }));
             if (!crag) {
