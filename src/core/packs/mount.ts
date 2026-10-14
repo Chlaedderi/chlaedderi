@@ -39,7 +39,8 @@ const routeKeys = (sector: StoredSector): string[] => {
     const seen = new Set<string>();
     return sector.routes.map((route, i) => {
         const kept = sector.rk?.[i];
-        if (kept) {
+        // A held key once only: two routes under one key would share a favourite and a logbook.
+        if (kept && !seen.has(kept)) {
             seen.add(kept);
             return kept;
         }
@@ -127,7 +128,8 @@ export const toCrag = (sector: StoredSector, packId: string): Crag => {
         gmax: sector.gmax ?? null,
         gminI: sector.gminI ?? null,
         gmaxI: sector.gmaxI ?? null,
-        nRoutes: sector.nRoutes ?? null,
+        // Optional in a pack; the list is what it counts, when it is not given.
+        nRoutes: sector.nRoutes ?? (sector.routes.length || null),
         nSingle: sector.nSingle ?? null,
         nMulti: sector.nMulti ?? null,
         bands: sector.bands ?? null,
@@ -295,9 +297,15 @@ export const mountPacks = (packs: readonly Mappack[]): MountedData => {
             if (sector.id in byId) continue;
             const pointed: StoredSector = {
                 ...sector,
-                pk: sector.pk ? (renamed[sector.pk] ?? sector.pk) : sector.pk,
-                pkOff: sector.pkOff ? (renamed[sector.pkOff] ?? sector.pkOff) : sector.pkOff,
-                ap: sector.ap?.map((a) => ({ ...a, pk: renamed[a.pk] ?? a.pk })) ?? sector.ap,
+                // A car park the pack does not list is no car park: kept as written, its raw id
+                // was shown as a name, and one with a slash in it named another region's.
+                pk: sector.pk ? (renamed[sector.pk] ?? null) : sector.pk,
+                pkOff: sector.pkOff ? (renamed[sector.pkOff] ?? null) : sector.pkOff,
+                ap:
+                    sector.ap?.map((a) => ({
+                        ...a,
+                        pk: renamed[a.pk] ?? parkKey(pack.id, a.pk),
+                    })) ?? sector.ap,
                 // Every index is moved into the joined list, and one that is not this pack's --
                 // past its own list, or into none at all -- points at no source rather than at
                 // the next pack's: a picture must never be credited to somebody else's source.

@@ -91,5 +91,11 @@ describe("DataProvider", () => {
         });
 
         await waitFor(() => expect(api!.regions.map((r) => r.key)).toEqual(["ow"]));
+
+        // Unloaded in another tab: it goes here too.
+        act(() => {
+            store.dispatch(prefsActions.restore({ ...store.getState().prefs, packs: [] }));
+        });
+        await waitFor(() => expect(api!.onlyShowcase).toBe(true));
     });
 });

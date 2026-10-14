@@ -63,4 +63,24 @@ describe("PacksDialog", () => {
             fetchNow: true,
         });
     });
+
+    it("follows a hand-written link without the slash, too", () => {
+        const store = opened();
+        renderApp(
+            <>
+                <PacksDialog />
+                <Where />
+            </>,
+            { store },
+        );
+        const pack = "https://example.org/pack.ow.chlpack";
+        fireEvent.change(screen.getByLabelText(/address of a mappack/i), {
+            target: {
+                value: `https://xn--chldderi-2za.ch/#pack?url=${encodeURIComponent(pack)}&k=abc`,
+            },
+        });
+        fireEvent.click(screen.getByRole("button", { name: /^load$/i }));
+        expect(store.getState().ui.packOffer).toBeNull();
+        expect(screen.getByTestId("where").textContent).toMatch(/^\/pack\?/);
+    });
 });

@@ -199,6 +199,8 @@ export const MapPane = () => {
     // Tiles that will not load: an offline device, a blocked host, a base map that is down.
     const [tileTrouble, setTileTrouble] = useState(false);
     const tileErrors = useRef(0);
+    /** Closed by the viewer: the next failing tile must not put it straight back. */
+    const tileDismissed = useRef(false);
     const tileOk = useRef(false);
     const [openPark, setOpenPark] = useState<string | null>(null);
 
@@ -210,6 +212,7 @@ export const MapPane = () => {
     useEffect(() => {
         tileErrors.current = 0;
         tileOk.current = false;
+        tileDismissed.current = false;
         setTileTrouble(false);
     }, [base.url]);
 
@@ -436,8 +439,9 @@ export const MapPane = () => {
     const plannerStarts = useMemo(() => {
         const crag = planCrag;
         if (!crag) return [];
+        // Only car parks that exist: one the pack names but does not list has nowhere to start.
         const keys = [...new Set([crag.pk, ...(crag.ap ?? []).map((a) => a.pk)])].filter(
-            (k): k is string => Boolean(k),
+            (k): k is string => Boolean(k) && parks[k!] !== undefined,
         );
         const out = keys.map((key) => ({
             value: key,
@@ -450,7 +454,7 @@ export const MapPane = () => {
             label: planFrom ? t("pl.point") : t("pl.from.map"),
         });
         return out;
-    }, [planCrag, me, parkName, planFrom, t]);
+    }, [planCrag, me, parks, parkName, planFrom, t]);
 
     // Plan as soon as the panel is open and there is both a start and a crag to reach.
     useEffect(() => {
@@ -585,7 +589,11 @@ export const MapPane = () => {
                             // waits for several failures and gives up the moment one tile arrives.
                             tileerror: () => {
                                 tileErrors.current += 1;
-                                if (tileErrors.current >= 4 && !tileOk.current)
+                                if (
+                                    tileErrors.current >= 4 &&
+                                    !tileOk.current &&
+                                    !tileDismissed.current
+                                )
                                     setTileTrouble(true);
                             },
                             tileload: () => {
@@ -723,7 +731,10 @@ export const MapPane = () => {
                 <Alert
                     severity="warning"
                     data-testid="tile-trouble"
-                    onClose={() => setTileTrouble(false)}
+                    onClose={() => {
+                        tileDismissed.current = true;
+                        setTileTrouble(false);
+                    }}
                     sx={{
                         position: "absolute",
                         top: 8,

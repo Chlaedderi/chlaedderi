@@ -55,7 +55,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // «installed» in the packs dialog while the map showed the showcase.
     const tried = useRef(new Set<string>());
     const started = useRef(false);
+    const latestInstalled = useRef(installed);
+    latestInstalled.current = installed;
     useEffect(() => {
+        // A region unloaded elsewhere -- another tab -- goes here too, and may be read anew later.
+        const listed = new Set(installed.map((note) => note.id));
+        for (const id of [...tried.current]) if (!listed.has(id)) tried.current.delete(id);
+        setPacks((current) =>
+            current.every((p) => listed.has(p.id))
+                ? current
+                : current.filter((p) => listed.has(p.id)),
+        );
         const fresh = installed.filter((note) => !tried.current.has(note.id));
         for (const note of fresh) tried.current.add(note.id);
         // Nothing new after the first pass: nothing to do. The first pass always runs, so that
@@ -76,8 +86,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             // leaving a region the viewer was just told is loaded, and is not, until a reload.
             // Not cancelled on unmount either: a second run skips what the first already took on,
             // so the first has to see it through.
+            // And only what is still listed: a region unloaded while it was being read stays gone.
+            const still = new Set(latestInstalled.current.map((note) => note.id));
             setPacks((current) => [
-                ...loaded.filter((p) => !current.some((c) => c.id === p.id)),
+                ...loaded.filter((p) => still.has(p.id) && !current.some((c) => c.id === p.id)),
                 ...current,
             ]);
             if (first) setBooted(true);

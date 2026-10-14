@@ -36,7 +36,7 @@ describe("Persistence", () => {
     it("writes no settings before the stored ones are read back", async () => {
         // localStorage had lost them; IndexedDB and the Cache still hold the installed region.
         const note = { id: "ow", src: { type: "url", url: "https://example.org/pack.ow.json" } };
-        fake.saved.prefs = { ...makeStore().getState().prefs, packs: [note] };
+        fake.saved.prefs = { ...makeStore().getState().prefs, packs: [note], region: "ow" };
 
         const store = makeStore();
         const legend = store.getState().prefs.legend;
@@ -44,6 +44,8 @@ describe("Persistence", () => {
         // A setting changed at start, while the store is still being read.
         act(() => {
             store.dispatch(prefsActions.setFlag({ key: "legend", value: !legend }));
+            // And the app, finding nothing installed, showed the showcase meanwhile.
+            store.dispatch(prefsActions.setRegion("testing"));
         });
         await act(async () => {
             await new Promise((resolve) => setTimeout(resolve, 600));
@@ -58,6 +60,8 @@ describe("Persistence", () => {
         // The region came back, the change made meanwhile was kept, and what is written has both.
         expect(store.getState().prefs.packs.map((p) => p.id)).toEqual(["ow"]);
         expect(store.getState().prefs.legend).toBe(!legend);
+        // The region the viewer left, not the stand-in picked while it was missing.
+        expect(store.getState().prefs.region).toBe("ow");
         const written = fake.set.mock.calls.filter(([key]) => key === "prefs");
         expect(written.length).toBeGreaterThan(0);
         for (const [, value] of written) {

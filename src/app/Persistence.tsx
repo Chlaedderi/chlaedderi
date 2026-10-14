@@ -88,43 +88,59 @@ export const Persistence = () => {
     // ---- read back once
     useEffect(() => {
         void (async () => {
-            await store.ready;
-            const [fav, log, saved] = await Promise.all([
-                store.get("fav"),
-                store.get("log"),
-                store.get("prefs"),
-            ]);
-            if (fav) known.current.fav = JSON.stringify(fav);
-            if (log) known.current.log = JSON.stringify(log);
-            if (saved) known.current.prefs = JSON.stringify(saved);
-            loaded.current = true;
+            try {
+                await store.ready;
+                const [fav, log, saved] = await Promise.all([
+                    store.get("fav"),
+                    store.get("log"),
+                    store.get("prefs"),
+                ]);
+                if (fav) known.current.fav = JSON.stringify(fav);
+                if (log) known.current.log = JSON.stringify(log);
+                if (saved) known.current.prefs = JSON.stringify(saved);
+                loaded.current = true;
 
-            // Merged with whatever was added here while the store was still being read.
-            const clean = fav
-                ? cleanFavourites(fav)
-                : { c: new Set<string>(), r: new Set<string>() };
-            const now = latestFav.current;
-            if (fav || now.crags.length || now.routes.length) {
-                dispatch(
-                    favouritesActions.restore({
-                        crags: [...new Set([...clean.c, ...now.crags])],
-                        routes: [...new Set([...clean.r, ...now.routes])],
-                    }),
+                // Merged with whatever was added here while the store was still being read.
+                const clean = fav
+                    ? cleanFavourites(fav)
+                    : { c: new Set<string>(), r: new Set<string>() };
+                const now = latestFav.current;
+                if (fav || now.crags.length || now.routes.length) {
+                    dispatch(
+                        favouritesActions.restore({
+                            crags: [...new Set([...clean.c, ...now.crags])],
+                            routes: [...new Set([...clean.r, ...now.routes])],
+                        }),
+                    );
+                }
+                const stored = log ? cleanLog(log) : [];
+                const added = latestEntries.current.filter(
+                    (e) => !stored.some((s) => s.id === e.id),
                 );
+                if (log || added.length) dispatch(logbookActions.restore([...stored, ...added]));
+                if (saved) {
+                    const clean = cleanPrefs(saved);
+                    const now = latestPrefs.current;
+                    const merged = keepTouched(clean, now, storedPrefs.current);
+                    // A region picked while nothing of the viewer's was mounted yet -- the showcase,
+                    // chosen because the settings had come up empty -- is the app's doing, not theirs.
+                    // The region they left stays, when it is one of the regions coming back.
+                    const ownRegion = clean.packs.some((p) => p.id === clean.region);
+                    const pickedForThem = !now.packs.some((p) => p.id === now.region);
+                    dispatch(
+                        prefsActions.restore(
+                            ownRegion && pickedForThem
+                                ? { ...merged, region: clean.region }
+                                : merged,
+                        ),
+                    );
+                    storedPrefs.current = clean;
+                }
+            } finally {
+                // Whatever happened above, the settings must not stay unwritable for the session.
+                loaded.current = true;
+                setReady(true);
             }
-            const stored = log ? cleanLog(log) : [];
-            const added = latestEntries.current.filter((e) => !stored.some((s) => s.id === e.id));
-            if (log || added.length) dispatch(logbookActions.restore([...stored, ...added]));
-            if (saved) {
-                const clean = cleanPrefs(saved);
-                dispatch(
-                    prefsActions.restore(
-                        keepTouched(clean, latestPrefs.current, storedPrefs.current),
-                    ),
-                );
-                storedPrefs.current = clean;
-            }
-            setReady(true);
         })();
 
         // Another tab or window wrote something.

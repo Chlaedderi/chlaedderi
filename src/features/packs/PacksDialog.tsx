@@ -298,7 +298,7 @@ export const PacksDialog = () => {
                             const typed = url.trim();
                             // Only a fragment in the app's own shape: a pack address may carry one of its own.
                             const hash = typed.slice(typed.indexOf("#") + 1);
-                            const ours = typed.includes("#") && /^\/|[?&]pack=/.test(hash);
+                            const ours = typed.includes("#") && /^\/|^pack\?|[?&]pack=/.test(hash);
                             const route = ours ? routeFromShared(typed) : null;
                             if (route !== null && route !== "/") {
                                 void navigate(route);

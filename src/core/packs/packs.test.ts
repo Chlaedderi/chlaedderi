@@ -270,3 +270,33 @@ describe("mounting several packs together", () => {
         }
     });
 });
+
+describe("mounting an unusual but valid pack", () => {
+    const base = packs.showcase!;
+    const sector = base.sectors[0]!;
+    const odd = (over: Record<string, unknown>): Mappack => ({
+        ...base,
+        sectors: [{ ...sector, ...over } as typeof sector],
+    });
+
+    it("counts the route list when the pack gives no count", () => {
+        const crag = mountPacks([odd({ nRoutes: undefined })]).crags[0]!;
+        expect(crag.nRoutes).toBe(sector.routes.length);
+    });
+
+    it("never gives two routes the same key, whatever `rk` holds", () => {
+        const rk: (string | null)[] = sector.routes.map(() => null);
+        rk[0] = "same";
+        rk[1] = "same";
+        const crag = mountPacks([odd({ rk })]).crags[0]!;
+        const keys = crag.routes.map((r) => r.key);
+        expect(new Set(keys).size).toBe(keys.length);
+        expect(keys[0]).toBe(`${sector.id}~same`);
+    });
+
+    it("drops a car park the pack names but does not list", () => {
+        const crag = mountPacks([odd({ pk: "nowhere", pkOff: "other/park" })]).crags[0]!;
+        expect(crag.pk).toBeNull();
+        expect(crag.pkOff).toBeNull();
+    });
+});
