@@ -133,7 +133,11 @@ export const CragCallout = ({
                         {crag.walkEff != null && (
                             <>
                                 <br />
-                                {t("pop.walk", { 0: t("min", { 0: crag.walkEff }) })}
+                                {t("pop.walk", {
+                                    0: t(crag.walkHow === "calc" ? "min.ca" : "min", {
+                                        0: crag.walkEff,
+                                    }),
+                                })}
                             </>
                         )}
                     </div>
@@ -142,7 +146,7 @@ export const CragCallout = ({
                 <div className="pkline">
                     <Typography variant="caption" color="text.secondary">
                         {crag.walkEff != null
-                            ? `${t("pop.walk", { 0: t("min", { 0: crag.walkEff }) })} · ${t("pop.nopark")}`
+                            ? `${t("pop.walk", { 0: t(crag.walkHow === "calc" ? "min.ca" : "min", { 0: crag.walkEff }) })} · ${t("pop.nopark")}`
                             : t("pop.nopark")}
                     </Typography>
                 </div>

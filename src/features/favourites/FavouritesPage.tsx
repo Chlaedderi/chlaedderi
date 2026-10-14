@@ -97,7 +97,13 @@ export const FavouritesPage = () => {
                                 sx={{ flex: 1, minWidth: 0 }}
                                 className="kat-ellipsis"
                             >
-                                <Link component={RouterLink} to={`/crag/${crag.id}`}>
+                                <Link
+                                    component={RouterLink}
+                                    to={`/crag/${crag.id}`}
+                                    // The route list goes to the route and marks it, as a link
+                                    // to one route does.
+                                    state={{ route: route.key }}
+                                >
                                     {route.name}
                                 </Link>
                                 <Typography

@@ -148,10 +148,19 @@ const ParkBox = ({ crag, park, ap }: { crag: Crag; park: Park; ap?: Approach }) 
                 </>
             )}
 
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                {t("nav.t")}
-                {park.est ? ` · ${t("ap.pos", { 0: t("ap.est") })}` : ""}
-            </Typography>
+            {/* «Navigation from your position» under «no way there is offered» -- not for an
+                invented crag, whose buttons are withheld above. */}
+            {(!invented || park.est) && (
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mt: 0.5 }}
+                >
+                    {[!invented && t("nav.t"), park.est && t("ap.pos", { 0: t("ap.est") })]
+                        .filter(Boolean)
+                        .join(" · ")}
+                </Typography>
+            )}
         </Box>
     );
 };
