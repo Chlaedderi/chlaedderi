@@ -226,7 +226,7 @@ export const LogSheet = ({
                             </Typography>
                             {previous.map((e: LogEntry) => (
                                 <Typography key={e.id} variant="body2">
-                                    {e.d} · {t(`st.${e.st}`)} · {e.g}
+                                    {[e.d, t(`st.${e.st}`), e.g].filter(Boolean).join(" · ")}
                                 </Typography>
                             ))}
                         </Box>
