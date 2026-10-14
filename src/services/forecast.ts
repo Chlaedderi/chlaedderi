@@ -13,7 +13,7 @@
  *   crag rather than for the valley floor.
  */
 
-import type { ForecastData } from "@core/forecast";
+import { FORECAST_ZONE, type ForecastData } from "@core/forecast";
 import { toLV95 } from "@core/geo";
 
 import { fetchHeight } from "./swisstopo";
@@ -79,7 +79,7 @@ export const loadForecast = async ({
         `${URL_BASE}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}` +
         (elevation != null ? `&elevation=${Math.round(elevation)}` : "") +
         `&hourly=${VARS}&wind_speed_unit=kmh&timeformat=unixtime` +
-        "&timezone=Europe%2FZurich&forecast_days=7";
+        `&timezone=${encodeURIComponent(FORECAST_ZONE)}&forecast_days=7`;
 
     const [swiss, global] = await Promise.allSettled([
         ch ? getJson(`${query}&models=${CH_MODEL}`) : Promise.reject(new Error("not CH")),

@@ -1,7 +1,4 @@
-import { localParts } from "@core/forecast";
-
-/** The zone the forecast's days are grouped in, so that the label and the grouping agree. */
-const ZONE = "Europe/Zurich";
+import { FORECAST_ZONE as ZONE, localParts } from "@core/forecast";
 
 /** The weekday and the date, «Mi., 14.» or «Wed 14». */
 export const dateLabel = (iso: string, lang: string): string => {

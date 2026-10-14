@@ -53,6 +53,9 @@ export interface ForecastDay {
     readonly code: number;
 }
 
+/** The zone the forecast is asked for and its days are grouped and named in. */
+export const FORECAST_ZONE = "Europe/Zurich";
+
 /** Split a timestamp into the local day and hour the forecast's time zone puts it in. */
 export const localParts = (ts: number, zone: string): { d: string; h: number } => {
     const parts = new Intl.DateTimeFormat("en-GB", {
@@ -99,7 +102,7 @@ export const daySymbol = (codes: readonly number[], rain: number): number => {
  * A day is kept only when it has at least 20 of its hours, which is what drops the ragged first
  * and last day of the window instead of showing a «day» made of three hours.
  */
-export const forecastDays = (o: ForecastData, zone = "Europe/Zurich"): ForecastDay[] => {
+export const forecastDays = (o: ForecastData, zone = FORECAST_ZONE): ForecastDay[] => {
     interface Acc {
         d: string;
         h: number[];
@@ -177,7 +180,7 @@ export const forecastHours = (
     o: ForecastData,
     day: ForecastDay,
     now: number = Date.now() / 1000,
-    zone = "Europe/Zurich",
+    zone = FORECAST_ZONE,
 ): ForecastHour[] => {
     const rows: ForecastHour[] = [];
     for (let k = 0; k < day.h.length; k++) {
