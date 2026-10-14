@@ -55,7 +55,7 @@ import { ApproachSection } from "./ApproachSection";
 import { CragLinks } from "./CragLinks";
 import { CragLogbook } from "./CragLogbook";
 import { CragMore } from "./CragMore";
-import { gradesText } from "./cragText";
+import { gradesText, lengthText } from "./cragText";
 import { DryEstimate } from "./DryEstimate";
 import { Gallery } from "./Gallery";
 import { JumpRail } from "./JumpRail";
@@ -359,7 +359,7 @@ export const CragPage = () => {
                     />
                     <Tile
                         label={
-                            crag.nMulti
+                            crag.nMulti && crag.nSingle != null
                                 ? t("g.single", { 0: crag.nSingle, 1: crag.nMulti })
                                 : t("g.routes")
                         }
@@ -369,13 +369,9 @@ export const CragPage = () => {
                     />
                     <Tile
                         label={t("g.len") + (crag.lenIsTypical ? ` · ${t("len.typ")}` : "")}
-                        value={
-                            crag.len
-                                ? crag.len[0] === crag.len[1]
-                                    ? `${crag.len[0]} m`
-                                    : `${crag.len[0]}–${crag.len[1]} m`
-                                : "–"
-                        }
+                        // The call-out's own text: «up to 35 m» where only a maximum is known, and
+                        // never a «null» for a missing end.
+                        value={lengthText(crag, t as never) ?? "–"}
                         Icon={HeightIcon}
                         color="var(--violet)"
                     />
@@ -400,7 +396,7 @@ export const CragPage = () => {
                                 ? ` · ${t("pop.src", { 0: crag.walkMin })}`
                                 : "")
                         }
-                        value={crag.walkEff != null ? `${crag.walkEff} min` : "–"}
+                        value={crag.walkEff != null ? t("min", { 0: crag.walkEff }) : "–"}
                         Icon={DirectionsWalkIcon}
                         color="var(--park)"
                     />

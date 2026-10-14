@@ -13,6 +13,9 @@ import { useLang } from "@app/useAppData";
 import { longText, orientLabel } from "@core/dataText";
 import type { Crag } from "@domain/model";
 
+/** The reason codes the texts know: `sun.<value>` and `ori.<value>`. */
+const REASON = /^(sun|ori)\.[A-Za-z]+$/;
+
 export const DryEstimate = ({ crag }: { crag: Crag }) => {
     const { t } = useTranslation();
     const lang = useLang();
@@ -26,12 +29,18 @@ export const DryEstimate = ({ crag }: { crag: Crag }) => {
     }
 
     const verdict = t(`dry.long.${crag.dry}`);
+    // A reason is a code -- `sun.all`, `ori.S` -- or, from some packs, the source's own words.
+    const coded = crag.dryWhy.filter((why) => REASON.test(why));
+    const worded = crag.dryWhy.filter((why) => !REASON.test(why));
 
-    // Stated by a source: quote it rather than explaining our own reasoning.
+    // Stated by a source: quote it rather than explaining our own reasoning -- its note, or the
+    // words it gave as the reason. Nothing to quote is no reason for a dangling dash.
     if (crag.dryHow === "src") {
+        const said = longText(crag, "dryNote", lang) || worded.join(" ");
         return (
             <Typography variant="body2">
-                <b>{verdict}</b> – {longText(crag, "dryNote", lang)}
+                <b>{verdict}</b>
+                {said ? ` – ${said}` : null}
             </Typography>
         );
     }
@@ -43,12 +52,16 @@ export const DryEstimate = ({ crag }: { crag: Crag }) => {
               ? t("all.aspects")
               : crag.orient.map((o) => orientLabel(o, lang)).join(" / ");
 
-    const reasons = crag.dryWhy.map((why) => {
-        const [kind, value] = why.split(".");
-        return kind === "sun"
-            ? t("dry.w.sun", { 0: t(`sun.${value}`) })
-            : t(`dry.w.ori.${value}`, { 0: orient });
-    });
+    const reasons = [
+        ...coded.map((why) => {
+            const [kind, value] = why.split(".");
+            return kind === "sun"
+                ? t("dry.w.sun", { 0: t(`sun.${value}`) })
+                : t(`dry.w.ori.${value}`, { 0: orient });
+        }),
+        // Never built into a key: a raw `dry.w.ori.<words>` would reach the screen.
+        ...worded,
+    ];
 
     return (
         <Typography variant="body2">
