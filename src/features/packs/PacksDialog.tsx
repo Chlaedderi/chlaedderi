@@ -86,8 +86,12 @@ export const PacksDialog = () => {
         }
     };
 
-    // The file as it was stored, for passing on by hand. Only for a pack with no key: a sealed one
-    // is stored opened, and saving that would undo the seal its publisher put on it.
+    // The file as it was stored, for passing on by hand -- for a region that arrived sealed as
+    // well, which comes out opened, because that is how the app holds it. The seal was never what
+    // kept anybody out (the key is in every link it was sent in), and a publication does not last:
+    // a superseded one is swept after thirty days and a region can be taken down any day. When it
+    // goes, the link and its key go with it, and a file in the viewer's hands is the only copy
+    // left.
     const download = async (id: string) => {
         const text = await storedPackText(id);
         try {
@@ -211,7 +215,7 @@ export const PacksDialog = () => {
                                             <ShareIcon fontSize="small" />
                                         </IconButton>
                                     )}
-                                    {pack.src && !pack.src.key && (
+                                    {pack.src && (
                                         <IconButton
                                             aria-label={t("pk.download")}
                                             title={t("pk.download")}

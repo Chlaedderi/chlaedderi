@@ -59,9 +59,12 @@ export const readStoredPack = async (id: string): Promise<unknown> => {
 /**
  * The pack's JSON exactly as it was stored, to be saved as a file and passed on.
  *
- * A region that arrived sealed is stored opened, so this would hand out in the clear what its
- * publisher only ever sent under a key. The dialog therefore offers it only for a pack with no
- * key; a sealed one is passed on by its link.
+ * Sealed or not: a region that arrived sealed is stored opened, so what comes out is the opened
+ * text, and whoever it is handed to loads it without a key. That is on purpose. The seal is not
+ * access control -- the key is in every link it was ever sent in -- and a publication is not
+ * forever: a superseded one is swept after thirty days, and a region can be taken down any day,
+ * which ends the link and its key for everybody who was sent one. A saved file is the copy that
+ * outlives that.
  */
 export const storedPackText = async (id: string): Promise<string | null> => {
     const cache = await openCache();
