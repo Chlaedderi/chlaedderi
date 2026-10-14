@@ -103,6 +103,14 @@ redirects there.
   day. Nothing else about the paragraph above changes; thirty days is a grace period, not a
   guarantee, and still not access control.
 
+  What the sweep ends is the **link**, not every copy. A sealed region is stored opened, and the
+  packs dialog saves any installed region as a file — a sealed one included, as the opened JSON,
+  which whoever it is handed to loads without a key. That is deliberate: the seal never kept
+  anybody out, and when a publication goes, a file in the viewer's own hands is the only copy left
+  of a region they already had. `e2e/packdownload.spec.ts` covers both halves. The one region with
+  no save button is the built-in showcase: it never went through `storePack`, so there is nothing
+  in the cache to write out.
+
 - **The schema is open on purpose** (`additionalProperties: true`): an older app has to be able to
   ignore fields it does not know. Ajv therefore does not run in strict mode.
 
