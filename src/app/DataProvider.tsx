@@ -54,12 +54,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // the Cache when localStorage had lost it -- and a region listed then and never read would be
     // «installed» in the packs dialog while the map showed the showcase.
     const tried = useRef(new Set<string>());
+    /** Regions being read out of the cache right now: listed, not mounted yet, not given up on. */
+    // A ref for the check, which runs in the same commit as the effect that starts the read, and
+    // state so that the check runs again once the read is over, whichever way it went.
+    const loadingNow = useRef(new Set<string>());
+    const [loading, setLoading] = useState<ReadonlySet<string>>(() => new Set());
     const started = useRef(false);
     const latestInstalled = useRef(installed);
     latestInstalled.current = installed;
+    /** Put in place by install() and not yet in the list a pending effect may still be holding. */
+    const justInstalled = useRef(new Set<string>());
     useEffect(() => {
+        for (const note of installed) justInstalled.current.delete(note.id);
         // A region unloaded elsewhere -- another tab -- goes here too, and may be read anew later.
-        const listed = new Set(installed.map((note) => note.id));
+        const listed = new Set([...installed.map((note) => note.id), ...justInstalled.current]);
         for (const id of [...tried.current]) if (!listed.has(id)) tried.current.delete(id);
         setPacks((current) =>
             current.every((p) => listed.has(p.id))
@@ -73,6 +81,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (!fresh.length && started.current) return;
         const first = !started.current;
         started.current = true;
+        const ids = fresh.map((note) => note.id);
+        for (const id of ids) loadingNow.current.add(id);
+        if (ids.length) setLoading(new Set(loadingNow.current));
         void (async () => {
             const loaded: Mappack[] = [];
             for (const note of fresh) {
@@ -92,6 +103,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 ...loaded.filter((p) => still.has(p.id) && !current.some((c) => c.id === p.id)),
                 ...current,
             ]);
+            if (ids.length) {
+                for (const id of ids) loadingNow.current.delete(id);
+                setLoading(new Set(loadingNow.current));
+            }
             if (first) setBooted(true);
         })();
     }, [installed]);
@@ -132,6 +147,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 void openStore().persist();
                 // Already in hand: the read-back above has nothing to fetch for it.
                 tried.current.add(load.pack.id);
+                justInstalled.current.add(load.pack.id);
                 setPacks((current) => [...current.filter((p) => p.id !== load.pack.id), load.pack]);
                 const note = packNote(load.pack, source, load.bytes);
                 dispatch(prefsActions.putPack(note));
@@ -208,6 +224,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await forgetPack(id);
                 tried.current.delete(id);
+                justInstalled.current.delete(id);
                 setPacks((current) => current.filter((p) => p.id !== id));
                 dispatch(prefsActions.dropPack(id));
             } finally {
@@ -222,12 +239,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!booted) return;
         const keys = mounted.regions.map((r) => r.key);
+        // A region still being read is about to be here: switching away now would lose the
+        // viewer's region -- read back late, or chosen in another tab -- to whichever comes first.
+        if (region && loadingNow.current.has(region)) return;
         if (region && !keys.includes(region)) {
             dispatch(prefsActions.setRegion(keys[0] ?? null));
         } else if (!region && keys.length) {
             dispatch(prefsActions.setRegion(keys[0]!));
         }
-    }, [booted, dispatch, mounted.regions, region]);
+    }, [booted, dispatch, mounted.regions, region, loading]);
 
     // Tell the viewer once when the app is running on the showcase alone.
     useEffect(() => {

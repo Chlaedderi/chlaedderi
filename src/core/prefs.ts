@@ -152,6 +152,30 @@ export const cleanPrefs = (v: unknown): Prefs => {
  * what the store was last known to hold (`start`) says which ones the viewer has changed since.
  * Those win; the rest come from storage.
  */
+/** Stored regions, with what this tab added, replaced or removed since `start` laid over them. */
+const mergePacks = (
+    stored: readonly InstalledPack[],
+    current: readonly InstalledPack[],
+    start: readonly InstalledPack[],
+): InstalledPack[] => {
+    const was = new Map(start.map((p) => [p.id, JSON.stringify(p)]));
+    const now = new Map(current.map((p) => [p.id, p]));
+    const changed = (p: InstalledPack): boolean => was.get(p.id) !== JSON.stringify(p);
+    const out = stored
+        // Removed here since: stays removed.
+        .filter((p) => !(was.has(p.id) && !now.has(p.id)))
+        .map((p) => {
+            const mine = now.get(p.id);
+            return mine && changed(mine) ? mine : p;
+        });
+    for (const p of current) if (changed(p) && !out.some((o) => o.id === p.id)) out.push(p);
+    // The same list kept as the same array: a new one would read as a change downstream.
+    const text = JSON.stringify(out);
+    if (text === JSON.stringify(current)) return current as InstalledPack[];
+    if (text === JSON.stringify(stored)) return stored as InstalledPack[];
+    return out;
+};
+
 export const keepTouched = (stored: Prefs, current: Prefs, start: Prefs): Prefs => {
     const merged = { ...stored } as Record<string, unknown>;
     const now = current as unknown as Record<string, unknown>;
@@ -163,6 +187,9 @@ export const keepTouched = (stored: Prefs, current: Prefs, start: Prefs): Prefs 
     }
     // The install hint's history is counted, not chosen: neither side simply wins.
     merged.install = mergeInstallHint(stored.install, current.install);
+    // The installed regions by region, not as one value: a region installed from a link while
+    // the store was still being read must not throw away every region the store holds.
+    merged.packs = mergePacks(stored.packs, current.packs, start.packs);
     return merged as unknown as Prefs;
 };
 

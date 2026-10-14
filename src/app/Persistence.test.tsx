@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { makeStore, renderApp } from "../test/harness";
 
+import { favouritesActions } from "./slices/favouritesSlice";
 import { prefsActions } from "./slices/prefsSlice";
 
 /** A store whose read-back is held until the test lets it go. */
@@ -12,16 +13,21 @@ const fake = vi.hoisted(() => {
         release = resolve;
     });
     const saved: Record<string, unknown> = {};
+    const broken = { now: false };
     const set = vi.fn<
         (key: string, value: unknown) => Promise<{ ok: boolean; verified: boolean; t: number }>
     >(() => Promise.resolve({ ok: true, verified: true, t: Date.now() }));
     return {
         release: () => release(),
         saved,
+        broken,
         set,
         store: {
             ready,
-            get: (key: string) => Promise.resolve(saved[key] ?? null),
+            get: (key: string) =>
+                broken.now
+                    ? Promise.reject(new Error("unreadable"))
+                    : Promise.resolve(saved[key] ?? null),
             set,
             subscribe: () => {},
         },
@@ -67,5 +73,25 @@ describe("Persistence", () => {
         for (const [, value] of written) {
             expect((value as { packs: { id: string }[] }).packs.map((p) => p.id)).toEqual(["ow"]);
         }
+    });
+
+    it("writes nothing when what is stored could not be read at all", async () => {
+        fake.release();
+        fake.broken.now = true;
+        fake.set.mockClear();
+        const store = makeStore();
+        renderApp(<Persistence />, { store });
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        });
+        // One favourite added: written now, it would be newer than every stored list and replace them.
+        act(() => {
+            store.dispatch(favouritesActions.toggleCrag("testing-musterwand"));
+        });
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+        });
+        expect(fake.set).not.toHaveBeenCalled();
+        fake.broken.now = false;
     });
 });

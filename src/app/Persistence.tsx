@@ -125,7 +125,7 @@ export const Persistence = () => {
                     // A region picked while nothing of the viewer's was mounted yet -- the showcase,
                     // chosen because the settings had come up empty -- is the app's doing, not theirs.
                     // The region they left stays, when it is one of the regions coming back.
-                    const ownRegion = clean.packs.some((p) => p.id === clean.region);
+                    const ownRegion = merged.packs.some((p) => p.id === clean.region);
                     const pickedForThem = !now.packs.some((p) => p.id === now.region);
                     dispatch(
                         prefsActions.restore(
@@ -136,10 +136,11 @@ export const Persistence = () => {
                     );
                     storedPrefs.current = clean;
                 }
-            } finally {
-                // Whatever happened above, the settings must not stay unwritable for the session.
-                loaded.current = true;
                 setReady(true);
+            } catch {
+                // Nothing read, so nothing written: what this tab holds may be the defaults, and
+                // a write of them would be the newest record on every layer. A lost change to a
+                // setting is the lesser harm than lost regions, favourites or ascents.
             }
         })();
 

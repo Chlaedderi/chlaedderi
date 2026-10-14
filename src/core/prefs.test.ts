@@ -110,6 +110,21 @@ describe("keepTouched", () => {
         const merged = keepTouched(defaultPrefs(), current, start);
         expect(merged.packs).toBe(packs);
     });
+
+    it("merges the installed regions by region", () => {
+        const start = defaultPrefs();
+        const stored = { ...start, packs: [{ id: "x" }, { id: "z" }] };
+        // Region y installed here from a link while the store was still being read.
+        const current = { ...start, packs: [{ id: "y" }] };
+        expect(keepTouched(stored, current, start).packs.map((p) => p.id)).toEqual(["x", "z", "y"]);
+    });
+
+    it("keeps a region removed here removed, and a newer one stored", () => {
+        const start = { ...defaultPrefs(), packs: [{ id: "x" }, { id: "z", version: "1" }] };
+        const stored = { ...start, packs: [{ id: "x" }, { id: "z", version: "2" }] };
+        const current = { ...start, packs: [{ id: "z", version: "1" }] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "z", version: "2" }]);
+    });
 });
 
 describe("readPrefsSync", () => {

@@ -98,4 +98,38 @@ describe("DataProvider", () => {
         });
         await waitFor(() => expect(api!.onlyShowcase).toBe(true));
     });
+
+    it("keeps a region read back late while it is still being loaded", async () => {
+        const store = makeStore();
+        let api: ReturnType<typeof useData> | null = null;
+        const Probe = () => {
+            api = useData();
+            return null;
+        };
+        render(
+            <Provider store={store}>
+                <DataProvider>
+                    <Probe />
+                </DataProvider>
+            </Provider>,
+        );
+        await waitFor(() => expect(api?.booted).toBe(true));
+
+        // Two regions, and the viewer had left the second one open.
+        act(() => {
+            store.dispatch(
+                prefsActions.restore({
+                    ...store.getState().prefs,
+                    region: "zz",
+                    packs: [
+                        { id: "aa", src: { type: "url", url: "https://example.org/aa.json" } },
+                        { id: "zz", src: { type: "url", url: "https://example.org/zz.json" } },
+                    ],
+                }),
+            );
+        });
+
+        await waitFor(() => expect(api!.regions).toHaveLength(2));
+        expect(store.getState().prefs.region).toBe("zz");
+    });
 });
