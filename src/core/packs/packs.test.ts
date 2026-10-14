@@ -5,7 +5,7 @@ import type { Mappack } from "@domain/mappack";
 import showcase from "../../../maps/pack.showcase.json";
 import testing from "../../../maps/pack.testing.json";
 
-import { mountPacks, toCrag } from "./mount";
+import { mountPacks, parksOf, toCrag } from "./mount";
 import { checkPack } from "./validate";
 
 /*
@@ -100,6 +100,18 @@ describe("mounting the mappacks", () => {
         expect(Object.keys(mounted.byId)).toHaveLength(expected);
         // The showcase is a slice of the testing region and carries that region's id.
         expect(mounted.regions.map((r) => r.key)).toEqual(["testing", "other"]);
+    });
+
+    it("hands the map one region's car parks, not every mounted one's", () => {
+        const all = Object.keys(mounted.parks);
+        const own = Object.keys(parksOf(mounted.parks, "other"));
+        expect(own.length).toBe(Object.keys(second.parks ?? {}).length);
+        expect(own.length).toBeGreaterThan(0);
+        expect(own.every((k) => k.startsWith("other/"))).toBe(true);
+        expect(all.length).toBeGreaterThan(own.length);
+        expect(Object.keys(parksOf(mounted.parks, undefined))).toEqual([]);
+        // A region whose id begins another's does not take the other's car parks.
+        expect(Object.keys(parksOf(mounted.parks, "oth"))).toEqual([]);
     });
 
     it("agrees with the counts the packs state", () => {

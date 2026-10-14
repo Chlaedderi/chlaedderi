@@ -24,38 +24,21 @@ import {
     forecastDays,
     forecastHours,
     freezingText,
-    localParts,
     tempText,
     windDir,
     wmoText,
     type ForecastData,
     type ForecastDay,
 } from "@core/forecast";
-import { todayIso } from "@core/logbook";
 import { positionOf } from "@core/weather";
 import { formatMm } from "@core/weather";
 import type { Crag } from "@domain/model";
 import { SectionTitle } from "@features/crag/SectionTitle";
 
+import { dateLabel, dayLabel, zurichDate } from "./dayLabel";
 import { useAutoRefresh } from "./useAutoRefresh";
 import { useForecast, type Place } from "./useForecast";
 import { WxIcon } from "./WxIcon";
-
-/**
- * «Today», «Tomorrow», then the weekday and the date. By the day's date, not its place in the
- * list: a forecast kept offline overnight starts with yesterday, which is not «today».
- */
-const dayLabel = (iso: string, _index: number, lang: string, t: (k: string) => string): string => {
-    // In the zone the days are grouped in, so that the two agree around midnight.
-    const now = Date.now();
-    if (iso === localParts(now / 1000, "Europe/Zurich").d) return t("fc.today");
-    if (iso === localParts(now / 1000 + 86_400, "Europe/Zurich").d) return t("fc.tomorrow");
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(
-        lang === "de" ? "de-CH" : "en-GB",
-        { weekday: "short", day: "numeric", timeZone: "UTC" },
-    );
-};
 
 const timeOf = (ms: number): string => {
     const d = new Date(ms);
@@ -181,7 +164,8 @@ export const ForecastSection = ({
         data.model === "ch"
             ? t("fc.src.ch", {
                   0: data.chUntil
-                      ? dayLabel(todayIso(new Date(data.chUntil * 1000)), -1, lang, t)
+                      ? // Mid-sentence, so never «Tomorrow»: always the weekday.
+                        dateLabel(zurichDate(data.chUntil), lang)
                       : "",
               })
             : t(ch ? "fc.src.chfail" : "fc.src.om");
@@ -202,7 +186,7 @@ export const ForecastSection = ({
                             {t("fc.none")}
                         </Typography>
                     )}
-                    {days.map((day, i) => {
+                    {days.map((day) => {
                         const isOpen = open === day.d;
                         const fz = freezingText(day.fz);
                         return (
@@ -248,7 +232,7 @@ export const ForecastSection = ({
                                             whiteSpace: "nowrap",
                                         }}
                                     >
-                                        {dayLabel(day.d, i, lang, t)}
+                                        {dayLabel(day.d, lang, t)}
                                     </Box>
                                     {/* The symbol the original had: it is what makes a week
                                         readable in one look. The day's symbol is the daytime one

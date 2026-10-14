@@ -239,6 +239,22 @@ export const toRegion = (pack: Mappack, picOffset = 0): Region => ({
 export const parkKey = (packId: string, key: string): string => `${packId}/${key}`;
 
 /**
+ * The car parks of one region, out of the joined set. The map draws only the region on screen's
+ * crags, and its car parks must follow: another region's would sit on the map with nothing to say
+ * whose they are -- and an invented region's on real ground with no demo strip beside them.
+ */
+export const parksOf = (
+    parks: Readonly<Record<string, Park>>,
+    packId: string | undefined,
+): Record<string, Park> => {
+    const own: Record<string, Park> = Object.create(null) as Record<string, Park>;
+    if (packId === undefined) return own;
+    const prefix = parkKey(packId, "");
+    for (const [key, park] of Object.entries(parks)) if (key.startsWith(prefix)) own[key] = park;
+    return own;
+};
+
+/**
  * Mount a set of packs.
  *
  * Two things have to be renumbered while pouring several packs into one set, both of them carried

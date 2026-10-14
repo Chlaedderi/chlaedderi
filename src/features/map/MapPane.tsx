@@ -32,6 +32,7 @@ import { useFilterContext, useLang, useRegion, useRegionOf, useShownCrags } from
 import { useWeather } from "@app/weatherContext";
 import { longText } from "@core/dataText";
 import { bboxOf, formatDistance, haversine } from "@core/geo";
+import { parksOf } from "@core/packs/mount";
 import { radarSource } from "@core/radar";
 import type { Crag } from "@domain/model";
 
@@ -267,6 +268,8 @@ export const MapPane = () => {
         (key: string) => longText(parks[key], "name", lang) ?? key,
         [parks, lang],
     );
+    /** Only the region on screen's car parks, as only its crags are drawn. */
+    const regionParks = useMemo(() => parksOf(parks, region?.key), [parks, region?.key]);
 
     /**
      * The chosen crag, whether or not the filters let it through.
@@ -620,7 +623,7 @@ export const MapPane = () => {
                     <AllPathsLayer shown={shown} selectedId={selectedId} enabled={prefs.allPaths} />
                     {region && <MapLabels labels={region.labels} />}
                     <ParkMarkers
-                        parks={parks}
+                        parks={regionParks}
                         parkName={parkName}
                         enabled={prefs.allParks}
                         onParkClick={openParkCard}
