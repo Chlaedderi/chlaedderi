@@ -24,7 +24,9 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
+import { useMatch } from "react-router-dom";
 
+import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { prefsActions } from "@app/slices/prefsSlice";
 import { useRegion } from "@app/useAppData";
@@ -34,8 +36,17 @@ export const DemoNotice = () => {
     const region = useRegion();
     const seen = useAppSelector((s) => s.prefs.demoSeen);
     const dispatch = useAppDispatch();
+    // The crag on screen counts, not only the region selected: one opened from the favourites,
+    // the logbook or a record keeps the region it was opened from, and an invented crag must not
+    // look real there -- nor a real one invented.
+    const { byId, regions } = useData();
+    const onPage = useMatch("/crag/:id")?.params.id;
+    const selectedId = useAppSelector((s) => s.ui.selectedId);
+    const shownId = onPage ?? selectedId;
+    const shown = shownId ? byId[shownId] : undefined;
+    const shownRegion = shown ? regions.find((r) => r.key === shown.packId) : region;
 
-    if (region?.fictional !== true) return null;
+    if (shownRegion?.fictional !== true) return null;
 
     const close = (): void => {
         dispatch(prefsActions.setFlag({ key: "demoSeen", value: true }));

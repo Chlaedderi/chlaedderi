@@ -1,7 +1,9 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { mountedShowcase, renderApp } from "../../test/harness";
+import { prefsActions } from "@app/slices/prefsSlice";
+
+import { makeStore, mountedShowcase, renderApp } from "../../test/harness";
 
 import { DryEstimate } from "./DryEstimate";
 
@@ -27,5 +29,30 @@ describe("how fast a wall dries", () => {
         const { container } = renderApp(<DryEstimate crag={wall} />);
         expect(container.textContent).not.toMatch(/dry\.w\./);
         expect(container.textContent).toMatch(/Open south face/);
+    });
+
+    it("shows what a source said beside an estimate, in the viewer's language", () => {
+        // testing-musterwand-nord: estimated slow, and a note that it seeps for days.
+        const wall = crag("testing-musterwand-nord");
+        expect(wall.dryHow).toBe("est");
+        const { container, unmount } = renderApp(<DryEstimate crag={wall} />);
+        expect(container.textContent).toMatch(/Seeps for days after rain\./);
+        unmount();
+
+        const store = makeStore();
+        store.dispatch(prefsActions.setLang("de"));
+        const de = renderApp(<DryEstimate crag={wall} />, { store, lang: "de" });
+        expect(de.container.textContent).toMatch(/Zieht nach Regen tagelang Wasser\./);
+    });
+
+    it("leaves out a reason code it has no text for", () => {
+        const wall = {
+            ...crag("testing-musterwand"),
+            dryHow: "est" as const,
+            dryWhy: ["ori.SW", "sun.am"],
+        };
+        const { container } = renderApp(<DryEstimate crag={wall} />);
+        expect(container.textContent).not.toMatch(/ori\.SW|dry\.w\./);
+        expect(container.textContent).toMatch(/Morning/);
     });
 });

@@ -107,10 +107,8 @@ export const MorePage = () => {
                         value={prefs.theme}
                         onChange={(e) => {
                             const next = e.target.value as typeof prefs.theme;
+                            // Applied by PrefsSync, which hands it to MUI.
                             dispatch(prefsActions.setTheme(next));
-                            if (next === "auto")
-                                document.documentElement.removeAttribute("data-theme");
-                            else document.documentElement.setAttribute("data-theme", next);
                         }}
                     >
                         <MenuItem value="auto">{t("theme.auto")}</MenuItem>

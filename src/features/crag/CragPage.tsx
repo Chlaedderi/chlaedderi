@@ -396,7 +396,11 @@ export const CragPage = () => {
                                 ? ` · ${t("pop.src", { 0: crag.walkMin })}`
                                 : "")
                         }
-                        value={crag.walkEff != null ? t("min", { 0: crag.walkEff }) : "–"}
+                        value={
+                            crag.walkEff != null
+                                ? t(crag.walkHow === "calc" ? "min.ca" : "min", { 0: crag.walkEff })
+                                : "–"
+                        }
                         Icon={DirectionsWalkIcon}
                         color="var(--park)"
                     />

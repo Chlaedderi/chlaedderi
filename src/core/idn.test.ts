@@ -111,6 +111,7 @@ describe("shownHost", () => {
         ["xn--ch1dderi-2za.ch", "ch1ädderi.ch, with a digit for a letter"],
         ["xn--chdderi-6wa95f.ch", "chłädderi.ch, with a stroked l"],
         ["xn--chlderi-7wa91b.ch", "chläđderi.ch, with a stroked d"],
+        ["xn--cldderi-6wa51d.ch", "cħlädderi.ch, with a stroked h"],
     ])("refuses this app's own name spelled any way but its own: %s -- %s", (given) => {
         // The allowlist bounds what alphabet a hostile label may use, not what it may be mistaken
         // for, and this is the one name the app has taught its readers to trust.

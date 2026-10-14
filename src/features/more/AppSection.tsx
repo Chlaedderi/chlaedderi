@@ -19,6 +19,7 @@ import { useInstallPrompt } from "@app/installPrompt";
 import { prefsActions } from "@app/slices/prefsSlice";
 import { useLang } from "@app/useAppData";
 import { isIOSDevice } from "@core/installHint";
+import { todayIso } from "@core/logbook";
 import { formatDate } from "@i18n/index";
 
 import { isStandalone, loadVersion, refreshApp, useAppVersion } from "../../version";
@@ -128,7 +129,8 @@ export const AppSection = () => {
                 {version.built
                     ? t("m.ver.line", {
                           0: version.version,
-                          1: `${formatDate(version.built.slice(0, 10), lang)} ${timeOf(version.built)}`,
+                          // The local date beside the local time: `built` is UTC.
+                          1: `${formatDate(todayIso(new Date(version.built)), lang)} ${timeOf(version.built)}`,
                       })
                     : t("m.ver.dev")}
             </Typography>

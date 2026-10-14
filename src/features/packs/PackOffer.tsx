@@ -299,7 +299,11 @@ export const PackOffer = () => {
                                     // Read the same way as the host above it: the dialog is asking
                                     // for a comparison, and two spellings of one host would read
                                     // as an alarm that is not there.
-                                    3: replacedAt ? shownHost(replacedAt.host) : "",
+                                    // A region that came as a file has no host: its file's name
+                                    // then, rather than «from )».
+                                    3: replacedAt
+                                        ? shownHost(replacedAt.host)
+                                        : oneLine(replaced.src?.name ?? "–", NAME_MAX),
                                 })}
                             </Alert>
                         )}

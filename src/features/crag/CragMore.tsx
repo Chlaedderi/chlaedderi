@@ -148,7 +148,11 @@ export const CragMore = ({ crag }: { crag: Crag }) => {
                     </Row>
                     {crag.style && (
                         <Row label={t("g.style")}>
-                            {t("d.style.v", { 0: shortText(crag.style, lang, de) })}
+                            {/* «, bolted» only for a sport crag, and only where the pack's
+                                own words do not say so already -- they are often a sentence. */}
+                            {crag.styleKey === "sport" && !/bolt|bohrhaken/i.test(crag.style)
+                                ? t("d.style.v", { 0: shortText(crag.style, lang, de) })
+                                : shortText(crag.style, lang, de)}
                         </Row>
                     )}
                     <Row label={t("d.bolt")}>
