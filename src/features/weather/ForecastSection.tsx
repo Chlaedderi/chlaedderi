@@ -24,6 +24,7 @@ import {
     forecastDays,
     forecastHours,
     freezingText,
+    localParts,
     tempText,
     windDir,
     wmoText,
@@ -40,10 +41,15 @@ import { useAutoRefresh } from "./useAutoRefresh";
 import { useForecast, type Place } from "./useForecast";
 import { WxIcon } from "./WxIcon";
 
-/** «Today», «Tomorrow», then the weekday and the date. */
-const dayLabel = (iso: string, index: number, lang: string, t: (k: string) => string): string => {
-    if (index === 0) return t("fc.today");
-    if (index === 1) return t("fc.tomorrow");
+/**
+ * «Today», «Tomorrow», then the weekday and the date. By the day's date, not its place in the
+ * list: a forecast kept offline overnight starts with yesterday, which is not «today».
+ */
+const dayLabel = (iso: string, _index: number, lang: string, t: (k: string) => string): string => {
+    // In the zone the days are grouped in, so that the two agree around midnight.
+    const now = Date.now();
+    if (iso === localParts(now / 1000, "Europe/Zurich").d) return t("fc.today");
+    if (iso === localParts(now / 1000 + 86_400, "Europe/Zurich").d) return t("fc.tomorrow");
     const [y, m, d] = iso.split("-").map(Number);
     return new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(
         lang === "de" ? "de-CH" : "en-GB",
@@ -159,9 +165,17 @@ export const ForecastSection = ({
     const days = forecastDays(data);
     const elevation =
         data.elev != null
-            ? t(data.elevSrc === "swisstopo" ? "fc.elev.ch" : "fc.elev.om", {
-                  0: Math.round(data.elev),
-              })
+            ? t(
+                  data.elevSrc !== "swisstopo"
+                      ? "fc.elev.om"
+                      : // A point somebody tapped has a height, not a wall.
+                        place.id.startsWith("pt:")
+                        ? "fc.elev.pt"
+                        : "fc.elev.ch",
+                  {
+                      0: Math.round(data.elev),
+                  },
+              )
             : "";
     const source =
         data.model === "ch"

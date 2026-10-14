@@ -473,6 +473,9 @@ export const MapPane = () => {
                     ? [park.lat, park.lon]
                     : null;
         if (!origin) {
+            // Nothing to plan from yet: the last crag's route must not stay on the map, in the
+            // panel and in the GPX, under this crag's name.
+            planner.clear();
             // Asked to start from «my position» and there is none: say so and switch to a tap.
             if (from === "me" && !me) {
                 dispatch(uiActions.toast({ message: t("pl.nome") }));

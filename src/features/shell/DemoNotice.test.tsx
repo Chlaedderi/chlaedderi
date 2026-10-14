@@ -56,6 +56,17 @@ describe("the demo notice", () => {
         expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
     });
 
+    it("keeps marking it when the card is put away and its approach stays drawn", () => {
+        const data = twoRegions();
+        const invented = data.crags.find((c) => c.packId === showcase.id)!;
+        const store = makeStore();
+        store.dispatch(prefsActions.setRegion("real"));
+        store.dispatch(uiActions.reveal(invented.id));
+        store.dispatch(uiActions.hideCallout());
+        renderApp(<DemoNotice />, { data, store, route: "/" });
+        expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
+    });
+
     it("leaves a real region's screens unmarked", () => {
         const data = twoRegions();
         const real = data.crags.find((c) => c.packId === "real")!;

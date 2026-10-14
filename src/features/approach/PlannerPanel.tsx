@@ -250,7 +250,13 @@ export const PlannerPanel = ({
 
                             {result.src !== "ch" && (
                                 <Alert severity="warning" sx={{ my: 1 }}>
-                                    {t("pl.osm", { 0: result.netErr ?? "" })}
+                                    {t("pl.osm", {
+                                        // A reason of the planner's own is a text key; a network
+                                        // error is said as it came.
+                                        0: result.netErr?.startsWith("pl.")
+                                            ? t(result.netErr)
+                                            : (result.netErr ?? ""),
+                                    })}
                                 </Alert>
                             )}
                             {result.by[0] >= 30 && (
