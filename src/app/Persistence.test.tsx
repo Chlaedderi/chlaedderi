@@ -1,0 +1,67 @@
+import { act } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import { makeStore, renderApp } from "../test/harness";
+
+import { prefsActions } from "./slices/prefsSlice";
+
+/** A store whose read-back is held until the test lets it go. */
+const fake = vi.hoisted(() => {
+    let release: () => void = () => {};
+    const ready = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    const saved: Record<string, unknown> = {};
+    const set = vi.fn<
+        (key: string, value: unknown) => Promise<{ ok: boolean; verified: boolean; t: number }>
+    >(() => Promise.resolve({ ok: true, verified: true, t: Date.now() }));
+    return {
+        release: () => release(),
+        saved,
+        set,
+        store: {
+            ready,
+            get: (key: string) => Promise.resolve(saved[key] ?? null),
+            set,
+            subscribe: () => {},
+        },
+    };
+});
+
+vi.mock("@core/store", () => ({ openStore: () => fake.store }));
+
+const { Persistence } = await import("./Persistence");
+
+describe("Persistence", () => {
+    it("writes no settings before the stored ones are read back", async () => {
+        // localStorage had lost them; IndexedDB and the Cache still hold the installed region.
+        const note = { id: "ow", src: { type: "url", url: "https://example.org/pack.ow.json" } };
+        fake.saved.prefs = { ...makeStore().getState().prefs, packs: [note] };
+
+        const store = makeStore();
+        const legend = store.getState().prefs.legend;
+        renderApp(<Persistence />, { store });
+        // A setting changed at start, while the store is still being read.
+        act(() => {
+            store.dispatch(prefsActions.setFlag({ key: "legend", value: !legend }));
+        });
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+        });
+        expect(fake.set.mock.calls.filter(([key]) => key === "prefs")).toEqual([]);
+
+        fake.release();
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+        });
+
+        // The region came back, the change made meanwhile was kept, and what is written has both.
+        expect(store.getState().prefs.packs.map((p) => p.id)).toEqual(["ow"]);
+        expect(store.getState().prefs.legend).toBe(!legend);
+        const written = fake.set.mock.calls.filter(([key]) => key === "prefs");
+        expect(written.length).toBeGreaterThan(0);
+        for (const [, value] of written) {
+            expect((value as { packs: { id: string }[] }).packs.map((p) => p.id)).toEqual(["ow"]);
+        }
+    });
+});

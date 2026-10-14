@@ -216,7 +216,11 @@ describe("PackOffer", () => {
         const data = mountedShowcase();
         renderApp(<PackOffer />, {
             store,
-            data: { ...data, regions: [...data.regions, { ...data.regions[0]!, key: "ow" }] },
+            data: {
+                ...data,
+                onlyShowcase: false,
+                regions: [...data.regions, { ...data.regions[0]!, key: "ow" }],
+            },
         });
 
         await waitFor(() => expect(store.getState().ui.packOffer).toBeNull());
@@ -247,5 +251,21 @@ describe("PackOffer", () => {
 
         await waitFor(() => expect(fetched).toHaveBeenCalledOnce());
         expect(store.getState().ui.packOffer).not.toBeNull();
+    });
+
+    it("does not take the built-in showcase for an evicted region that shares its id", async () => {
+        const fetched = vi.fn(() => Promise.resolve(answer(pack({ id: "testing" }))));
+        globalThis.fetch = fetched as unknown as typeof fetch;
+        const base = makeStore().getState();
+        const url = "https://example.org/pack.testing.json";
+        const store = makeStore({
+            ui: { ...base.ui, packOffer: { url, fetchNow: true } },
+            prefs: { ...base.prefs, packs: [{ id: "testing", src: { type: "url", url } }] },
+        });
+
+        // The full region was evicted; what is mounted under its id is only the showcase.
+        renderApp(<PackOffer />, { store, data: mountedShowcase() });
+
+        await waitFor(() => expect(fetched).toHaveBeenCalledOnce());
     });
 });

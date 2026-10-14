@@ -11,7 +11,7 @@
  * the setup they had.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
@@ -82,6 +82,8 @@ export const Persistence = () => {
     // empty, and a write of one new favourite in that window would be newer than everything stored
     // and replace it, on every layer.
     const loaded = useRef(false);
+    // The same, as state, for the settings: their write waits on it and has to run once it flips.
+    const [ready, setReady] = useState(false);
 
     // ---- read back once
     useEffect(() => {
@@ -122,6 +124,7 @@ export const Persistence = () => {
                 );
                 storedPrefs.current = clean;
             }
+            setReady(true);
         })();
 
         // Another tab or window wrote something.
@@ -149,8 +152,7 @@ export const Persistence = () => {
 
     /** Whether `value` is news to the store under `key`; remembers it if so. */
     const isNew = (key: "fav" | "log" | "prefs", value: unknown): boolean => {
-        // Settings are read synchronously at start and guarded by keepTouched; the two lists are not.
-        if (key !== "prefs" && !loaded.current) return false;
+        if (!loaded.current) return false;
         const text = JSON.stringify(value);
         if (known.current[key] === text) return false;
         known.current[key] = text;
@@ -246,8 +248,14 @@ export const Persistence = () => {
         });
     });
 
-    useDebouncedWrite(prefs, (value) => {
-        if (!isNew("prefs", value)) return;
+    // The settings too wait for the read-back. Read synchronously at start they come from
+    // localStorage alone; where that copy was lost they are the defaults -- no installed regions,
+    // no keys -- and a write of them before the read-back would be the newest record on every
+    // layer, and the read-back would hand those defaults back. Once it is in, whatever was
+    // changed meanwhile is written (keepTouched kept it).
+    const prefsToWrite = useMemo(() => (ready ? prefs : null), [ready, prefs]);
+    useDebouncedWrite(prefsToWrite, (value) => {
+        if (value === null || !isNew("prefs", value)) return;
         storedPrefs.current = value;
         void store.set("prefs", value);
     });

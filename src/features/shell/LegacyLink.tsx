@@ -23,7 +23,7 @@ import { uiActions } from "@app/slices/uiSlice";
 
 export const LegacyLink = () => {
     const { pathname, search } = useLocation();
-    const { byId, booted, regions } = useData();
+    const { byId, booted, regions, onlyShowcase } = useData();
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -59,9 +59,15 @@ export const LegacyLink = () => {
         // A locked region travels with its key in the fragment, never in a request.
         const offeredKey = params.get("k") ?? undefined;
         const theirs = crag ? regions.find((r) => r.key === crag.packId) : null;
-        // Mounted, not merely listed: an evicted region is still in the list and has no crags.
+        // Mounted, not merely listed: an evicted region is still in the list and has no crags --
+        // and the showcase standing in for it may share its id.
         const haveIt = offered
-            ? installed.some((p) => p.src?.url === offered && regions.some((r) => r.key === p.id))
+            ? installed.some(
+                  (p) =>
+                      p.src?.url === offered &&
+                      !onlyShowcase &&
+                      regions.some((r) => r.key === p.id),
+              )
             : true;
         if (offered && !haveIt && (!crag || theirs?.partial === true)) {
             dispatch(uiActions.offerPack({ url: offered, key: offeredKey, then: token }));
@@ -91,7 +97,19 @@ export const LegacyLink = () => {
             replace: true,
             state: route ? { route: route.key } : undefined,
         });
-    }, [booted, pathname, search, byId, regions, installed, region, dispatch, navigate, t]);
+    }, [
+        booted,
+        pathname,
+        search,
+        byId,
+        regions,
+        onlyShowcase,
+        installed,
+        region,
+        dispatch,
+        navigate,
+        t,
+    ]);
 
     return null;
 };

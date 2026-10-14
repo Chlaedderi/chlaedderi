@@ -60,7 +60,7 @@ export const PackOffer = () => {
     const offer = useAppSelector((s) => s.ui.packOffer);
     const packsOpen = useAppSelector((s) => s.ui.packsOpen);
     const installed = useAppSelector((s) => s.prefs.packs);
-    const { installLoaded, busy, booted, byId, regions } = useData();
+    const { installLoaded, busy, booted, byId, regions, onlyShowcase } = useData();
 
     const [checking, setChecking] = useState(false);
     const [result, setResult] = useState<Fetched | null>(null);
@@ -134,9 +134,11 @@ export const PackOffer = () => {
 
         // Here means mounted, not merely listed: a region whose stored copy the browser evicted, or
         // that would not read back, stays in the list -- and switching to it would bounce straight
-        // back off, saying nothing. That one is fetched again like any other.
+        // back off, saying nothing. That one is fetched again like any other. Nor is the built-in
+        // showcase standing in for it, which may carry the same id.
         const here = installed.find(
-            (p) => p.src?.url === address.url && regions.some((r) => r.key === p.id),
+            (p) =>
+                p.src?.url === address.url && !onlyShowcase && regions.some((r) => r.key === p.id),
         );
         if (here) {
             // Nothing to download and nothing to decide: it is this region, and it is already here.
@@ -148,7 +150,18 @@ export const PackOffer = () => {
         if (offer.fetchNow && !result && !checking) void check();
         // `result` and `checking` are read to avoid re-fetching, not to react to them.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [offer, address?.url, booted, packsOpen, settled, installed, regions, dispatch, t]);
+    }, [
+        offer,
+        address?.url,
+        booted,
+        packsOpen,
+        settled,
+        installed,
+        regions,
+        onlyShowcase,
+        dispatch,
+        t,
+    ]);
 
     // Follow the link that asked for the region, once that region is actually mounted. Waiting
     // for `byId` matters: navigating straight off the install lands a commit early, and CragPage

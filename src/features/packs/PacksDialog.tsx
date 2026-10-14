@@ -296,7 +296,10 @@ export const PacksDialog = () => {
                             // in its fragment -- goes where a pasted one goes. Fetched as it
                             // stands it is the app's own page, «not a mappack», key ignored.
                             const typed = url.trim();
-                            const route = typed.includes("#") ? routeFromShared(typed) : null;
+                            // Only a fragment in the app's own shape: a pack address may carry one of its own.
+                            const hash = typed.slice(typed.indexOf("#") + 1);
+                            const ours = typed.includes("#") && /^\/|[?&]pack=/.test(hash);
+                            const route = ours ? routeFromShared(typed) : null;
                             if (route !== null && route !== "/") {
                                 void navigate(route);
                                 return;

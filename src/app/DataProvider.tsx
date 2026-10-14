@@ -9,7 +9,7 @@
  * dropped as soon as a real pack is installed, and comes back when the last one is removed.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { mountPacks } from "@core/packs/mount";
@@ -49,34 +49,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [busy, setBusy] = useState(false);
     const [booted, setBooted] = useState(false);
 
-    // At start, read every installed pack back out of the Cache Storage, so the app works offline.
+    // Every installed pack read back out of the Cache Storage, so the app works offline. Not only
+    // at start: the list of installed packs may itself arrive late, read back from IndexedDB or
+    // the Cache when localStorage had lost it -- and a region listed then and never read would be
+    // «installed» in the packs dialog while the map showed the showcase.
+    const tried = useRef(new Set<string>());
+    const started = useRef(false);
     useEffect(() => {
-        let cancelled = false;
+        const fresh = installed.filter((note) => !tried.current.has(note.id));
+        for (const note of fresh) tried.current.add(note.id);
+        // Nothing new after the first pass: nothing to do. The first pass always runs, so that
+        // `booted` is said even with nothing installed -- and only it says so the first time.
+        if (!fresh.length && started.current) return;
+        const first = !started.current;
+        started.current = true;
         void (async () => {
             const loaded: Mappack[] = [];
-            for (const note of installed) {
+            for (const note of fresh) {
                 // One region that cannot be read must not keep the others -- and the app's start
                 // -- from happening.
                 const result = await loadStoredPack(note.id).catch(() => null);
                 if (result?.ok) loaded.push(result.pack);
             }
-            if (!cancelled) {
-                // Merge, never replace. A pack installed from a link while this was still reading
-                // three big ones out of the cache would otherwise be wiped back out of `packs` --
-                // leaving a region the viewer was just told is loaded, and is not, until a reload.
-                setPacks((current) => [
-                    ...loaded.filter((p) => !current.some((c) => c.id === p.id)),
-                    ...current,
-                ]);
-                setBooted(true);
-            }
+            // Merge, never replace. A pack installed from a link while this was still reading
+            // three big ones out of the cache would otherwise be wiped back out of `packs` --
+            // leaving a region the viewer was just told is loaded, and is not, until a reload.
+            // Not cancelled on unmount either: a second run skips what the first already took on,
+            // so the first has to see it through.
+            setPacks((current) => [
+                ...loaded.filter((p) => !current.some((c) => c.id === p.id)),
+                ...current,
+            ]);
+            if (first) setBooted(true);
         })();
-        return () => {
-            cancelled = true;
-        };
-        // Only at start: later changes go through install/uninstall, which set `packs` themselves.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [installed]);
 
     const mounted = useMemo(() => mountPacks(packs.length ? packs : [showcase]), [packs]);
 
@@ -112,6 +118,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 // The answer lands in the store's status either way, which is what the favourites
                 // page reads.
                 void openStore().persist();
+                // Already in hand: the read-back above has nothing to fetch for it.
+                tried.current.add(load.pack.id);
                 setPacks((current) => [...current.filter((p) => p.id !== load.pack.id), load.pack]);
                 const note = packNote(load.pack, source, load.bytes);
                 dispatch(prefsActions.putPack(note));
@@ -187,6 +195,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setBusy(true);
             try {
                 await forgetPack(id);
+                tried.current.delete(id);
                 setPacks((current) => current.filter((p) => p.id !== id));
                 dispatch(prefsActions.dropPack(id));
             } finally {

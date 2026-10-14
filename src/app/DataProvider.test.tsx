@@ -8,6 +8,14 @@ import { makeStore, showcase } from "../test/harness";
 
 import { useData } from "./dataContext";
 import { DataProvider } from "./DataProvider";
+import { prefsActions } from "./slices/prefsSlice";
+
+vi.mock("@core/packs/storage", async (original) => ({
+    ...(await original<typeof import("@core/packs/storage")>()),
+    // Whatever is asked for is on the device, as the showcase renamed.
+    loadStoredPack: (id: string) =>
+        Promise.resolve({ ok: true, pack: { ...(showcase as object), id }, bytes: 1 }),
+}));
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -53,5 +61,35 @@ describe("DataProvider", () => {
         // The other region keeps the address it came from.
         const other = store.getState().prefs.packs.find((p) => p.id === "other");
         expect(other?.src?.url).toBe("https://example.org/other.json");
+    });
+
+    it("loads a region whose note arrives after the start", async () => {
+        const store = makeStore();
+        let api: ReturnType<typeof useData> | null = null;
+        const Probe = () => {
+            api = useData();
+            return null;
+        };
+        render(
+            <Provider store={store}>
+                <DataProvider>
+                    <Probe />
+                </DataProvider>
+            </Provider>,
+        );
+        await waitFor(() => expect(api?.booted).toBe(true));
+        expect(api!.onlyShowcase).toBe(true);
+
+        // The installed list read back late, from IndexedDB, after localStorage had lost it.
+        act(() => {
+            store.dispatch(
+                prefsActions.restore({
+                    ...store.getState().prefs,
+                    packs: [{ id: "ow", src: { type: "url", url: "https://example.org/ow.json" } }],
+                }),
+            );
+        });
+
+        await waitFor(() => expect(api!.regions.map((r) => r.key)).toEqual(["ow"]));
     });
 });

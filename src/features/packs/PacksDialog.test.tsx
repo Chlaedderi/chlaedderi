@@ -50,4 +50,17 @@ describe("PacksDialog", () => {
             fetchNow: true,
         });
     });
+
+    it("fetches a pack address that carries a fragment of its own", () => {
+        const store = opened();
+        renderApp(<PacksDialog />, { store });
+        fireEvent.change(screen.getByLabelText(/address of a mappack/i), {
+            target: { value: "https://example.org/pack.json#v2" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: /^load$/i }));
+        expect(store.getState().ui.packOffer).toMatchObject({
+            url: "https://example.org/pack.json#v2",
+            fetchNow: true,
+        });
+    });
 });
