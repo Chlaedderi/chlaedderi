@@ -106,6 +106,7 @@ export const useFilterContext = (): FilterContext => {
     const me = useAppSelector((s) => s.ui.me);
     const region = useRegion();
     const { stateOf, at: weatherAt } = useWeather();
+    const weatherOn = useAppSelector((s) => s.prefs.wx);
 
     return useMemo(() => {
         const areaIndex: Record<string, number> = {};
@@ -114,14 +115,17 @@ export const useFilterContext = (): FilterContext => {
         });
         return {
             ...base,
-            // «dry» or «wet» as far as the rain model knows; null until a forecast is loaded, which
-            // is what makes the weather filter show nothing rather than everything.
-            wxState: weatherAt
-                ? (crag: Crag) => {
-                      const state = stateOf(crag);
-                      return state == null ? null : state === "dry" ? "dry" : "wet";
-                  }
-                : undefined,
+            // «dry» or «wet» as far as the rain model knows. Until a forecast is loaded -- and
+            // while the rain markers are switched off, when nothing reads it -- there is none, and
+            // the weather filter is not applied: with rain switched off but a forecast still kept,
+            // every crag read as unknown and «dry now» emptied the list.
+            wxState:
+                weatherAt && weatherOn
+                    ? (crag: Crag) => {
+                          const state = stateOf(crag);
+                          return state == null ? null : state === "dry" ? "dry" : "wet";
+                      }
+                    : undefined,
             areaIndex,
             distance: me
                 ? (crag: Crag) =>
@@ -130,7 +134,7 @@ export const useFilterContext = (): FilterContext => {
                           : haversine(me.lat, me.lon, crag.lat, crag.lon)
                 : undefined,
         };
-    }, [base, region, me, stateOf, weatherAt]);
+    }, [base, region, me, stateOf, weatherAt, weatherOn]);
 };
 
 /** The filtered, sorted list the map and the list both read. */

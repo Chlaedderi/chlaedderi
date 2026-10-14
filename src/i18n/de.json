@@ -747,6 +747,8 @@
     "sum.fav": "♥ Favorit",
     "sum.grade": "{0} bis {1}",
     "sum.grade1": "Grad {0}",
+    "sum.grade.down": "bis {0}",
+    "sum.grade.up": "ab {0}",
     "sum.many": "Zeigt Gebiete mit mindestens {0} Routen: {1}.",
     "sum.one": "Zeigt Gebiete mit mindestens einer Route: {1}.",
     "sum.star": "{0} oder mehr",

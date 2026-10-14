@@ -36,17 +36,16 @@ export const DemoNotice = () => {
     const region = useRegion();
     const seen = useAppSelector((s) => s.prefs.demoSeen);
     const dispatch = useAppDispatch();
-    // The crag on screen counts, not only the region selected: one opened from the favourites,
-    // the logbook or a record keeps the region it was opened from, and an invented crag must not
-    // look real there -- nor a real one invented.
+    // The crag on screen counts as well as the region selected: one opened from the favourites,
+    // the logbook or a record keeps the region it was opened from. Either one invented is reason
+    // enough -- a strip over a real crag costs nothing, a missing one over an invented crag is what
+    // this control exists to prevent. (The map's selection is not asked: it outlives the page.)
     const { byId, regions } = useData();
     const onPage = useMatch("/crag/:id")?.params.id;
-    const selectedId = useAppSelector((s) => s.ui.selectedId);
-    const shownId = onPage ?? selectedId;
-    const shown = shownId ? byId[shownId] : undefined;
-    const shownRegion = shown ? regions.find((r) => r.key === shown.packId) : region;
+    const shown = onPage ? byId[onPage] : undefined;
+    const shownRegion = shown ? regions.find((r) => r.key === shown.packId) : undefined;
 
-    if (shownRegion?.fictional !== true) return null;
+    if (region?.fictional !== true && shownRegion?.fictional !== true) return null;
 
     const close = (): void => {
         dispatch(prefsActions.setFlag({ key: "demoSeen", value: true }));

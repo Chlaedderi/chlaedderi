@@ -747,6 +747,8 @@
     "sum.fav": "♥ favourite",
     "sum.grade": "{0} to {1}",
     "sum.grade1": "grade {0}",
+    "sum.grade.down": "up to {0}",
+    "sum.grade.up": "{0} and harder",
     "sum.many": "Shows crags with at least {0} routes: {1}.",
     "sum.one": "Shows crags with at least one route: {1}.",
     "sum.star": "{0} or more",

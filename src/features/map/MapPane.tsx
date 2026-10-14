@@ -82,6 +82,15 @@ const FitBounds = ({ span }: { span: Span | null }) => {
     return null;
 };
 
+/** Move the map to a point, when asked: each request is a new object, so one point twice moves twice. */
+const PanTo = ({ to, calm }: { to: { lat: number; lon: number } | null; calm: boolean }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (to) map.panTo([to.lat, to.lon], { animate: !calm });
+    }, [map, to, calm]);
+    return null;
+};
+
 /** `Span` is how the app talks about a box; Leaflet wants its own type at the edge. */
 const toBounds = (span: Span): L.LatLngBoundsExpression => [
     [span.south, span.west],
@@ -184,6 +193,8 @@ export const MapPane = () => {
     const picking = useAppSelector((s) => s.ui.picking);
     const calloutOpen = useAppSelector((s) => s.ui.calloutOpen);
     const [locateState, setLocateState] = useState<LocateState>("off");
+    /** Where «my position» asked the map to go, if anywhere. */
+    const [panTo, setPanTo] = useState<{ lat: number; lon: number } | null>(null);
     // Tiles that will not load: an offline device, a blocked host, a base map that is down.
     const [tileTrouble, setTileTrouble] = useState(false);
     const tileErrors = useRef(0);
@@ -488,6 +499,12 @@ export const MapPane = () => {
             dispatch(uiActions.setPicking(false));
             return;
         }
+        // On already: a second tap switches it off, as the button's own label says.
+        if (locateState === "on") {
+            setLocateState("off");
+            dispatch(uiActions.setMe(null));
+            return;
+        }
         if (!navigator.geolocation) {
             askByHand(t("loc.none"));
             return;
@@ -519,6 +536,9 @@ export const MapPane = () => {
                     dispatch(
                         uiActions.toast({ message: t("loc.far", { 0: formatDistance(far) }) }),
                     );
+                } else {
+                    // Near the crags: centre on the position, which is what the button says.
+                    setPanTo({ lat: pos.coords.latitude, lon: pos.coords.longitude });
                 }
             },
             (err) => {
@@ -661,6 +681,8 @@ export const MapPane = () => {
                         onViaRemove={() => dispatch(uiActions.clearVia())}
                         viaTitle={t("pl.via.t")}
                     />
+
+                    <PanTo to={panTo} calm={calm} />
 
                     <BackgroundClick
                         onClick={(latlng) => {

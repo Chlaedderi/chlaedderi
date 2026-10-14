@@ -540,10 +540,15 @@ export const routeSummary = (
 
     const parts: string[] = [];
     if (gradeActive(f)) {
+        // The slider's ends are open, as `gradeBounds` applies them, and the summary says so.
         parts.push(
-            f.gmin === f.gmax
-                ? t("sum.grade1", { 0: GRADES[f.gmin] })
-                : t("sum.grade", { 0: GRADES[f.gmin], 1: GRADES[f.gmax] }),
+            f.gmax >= GRADE_HI
+                ? t("sum.grade.up", { 0: GRADES[f.gmin] })
+                : f.gmin <= GRADE_LO
+                  ? t("sum.grade.down", { 0: GRADES[f.gmax] })
+                  : f.gmin === f.gmax
+                    ? t("sum.grade1", { 0: GRADES[f.gmin] })
+                    : t("sum.grade", { 0: GRADES[f.gmin], 1: GRADES[f.gmax] }),
         );
     }
     if (f.star !== "any") {

@@ -22,25 +22,35 @@ const twoRegions = () => {
 };
 
 describe("the demo notice", () => {
-    it("marks an invented crag on screen while a real region is selected", () => {
+    it("marks an invented crag on its page while a real region is selected", () => {
         // Opened from the favourites, the logbook or a record, a crag keeps the region it was
-        // opened from -- the strip must follow the crag, not the selection.
+        // opened from -- the strip must follow the crag on the page too.
         const data = twoRegions();
         const invented = data.crags.find((c) => c.packId === showcase.id)!;
         const store = makeStore();
         store.dispatch(prefsActions.setRegion("real"));
-        store.dispatch(uiActions.select(invented.id));
-        renderApp(<DemoNotice />, { data, store });
+        renderApp(<DemoNotice />, { data, store, route: `/crag/${invented.id}` });
         expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
     });
 
-    it("does not mark a real crag while the invented region is selected", () => {
+    it("stays on the invented region's screens after a real crag was opened", () => {
+        // A real crag opened from the favourites leaves its id selected; back on the list of the
+        // invented region, that stale selection must not take the strip away.
         const data = twoRegions();
         const real = data.crags.find((c) => c.packId === "real")!;
         const store = makeStore();
         store.dispatch(prefsActions.setRegion(showcase.id));
         store.dispatch(uiActions.select(real.id));
-        renderApp(<DemoNotice />, { data, store });
+        renderApp(<DemoNotice />, { data, store, route: "/" });
+        expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
+    });
+
+    it("leaves a real region's screens unmarked", () => {
+        const data = twoRegions();
+        const real = data.crags.find((c) => c.packId === "real")!;
+        const store = makeStore();
+        store.dispatch(prefsActions.setRegion("real"));
+        renderApp(<DemoNotice />, { data, store, route: `/crag/${real.id}` });
         expect(screen.queryByTestId("demo-strip")).toBeNull();
     });
 });

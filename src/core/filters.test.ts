@@ -417,6 +417,14 @@ describe("routeSummary", () => {
         expect(routeSummary(range, say)).toContain("sum.grade(6a|6c+)");
     });
 
+    it("says an end of the slider is open, as the filter applies it", () => {
+        // The «8a+» preset ends at 9a and lets 9a+ through; «to 9a» would say otherwise.
+        const hard = { ...emptyFilters(), gmin: gradeIdx("8a")!, gmax: GRADE_HI };
+        expect(routeSummary(hard, say)).toContain("sum.grade.up(8a)");
+        const easy = { ...emptyFilters(), gmin: GRADE_LO, gmax: gradeIdx("4c+")! };
+        expect(routeSummary(easy, say)).toContain("sum.grade.down(4c+)");
+    });
+
     it("treats five stars as exact and fewer as «or more», as the original did", () => {
         const five = { ...emptyFilters(), star: "5" as const };
         expect(routeSummary(five, say)).toContain("sum.star5(★★★★★)");
