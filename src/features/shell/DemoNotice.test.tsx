@@ -45,6 +45,17 @@ describe("the demo notice", () => {
         expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
     });
 
+    it("marks an invented crag's card on the map while a real region is selected", () => {
+        // «Show on the map» from an invented crag's page opens its card over the real region.
+        const data = twoRegions();
+        const invented = data.crags.find((c) => c.packId === showcase.id)!;
+        const store = makeStore();
+        store.dispatch(prefsActions.setRegion("real"));
+        store.dispatch(uiActions.reveal(invented.id));
+        renderApp(<DemoNotice />, { data, store, route: "/" });
+        expect(screen.getByTestId("demo-strip")).toBeInTheDocument();
+    });
+
     it("leaves a real region's screens unmarked", () => {
         const data = twoRegions();
         const real = data.crags.find((c) => c.packId === "real")!;

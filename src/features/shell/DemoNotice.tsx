@@ -39,13 +39,26 @@ export const DemoNotice = () => {
     // The crag on screen counts as well as the region selected: one opened from the favourites,
     // the logbook or a record keeps the region it was opened from. Either one invented is reason
     // enough -- a strip over a real crag costs nothing, a missing one over an invented crag is what
-    // this control exists to prevent. (The map's selection is not asked: it outlives the page.)
+    // this control exists to prevent. The map's selection counts only while its card is open on
+    // the map -- «show on the map» from an invented crag's page lands there -- since a selection
+    // alone outlives the page it was made on.
     const { byId, regions } = useData();
     const onPage = useMatch("/crag/:id")?.params.id;
-    const shown = onPage ? byId[onPage] : undefined;
-    const shownRegion = shown ? regions.find((r) => r.key === shown.packId) : undefined;
+    const onMap = useMatch("/") !== null;
+    const selectedId = useAppSelector((s) => s.ui.selectedId);
+    const calloutOpen = useAppSelector((s) => s.ui.calloutOpen);
+    const inventedCrag = (id: string | null | undefined): boolean => {
+        const crag = id ? byId[id] : undefined;
+        return crag ? regions.find((r) => r.key === crag.packId)?.fictional === true : false;
+    };
 
-    if (region?.fictional !== true && shownRegion?.fictional !== true) return null;
+    if (
+        region?.fictional !== true &&
+        !inventedCrag(onPage) &&
+        !(onMap && calloutOpen && inventedCrag(selectedId))
+    ) {
+        return null;
+    }
 
     const close = (): void => {
         dispatch(prefsActions.setFlag({ key: "demoSeen", value: true }));
