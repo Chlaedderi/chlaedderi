@@ -51,6 +51,11 @@ export interface TrailGraph {
     readonly adj: Edge[][];
     readonly segs: [a: number, b: number, cat: PathCategory][];
     readonly grid: Map<string, number[]>;
+    /**
+     * For each entry of `segs`, the trail segment it is part of: itself, or the segment it was
+     * cut out of. Optional, for a graph built by hand.
+     */
+    readonly from?: number[];
     readonly G: number;
     n: number;
 }
@@ -109,10 +114,16 @@ export const nearest = (
 
     out.sort((m, n) => m.d - n.d);
     const pick: NearPoint[] = [];
+    const taken = new Set<number>();
     for (const h of out) {
         if (pick.length >= maxN) break;
+        // One point per segment as the trails drew it, the closest -- its pieces are one way, not
+        // several, and must not crowd the other ways out of the few points taken.
+        const whole = g.from?.[h.seg] ?? h.seg;
+        if (taken.has(whole)) continue;
         // Much further than the closest is not an alternative, it is a different place.
         if (pick.length && h.d > pick[0]!.d * 1.5 + 60) break;
+        taken.add(whole);
         if (pick.every((o) => Math.hypot(o.x - h.x, o.y - h.y) > 25)) pick.push(h);
     }
     return pick;
@@ -153,9 +164,11 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         adj[b]!.push({ to: a, d, cat });
     };
 
-    const index = (a: number, b: number, cat: PathCategory): void => {
+    const from: number[] = [];
+    const index = (a: number, b: number, cat: PathCategory, whole?: number): void => {
         const i = segs.length;
         segs.push([a, b, cat]);
+        from.push(whole ?? i);
         const x0 = Math.floor(Math.min(X[a]!, X[b]!) / G);
         const x1 = Math.floor(Math.max(X[a]!, X[b]!) / G);
         const y0 = Math.floor(Math.min(Y[a]!, Y[b]!) / G);
@@ -185,7 +198,7 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         }
     }
 
-    const g: TrailGraph = { X, Y, adj, segs, grid, G, n: X.length };
+    const g: TrailGraph = { X, Y, adj, segs, grid, from, G, n: X.length };
 
     // Where along each segment the nodes put onto it lie -- a trail ending on it, a trail crossing
     // it -- so that the segment can be cut at them below.
@@ -285,7 +298,7 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         const chain = [s0, ...list.map((e) => e.p), s1];
         for (let i = 1; i < chain.length; i++) link(chain[i - 1]!, chain[i]!, cat);
         segs[seg] = [chain[0]!, chain[1]!, cat];
-        for (let i = 2; i < chain.length; i++) index(chain[i - 1]!, chain[i]!, cat);
+        for (let i = 2; i < chain.length; i++) index(chain[i - 1]!, chain[i]!, cat, seg);
     }
 
     g.n = X.length;

@@ -520,7 +520,7 @@
     "pk.active": "angezeigt",
     "pk.add": "Region laden",
     "pk.added": "{0} geladen: {1} Gebiete.",
-    "pk.bad": "Nicht geladen. {0}",
+    "pk.bad": "Nicht geladen.",
     "pk.builtin": "Kommt mit der App",
     "pk.download": "Als Datei speichern",
     "pk.download.fail": "Die Region liess sich in diesem Browser nicht als Datei speichern.",

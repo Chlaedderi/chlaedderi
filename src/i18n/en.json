@@ -520,7 +520,7 @@
     "pk.active": "shown",
     "pk.add": "Load a region",
     "pk.added": "{0} loaded: {1} crags.",
-    "pk.bad": "Not loaded. {0}",
+    "pk.bad": "Not loaded.",
     "pk.builtin": "Comes with the app",
     "pk.download": "Save as a file",
     "pk.download.fail": "The region could not be saved as a file in this browser.",

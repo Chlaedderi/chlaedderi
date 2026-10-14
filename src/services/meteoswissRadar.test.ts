@@ -21,9 +21,23 @@ const nameFor = (minutesAgo: number): string => {
 
 /** A catalogue holding these names, and the real fixture behind every frame. */
 const serving = (names: readonly string[]): ReturnType<typeof vi.fn> => {
-    const assets = Object.fromEntries(names.map((name) => [name, {}]));
     const fetcher = vi.fn((url: string) => {
         if (url.includes("/api/stac/")) {
+            // One catalogue per UTC day, as the service keeps them: within two hours of midnight
+            // the app asks for yesterday's and today's, and each must list only its own frames.
+            const assets = Object.fromEntries(
+                names
+                    .filter((name) => {
+                        const at = frameTime(name);
+                        return (
+                            at !== null &&
+                            url.includes(
+                                `/${new Date(at).toISOString().slice(0, 10).replaceAll("-", "")}-ch`,
+                            )
+                        );
+                    })
+                    .map((name) => [name, {}]),
+            );
             return Promise.resolve(new Response(JSON.stringify({ assets }), { status: 200 }));
         }
         const copy = new Uint8Array(FRAME);

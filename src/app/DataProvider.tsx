@@ -129,11 +129,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const installFromUrl = useCallback(
         async (url: string, key?: string) => {
-            const load = await fetchPack(url, undefined, key);
-            // What is remembered is the address that answered, not the one that was pasted: it is
-            // what «fetch again» asks for, and what a link to this region will carry -- with the
-            // key beside it, for a region that arrived locked.
-            return install(load, { type: "url", url: load.url, key });
+            // Busy from the first byte, not only once the download is in: «unload» pressed while
+            // «fetch again» was still downloading was undone the moment the download finished.
+            setBusy(true);
+            try {
+                const load = await fetchPack(url, undefined, key);
+                // What is remembered is the address that answered, not the one that was pasted: it
+                // is what «fetch again» asks for, and what a link to this region will carry -- with
+                // the key beside it, for a region that arrived locked.
+                return await install(load, { type: "url", url: load.url, key });
+            } finally {
+                setBusy(false);
+            }
         },
         [install],
     );
@@ -148,8 +155,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const installFromFile = useCallback(
-        async (file: File, key?: string) =>
-            install(await readPackFile(file, key), { type: "file", name: file.name, key }),
+        async (file: File, key?: string) => {
+            setBusy(true);
+            try {
+                return await install(await readPackFile(file, key), {
+                    type: "file",
+                    name: file.name,
+                    key,
+                });
+            } finally {
+                setBusy(false);
+            }
+        },
         [install],
     );
 

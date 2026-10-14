@@ -115,6 +115,22 @@ describe("buildGraph", () => {
     });
 });
 
+describe("nearest, on a network whose segments were cut", () => {
+    it("takes one point per segment as drawn, not one per piece of it", () => {
+        // The long path is cut at the two crossings into three pieces. Counted as three ways,
+        // they filled the few points taken and pushed a real alternative out.
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(500, -300, 500, 300),
+            line(600, -300, 600, 300),
+        ]);
+        // Between the crossings and 40 m off the path, so that the pieces lie well apart.
+        const hits = nearest(g, 550, 40, 100, 4);
+        const onLong = hits.filter((h) => (g.from?.[h.seg] ?? h.seg) === 0);
+        expect(onLong).toHaveLength(1);
+    });
+});
+
 describe("nearest", () => {
     const g = buildGraph([line(0, 0, 100, 0)]);
 

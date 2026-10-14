@@ -78,7 +78,10 @@ export const LogSheet = ({
             setStars(entry.r);
         } else {
             setName(route?.name ?? "");
-            setGrade(route?.grade ?? "6a");
+            // A route of the atlas keeps its own grade, none included: «6a» is the starting point
+            // of the picker for a route the atlas does not have, not a grade to give one that
+            // has none -- it would then count as a 6a send in the pyramid and the records.
+            setGrade(route ? (route.grade ?? "") : "6a");
             setDate(todayIso());
             setStyle(lastStyle);
             setStars(0);
@@ -107,7 +110,9 @@ export const LogSheet = ({
         };
         dispatch(logbookActions.upsert(record));
         dispatch(prefsActions.setLogStyle(style));
-        dispatch(uiActions.toast({ message: t("lb.saved"), severity: "success" }));
+        dispatch(
+            uiActions.toast({ message: t(entry ? "lb.updated" : "lb.saved"), severity: "success" }),
+        );
         onClose();
     };
 
@@ -132,7 +137,7 @@ export const LogSheet = ({
                     {crag ? ` · ${crag.name}` : ""}
                 </Typography>
                 <Typography variant="h3" gutterBottom>
-                    {custom ? t("lb.custom.t") : `${name} ${grade}`}
+                    {custom ? t("lb.custom.t") : `${name} ${grade}`.trim()}
                 </Typography>
 
                 <Stack spacing={2} sx={{ mt: 1 }}>

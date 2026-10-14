@@ -216,9 +216,20 @@ export const logStats = (
         routes: new Set(sends.map((e) => e.k ?? `${e.s}~${e.n}`)).size,
         crags: new Set(entries.map((e) => e.s)).size,
         days: new Set(entries.map((e) => e.d)).size,
+        // One chip per route: a top-rope and then a redpoint of the same line are one hardest
+        // route, not two. The most recent send of it stands for it.
         hardest: sends
             .filter((e) => gradeIdxOf(e) != null)
-            .sort((a, b) => (gradeIdxOf(b) ?? 0) - (gradeIdxOf(a) ?? 0) || (a.d < b.d ? 1 : -1))
+            .sort(
+                (a, b) =>
+                    (gradeIdxOf(b) ?? 0) - (gradeIdxOf(a) ?? 0) ||
+                    (a.d < b.d ? 1 : a.d > b.d ? -1 : 0),
+            )
+            .filter(
+                (e, i, all) =>
+                    all.findIndex((o) => (o.k ?? `${o.s}~${o.n}`) === (e.k ?? `${e.s}~${e.n}`)) ===
+                    i,
+            )
             .slice(0, limit),
     };
 };

@@ -116,7 +116,10 @@ export const refreshApp = async (): Promise<boolean> => {
         const probe = new AbortController();
         const timer = setTimeout(() => probe.abort(), 8000);
         try {
-            await fetch("version.json", { cache: "no-store", signal: probe.signal });
+            const answer = await fetch("version.json", { cache: "no-store", signal: probe.signal });
+            // A captive portal answers too -- with its own page, by way of a redirect -- and a
+            // server in trouble answers 5xx. Neither would serve the app's files.
+            if (!answer.ok || answer.redirected) return false;
         } finally {
             clearTimeout(timer);
         }

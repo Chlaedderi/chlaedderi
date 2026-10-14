@@ -208,6 +208,18 @@ describe("logStats", () => {
         expect(stats.days).toBe(2);
         expect(stats.hardest[0]?.g).toBe("7a");
     });
+
+    it("lists a route once among the hardest, by its latest send", () => {
+        const stats = logStats(
+            [
+                entry({ id: "a", k: "c1~r1", s: "c1", d: "2026-01-01", g: "7a", st: "tr" }),
+                entry({ id: "b", k: "c1~r1", s: "c1", d: "2026-03-01", g: "7a", st: "rp" }),
+                entry({ id: "c", k: "c1~r2", s: "c1", d: "2026-02-02", g: "6a" }),
+            ],
+            (e) => entryGradeIdx(e),
+        );
+        expect(stats.hardest.map((e) => e.id)).toEqual(["b", "c"]);
+    });
 });
 
 describe("gradePyramid", () => {
