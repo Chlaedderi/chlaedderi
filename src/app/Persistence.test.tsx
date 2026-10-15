@@ -111,6 +111,8 @@ describe("Persistence", () => {
             await new Promise((resolve) => setTimeout(resolve, 600));
         });
         expect(fake.set).not.toHaveBeenCalled();
+        // And the viewer is told that what they change now will not be kept.
+        expect(store.getState().ui.toasts.some((x) => x.severity === "warning")).toBe(true);
     });
 
     it("reads a view link's filters only once the region it offers is here", async () => {

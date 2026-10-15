@@ -89,6 +89,11 @@ export const Persistence = () => {
     // The same, as state, for the settings: their write waits on it and has to run once it flips.
     const [ready, setReady] = useState(false);
 
+    // The words as they are now, for the read-back below, which runs once and must not run again
+    // because the language changed.
+    const latestT = useRef(t);
+    latestT.current = t;
+
     // ---- read back once
     useEffect(() => {
         void (async () => {
@@ -151,6 +156,10 @@ export const Persistence = () => {
                 loaded.current = true;
                 setReady(true);
             } catch {
+                // Said, not hidden: nothing changed from here on will be kept this session.
+                dispatch(
+                    uiActions.toast({ message: latestT.current("save.fail"), severity: "warning" }),
+                );
                 // Not merged, so not written -- a lost change is the lesser harm than lost
                 // regions, favourites or ascents. (The store itself never rejects; this is for a
                 // failure in the merging above.)
@@ -259,7 +268,9 @@ export const Persistence = () => {
             // A silent failure here loses somebody's favourites. Say so, and name the page
             // that explains what this browser can and cannot keep.
             if (!result.ok) {
-                dispatch(uiActions.toast({ message: t("save.fail"), severity: "warning" }));
+                dispatch(
+                    uiActions.toast({ message: latestT.current("save.fail"), severity: "warning" }),
+                );
             }
         });
     });
