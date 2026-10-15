@@ -90,7 +90,11 @@ export interface LoadWeatherOptions {
     readonly signal?: AbortSignal;
 }
 
-/** Fetch the rain for a set of cells. Throws only when *every* request failed. */
+/**
+ * Fetch the rain for a set of cells. A batch survives one of its two requests failing; a batch
+ * with no answer at all throws, so that the caller keeps the whole set it had rather than
+ * replacing it with part of one.
+ */
 export const loadWeather = async ({
     cells,
     swissCells,

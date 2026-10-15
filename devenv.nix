@@ -86,7 +86,7 @@ in
     [
       git
 
-      # tools/make-packs.sh needs only these two
+      # tools/make-packs.sh needs jq; tools/serve.pl needs perl
       jq
       perl
 

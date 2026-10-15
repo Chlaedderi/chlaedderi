@@ -71,6 +71,64 @@ describe("buildGraph", () => {
         expect(lengthByCategory(leg)[0]).toBeLessThan(5);
         expect(lengthOf(leg)).toBeCloseTo(100, 0);
     });
+
+    it("joins a trail that stops a few metres short of another", () => {
+        // The spur ends at (50,3), three metres off the long path: surveyed data rarely lands
+        // exactly, and the crossing pass does not see a line that never reaches the other.
+        const g = buildGraph([line(0, 0, 100, 0), line(50, 60, 50, 3)]);
+        const leg = findLeg(g, [50, 60], [100, 0]);
+        expect(lengthByCategory(leg)[0]).toBeLessThan(5);
+        expect(lengthOf(leg)).toBeLessThan(115);
+    });
+
+    it("walks along one segment when start and end both lie beside it", () => {
+        // ──────────  one long segment; the start and the end snap onto it 400 m apart
+        const g = buildGraph([line(0, 0, 1000, 0)]);
+        const leg = findLeg(g, [300, 10], [700, 10]);
+        expect(lengthOf(leg)).toBeLessThan(430);
+    });
+
+    it("goes straight between two trails that end on the same segment", () => {
+        //      │
+        // ─────┴──┬─────  two spurs stopping 3 m short of the line, from opposite sides
+        //         │
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(400, 300, 400, 3),
+            line(600, -300, 600, -3),
+        ]);
+        const leg = findLeg(g, [400, 300], [600, -300]);
+        expect(lengthOf(leg)).toBeLessThan(820);
+    });
+
+    it("goes straight from one crossing to the next on the same segment", () => {
+        //   │ │    two paths crossing one long segment 20 m apart
+        // ──┼─┼──────────
+        //   │ │
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(500, -300, 500, 300),
+            line(520, -300, 520, 300),
+        ]);
+        const leg = findLeg(g, [500, -300], [520, 300]);
+        expect(lengthOf(leg)).toBeCloseTo(620, 0);
+    });
+});
+
+describe("nearest, on a network whose segments were cut", () => {
+    it("takes one point per segment as drawn, not one per piece of it", () => {
+        // The long path is cut at the two crossings into three pieces. Counted as three ways,
+        // they filled the few points taken and pushed a real alternative out.
+        const g = buildGraph([
+            line(0, 0, 1000, 0),
+            line(500, -300, 500, 300),
+            line(600, -300, 600, 300),
+        ]);
+        // Between the crossings and 40 m off the path, so that the pieces lie well apart.
+        const hits = nearest(g, 550, 40, 100, 4);
+        const onLong = hits.filter((h) => (g.from?.[h.seg] ?? h.seg) === 0);
+        expect(onLong).toHaveLength(1);
+    });
 });
 
 describe("nearest", () => {

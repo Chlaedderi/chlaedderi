@@ -45,6 +45,21 @@ const prefsSlice = createSlice({
         setPacks: (state, action: PayloadAction<InstalledPack[]>) => {
             state.packs = action.payload;
         },
+        /**
+         * Add or replace one pack's note, against the list as it is *now*. An install awaits a
+         * download and a write, and a list taken when it started would undo whatever another
+         * install or removal did meanwhile.
+         */
+        putPack: (state, action: PayloadAction<InstalledPack>) => {
+            state.packs = [
+                ...state.packs.filter((p) => p.id !== action.payload.id),
+                action.payload,
+            ];
+        },
+        /** Drop one pack's note, against the list as it is now. */
+        dropPack: (state, action: PayloadAction<string>) => {
+            state.packs = state.packs.filter((p) => p.id !== action.payload);
+        },
         /** The page was opened; `payload` is the time. */
         countVisit: (state, action: PayloadAction<number>) => {
             state.install = countVisit(state.install, action.payload);

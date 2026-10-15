@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fold, i18, isPlain, oneLine, parseInline, slug } from "./text";
+import { fold, httpHref, i18, isPlain, oneLine, parseInline, slug } from "./text";
 
 describe("i18", () => {
     it("picks the language and falls back rather than showing nothing", () => {
@@ -183,5 +183,27 @@ describe("oneLine", () => {
     it("has nothing to say about an absent string", () => {
         expect(oneLine(null, 80)).toBe("");
         expect(oneLine(undefined, 80)).toBe("");
+    });
+});
+
+describe("httpHref", () => {
+    it("keeps an http(s) target", () => {
+        expect(httpHref("https://commons.wikimedia.org/x")).toBe("https://commons.wikimedia.org/x");
+        expect(httpHref("HTTP://example.ch")).toBe("HTTP://example.ch");
+    });
+
+    it("gives no target for any other scheme a pack might carry", () => {
+        for (const url of [
+            "javascript:alert(1)",
+            "intent://x#Intent;package=evil;end",
+            "tel:+41000",
+            "data:text/html,x",
+            "//evil.example",
+            "",
+            null,
+            undefined,
+        ]) {
+            expect(httpHref(url), String(url)).toBeUndefined();
+        }
     });
 });

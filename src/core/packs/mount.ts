@@ -19,7 +19,9 @@ const RX_MAYBE = /unconfirmed|not confirmed|is said to apply|may apply/i;
 const RX_FAMILY = /famil|children|kids|animals|pets/i;
 const RX_CAUTION =
     /dangerous|abandon|outdated|old (and )?(dangerous|bolt|peg|equipment)|poorly maintained|re-bolt|restyling|dated bolt|not well bolted|sparse|weakness|rockfall|loose/i;
-const RX_NEGATED = /\b(not|un\w+)\b/i;
+// «unsuitable», «unsafe», «unfit» -- but not the un-words that negate nothing: «children under 6
+// need a helmet» or «until noon» used to mark a family crag as not one.
+const RX_NEGATED = /\b(not|(?!under|until|unit|univers|unique)un\w+)\b/i;
 
 /** Split a warning into sentences, so that one clause cannot colour the whole text. */
 const sentences = (s: string): string[] => s.match(/[^.!]+[.!]*\s*/g) ?? [];
@@ -37,7 +39,8 @@ const routeKeys = (sector: StoredSector): string[] => {
     const seen = new Set<string>();
     return sector.routes.map((route, i) => {
         const kept = sector.rk?.[i];
-        if (kept) {
+        // A held key once only: two routes under one key would share a favourite and a logbook.
+        if (kept && !seen.has(kept)) {
             seen.add(kept);
             return kept;
         }
@@ -125,7 +128,8 @@ export const toCrag = (sector: StoredSector, packId: string): Crag => {
         gmax: sector.gmax ?? null,
         gminI: sector.gminI ?? null,
         gmaxI: sector.gmaxI ?? null,
-        nRoutes: sector.nRoutes ?? null,
+        // Optional in a pack; the list is what it counts, when it is not given.
+        nRoutes: sector.nRoutes ?? (sector.routes.length || null),
         nSingle: sector.nSingle ?? null,
         nMulti: sector.nMulti ?? null,
         bands: sector.bands ?? null,
@@ -237,6 +241,22 @@ export const toRegion = (pack: Mappack, picOffset = 0): Region => ({
 export const parkKey = (packId: string, key: string): string => `${packId}/${key}`;
 
 /**
+ * The car parks of one region, out of the joined set. The map draws only the region on screen's
+ * crags, and its car parks must follow: another region's would sit on the map with nothing to say
+ * whose they are -- and an invented region's on real ground with no demo strip beside them.
+ */
+export const parksOf = (
+    parks: Readonly<Record<string, Park>>,
+    packId: string | undefined,
+): Record<string, Park> => {
+    const own: Record<string, Park> = Object.create(null) as Record<string, Park>;
+    if (packId === undefined) return own;
+    const prefix = parkKey(packId, "");
+    for (const [key, park] of Object.entries(parks)) if (key.startsWith(prefix)) own[key] = park;
+    return own;
+};
+
+/**
  * Mount a set of packs.
  *
  * Two things have to be renumbered while pouring several packs into one set, both of them carried
@@ -253,8 +273,10 @@ export const parkKey = (packId: string, key: string): string => `${packId}/${key
 export const mountPacks = (packs: readonly Mappack[]): MountedData => {
     const crags: Crag[] = [];
     const regions: Region[] = [];
-    const parks: Record<string, Park> = {};
-    const byId: Record<string, Crag> = {};
+    // Without a prototype: these are looked up by ids out of links, backup codes and packs, and
+    // `byId["constructor"]` on a plain object is a function, not «no such crag».
+    const parks: Record<string, Park> = Object.create(null) as Record<string, Park>;
+    const byId: Record<string, Crag> = Object.create(null) as Record<string, Crag>;
     const picSrc: string[] = [];
 
     for (const pack of packs) {
@@ -262,7 +284,7 @@ export const mountPacks = (packs: readonly Mappack[]): MountedData => {
         const own = pack.picSrc ?? [];
         picSrc.push(...own);
 
-        const renamed: Record<string, string> = {};
+        const renamed: Record<string, string> = Object.create(null) as Record<string, string>;
         for (const [key, park] of Object.entries(pack.parks ?? {})) {
             const unique = parkKey(pack.id, key);
             renamed[key] = unique;
@@ -275,27 +297,37 @@ export const mountPacks = (packs: readonly Mappack[]): MountedData => {
             if (sector.id in byId) continue;
             const pointed: StoredSector = {
                 ...sector,
-                pk: sector.pk ? (renamed[sector.pk] ?? sector.pk) : sector.pk,
-                pkOff: sector.pkOff ? (renamed[sector.pkOff] ?? sector.pkOff) : sector.pkOff,
-                ap: sector.ap?.map((a) => ({ ...a, pk: renamed[a.pk] ?? a.pk })) ?? sector.ap,
-                pics:
-                    own.length && sector.pics
-                        ? sector.pics.map(
-                              (p) =>
-                                  [
-                                      p[0],
-                                      p[1],
-                                      p[2],
-                                      (p[3] || 0) + picOffset,
-                                      p[4],
-                                      p[5],
-                                      p[6],
-                                      p[7],
-                                      p[8],
-                                      p[9],
-                                  ] as typeof p,
-                          )
-                        : sector.pics,
+                // A car park the pack does not list is no car park: kept as written, its raw id
+                // was shown as a name, and one with a slash in it named another region's.
+                pk: sector.pk ? (renamed[sector.pk] ?? null) : sector.pk,
+                pkOff: sector.pkOff ? (renamed[sector.pkOff] ?? null) : sector.pkOff,
+                ap:
+                    sector.ap?.map((a) => ({
+                        ...a,
+                        pk: renamed[a.pk] ?? parkKey(pack.id, a.pk),
+                    })) ?? sector.ap,
+                // Every index is moved into the joined list, and one that is not this pack's --
+                // past its own list, or into none at all -- points at no source rather than at
+                // the next pack's: a picture must never be credited to somebody else's source.
+                pics: sector.pics
+                    ? sector.pics.map(
+                          (p) =>
+                              [
+                                  p[0],
+                                  p[1],
+                                  p[2],
+                                  (p[3] || 0) >= 0 && (p[3] || 0) < own.length
+                                      ? (p[3] || 0) + picOffset
+                                      : -1,
+                                  p[4],
+                                  p[5],
+                                  p[6],
+                                  p[7],
+                                  p[8],
+                                  p[9],
+                              ] as typeof p,
+                      )
+                    : sector.pics,
             };
             const crag = toCrag(pointed, pack.id);
             byId[crag.id] = crag;

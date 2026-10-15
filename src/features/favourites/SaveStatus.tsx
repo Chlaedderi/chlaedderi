@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useLang } from "@app/useAppData";
+import { todayIso } from "@core/logbook";
 import { type StoreStatus, openStore } from "@core/store";
 import { formatDate } from "@i18n/index";
 
@@ -61,7 +62,7 @@ export const SaveStatus = ({
     }
 
     if (saved.ok && saved.verified && durable) {
-        const when = formatDate(new Date(saved.at).toISOString().slice(0, 10), lang);
+        const when = formatDate(todayIso(new Date(saved.at)), lang);
         return (
             <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mt: 2 }}>
                 {t("fv.ok", { 0: when })}

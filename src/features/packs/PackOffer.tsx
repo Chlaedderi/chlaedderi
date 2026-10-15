@@ -60,7 +60,7 @@ export const PackOffer = () => {
     const offer = useAppSelector((s) => s.ui.packOffer);
     const packsOpen = useAppSelector((s) => s.ui.packsOpen);
     const installed = useAppSelector((s) => s.prefs.packs);
-    const { installLoaded, busy, booted, byId } = useData();
+    const { installLoaded, busy, booted, byId, regions, onlyShowcase } = useData();
 
     const [checking, setChecking] = useState(false);
     const [result, setResult] = useState<Fetched | null>(null);
@@ -132,18 +132,40 @@ export const PackOffer = () => {
 
         if (!booted) return;
 
-        const here = installed.find((p) => p.src?.url === address.url);
+        // Here means mounted, not merely listed: a region whose stored copy the browser evicted, or
+        // that would not read back, stays in the list -- and switching to it would bounce straight
+        // back off, saying nothing. That one is fetched again like any other. Nor is the built-in
+        // showcase standing in for it, which may carry the same id.
+        const here = installed.find(
+            (p) =>
+                p.src?.url === address.url && !onlyShowcase && regions.some((r) => r.key === p.id),
+        );
         if (here) {
             // Nothing to download and nothing to decide: it is this region, and it is already here.
             dispatch(prefsActions.setRegion(here.id));
-            dispatch(uiActions.clearOffer());
+            // All of it, not only the offer: a region checked here that then arrived by itself --
+            // read back late, or installed in another tab -- would otherwise leave its answer
+            // standing, and the next offer would open on it.
+            close();
             if (offer.then) setPending(offer.then);
             return;
         }
         if (offer.fetchNow && !result && !checking) void check();
         // `result` and `checking` are read to avoid re-fetching, not to react to them.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [offer, address?.url, booted, packsOpen, settled, installed, dispatch, t]);
+    }, [
+        offer,
+        address?.url,
+        booted,
+        packsOpen,
+        settled,
+        installed,
+        regions,
+        onlyShowcase,
+        close,
+        dispatch,
+        t,
+    ]);
 
     // Follow the link that asked for the region, once that region is actually mounted. Waiting
     // for `byId` matters: navigating straight off the install lands a commit early, and CragPage
@@ -299,7 +321,11 @@ export const PackOffer = () => {
                                     // Read the same way as the host above it: the dialog is asking
                                     // for a comparison, and two spellings of one host would read
                                     // as an alarm that is not there.
-                                    3: replacedAt ? shownHost(replacedAt.host) : "",
+                                    // A region that came as a file has no host: its file's name
+                                    // then, rather than «from )».
+                                    3: replacedAt
+                                        ? shownHost(replacedAt.host)
+                                        : oneLine(replaced.src?.name ?? "–", NAME_MAX),
                                 })}
                             </Alert>
                         )}

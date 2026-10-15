@@ -8,7 +8,7 @@
 # is not committed, so this script builds it. A deploy and a preview therefore run the same
 # tools/build.sh over their own tree, and neither can publish bytes that nobody built.
 #
-# The tracked files are named one by one rather than globbed. The repository root used to hold
+# The tracked files are named one by one rather than globbed, the icons aside (by extension). The repository root used to hold
 # nothing but the app and its data, so `cp ./*.json` was safe; now package.json, tsconfig.json and
 # renovate.json live there too, and none of them belongs on a public site.
 #
@@ -17,9 +17,9 @@
 #
 # VERSION, if given, is written to version.json: one version per deploy. It is not stamped into the
 # bundle, because that would make the build non-reproducible -- two deploys of the same commit have
-# to produce the same bundle. The app reads this file instead: the service worker caches it with the
-# rest of the shell, and a `no-store` fetch of the same address is how the app notices that a newer
-# version is out.
+# to produce the same bundle. The app reads this file instead, with a `no-store` fetch, for the
+# version line on «More». It is kept out of the precache on purpose; a newer version is noticed by
+# the service worker, not by this file.
 #
 set -euo pipefail
 
@@ -33,6 +33,18 @@ version="${2-}"
 mkdir -p "${out}"
 out="$(cd -- "${out}" && pwd)"
 cd "${ROOT}"
+
+# Everything in OUTDIR is deleted below. Refuse a folder that holds this checkout (`.`, a parent,
+# a typo that resolved to $HOME) and dist/, which the build empties before it is copied from.
+root_real="$(cd -- "${ROOT}" && pwd)"
+if [[ "${root_real}/" == "${out%/}/"* ]]; then
+  echo "error: OUTDIR ${out} holds this checkout; refusing to empty it" >&2
+  exit 2
+fi
+if [[ "${out}" == "${root_real}/dist" ]]; then
+  echo "error: OUTDIR cannot be dist/, which the build writes" >&2
+  exit 2
+fi
 
 rm -rf "${out:?}"/*
 shopt -s nullglob

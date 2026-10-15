@@ -61,7 +61,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 /** The coordinates, with the original's copy button that turns into «Copied». */
-const Coordinates = ({ lat, lon }: { lat: number; lon: number }) => {
+const Coordinates = ({ lat, lon, invented }: { lat: number; lon: number; invented: boolean }) => {
     const { t } = useTranslation();
     const text = `${lat}, ${lon}`;
     const [label, setLabel] = useState<string | null>(null);
@@ -71,18 +71,26 @@ const Coordinates = ({ lat, lon }: { lat: number; lon: number }) => {
             <span className="num">
                 {lat.toFixed(6)}, {lon.toFixed(6)}
             </span>{" "}
-            <Button
-                size="small"
-                onClick={() => {
-                    void navigator.clipboard?.writeText(text).then(
-                        () => setLabel(t("copied")),
-                        // No clipboard: show the figures themselves, as the original did.
-                        () => setLabel(text),
-                    );
-                }}
-            >
-                {label ?? t("copy")}
-            </Button>
+            {/* Copying is a hand-off to another app, withheld for an invented crag like the rest. */}
+            {!invented && (
+                <Button
+                    size="small"
+                    onClick={() => {
+                        // No clipboard: show the figures themselves, as the original did. Without
+                        // the API at all, `?.` used to skip the fallback and the button did nothing.
+                        if (!navigator.clipboard) {
+                            setLabel(text);
+                            return;
+                        }
+                        void navigator.clipboard.writeText(text).then(
+                            () => setLabel(t("copied")),
+                            () => setLabel(text),
+                        );
+                    }}
+                >
+                    {label ?? t("copy")}
+                </Button>
+            )}
         </>
     );
 };
@@ -140,7 +148,11 @@ export const CragMore = ({ crag }: { crag: Crag }) => {
                     </Row>
                     {crag.style && (
                         <Row label={t("g.style")}>
-                            {t("d.style.v", { 0: shortText(crag.style, lang, de) })}
+                            {/* «, bolted» only for a sport crag, and only where the pack's
+                                own words do not say so already -- they are often a sentence. */}
+                            {crag.styleKey === "sport" && !/bolt|bohrhaken/i.test(crag.style)
+                                ? t("d.style.v", { 0: shortText(crag.style, lang, de) })
+                                : shortText(crag.style, lang, de)}
                         </Row>
                     )}
                     <Row label={t("d.bolt")}>
@@ -211,7 +223,7 @@ export const CragMore = ({ crag }: { crag: Crag }) => {
                 <Section title={t("d.loc")}>
                     <Row label={t("d.coord")}>
                         {coord ? (
-                            <Coordinates lat={coord.lat} lon={coord.lon} />
+                            <Coordinates lat={coord.lat} lon={coord.lon} invented={invented} />
                         ) : (
                             t(crag.coordDropped ? "d.coord.dropped" : "d.coord.none")
                         )}

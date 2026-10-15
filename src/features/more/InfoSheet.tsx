@@ -38,7 +38,11 @@ export const InfoSheet = ({
 
     const routes = crags.reduce((n, c) => n + c.routes.length, 0);
     const title =
-        topic === "licence" ? t("m.lic") : topic === "contribute" ? t("m.contrib") : t("m.about");
+        topic === "licence"
+            ? t("m.licences")
+            : topic === "contribute"
+              ? t("m.contrib")
+              : t("m.about");
 
     return (
         <Dialog open={topic !== null} onClose={onClose} fullWidth maxWidth="sm" scroll="paper">

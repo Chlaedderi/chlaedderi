@@ -26,6 +26,18 @@ test.describe("the More page", () => {
         await expect(page.getByText(/version.*:\s*dev/i)).toHaveCount(0);
     });
 
+    test("keeps a chosen dark theme across a reload, on a light system", async ({ page }) => {
+        // MUI owns the `data-theme` attribute; written by hand, the choice was undone at the next
+        // start by the scheme of the system.
+        await page.emulateMedia({ colorScheme: "light" });
+        await page.getByLabel("Appearance").click();
+        await page.getByRole("option", { name: /^Dark$/ }).click();
+        await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+        await page.reload();
+        await expect(page.getByLabel("Appearance")).toBeVisible();
+        await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    });
+
     test("offers to fetch the newest version", async ({ page }) => {
         await expect(page.getByRole("button", { name: /load newest version/i })).toBeVisible();
     });

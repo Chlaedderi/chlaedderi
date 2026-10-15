@@ -12,7 +12,7 @@ import { useMap } from "react-leaflet";
 import type { Park } from "@domain/mappack";
 
 import { holdCards } from "./holdCards";
-import { parkIcon } from "./icons";
+import { parkIcon, textTip } from "./icons";
 
 const FROM_ZOOM = 12.5;
 
@@ -65,7 +65,7 @@ export const ParkMarkers = ({
                     L.DomEvent.stopPropagation(e);
                     onParkClickRef.current(key);
                 })
-                .bindTooltip(parkName(key), { direction: "bottom", offset: [0, 12] })
+                .bindTooltip(textTip(parkName(key)), { direction: "bottom", offset: [0, 12] })
                 .addTo(group);
         }
     }, [parks, parkName, enabled]);

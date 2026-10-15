@@ -20,7 +20,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useLang, useRegion } from "@app/useAppData";
-import { i18 } from "@core/text";
+import { httpHref, i18 } from "@core/text";
 import conv from "@data/conv.json";
 
 import { PackInline } from "../packs/PackText";
@@ -123,16 +123,17 @@ export const KnowPage = () => {
                         <Table size="small" stickyHeader>
                             <TableHead>
                                 <TableRow>
-                                    {(whole ? SCALES : [from, to]).map((s) => (
-                                        <TableCell key={s}>{t(`cv.${s}`)}</TableCell>
+                                    {/* Keyed by position: «from» and «to» may be the same scale. */}
+                                    {(whole ? SCALES : [from, to]).map((s, i) => (
+                                        <TableCell key={`${i}-${s}`}>{t(`cv.${s}`)}</TableCell>
                                     ))}
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {rows.map((row) => (
                                     <TableRow key={row.fr} hover>
-                                        {(whole ? SCALES : [from, to]).map((s) => (
-                                            <TableCell key={s} className="num">
+                                        {(whole ? SCALES : [from, to]).map((s, i) => (
+                                            <TableCell key={`${i}-${s}`} className="num">
                                                 {cell(row, s)}
                                             </TableCell>
                                         ))}
@@ -200,7 +201,7 @@ export const KnowPage = () => {
                                     <Typography variant="caption" color="text.secondary">
                                         {fact.url ? (
                                             <Link
-                                                href={fact.url}
+                                                href={httpHref(fact.url)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >

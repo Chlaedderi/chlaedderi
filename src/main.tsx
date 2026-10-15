@@ -26,10 +26,12 @@ import { HashRouter } from "react-router-dom";
 import { App } from "./App";
 import { DataProvider } from "./app/DataProvider";
 import { watchInstallPrompt } from "./app/installPrompt";
+import { PrefsSync } from "./app/PrefsSync";
 import { store } from "./app/store";
 import { watchViewport } from "./app/viewport";
 import { WeatherProvider } from "./app/WeatherProvider";
 import { detectLang } from "./core/lang";
+import { PREVIEW_SUFFIX } from "./core/preview";
 import { createI18n } from "./i18n";
 import { theme } from "./theme";
 
@@ -49,8 +51,17 @@ createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <Provider store={store}>
             <I18nextProvider i18n={i18n}>
-                <ThemeProvider theme={theme} defaultMode="system">
+                {/* MUI keeps the mode in storage of its own; under /pr-N/ it carries the
+                    preview suffix like every other name, or a preview would switch the app's
+                    scheme in another tab. Without a suffix these are MUI's own defaults. */}
+                <ThemeProvider
+                    theme={theme}
+                    defaultMode="system"
+                    modeStorageKey={`mui-mode${PREVIEW_SUFFIX}`}
+                    colorSchemeStorageKey={`mui-color-scheme${PREVIEW_SUFFIX}`}
+                >
                     <CssBaseline enableColorScheme />
+                    <PrefsSync />
                     <DataProvider>
                         <WeatherProvider>
                             <HashRouter>

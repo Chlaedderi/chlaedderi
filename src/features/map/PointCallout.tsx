@@ -79,7 +79,7 @@ export const PointCallout = ({ inSwitzerland }: { readonly inSwitzerland: boolea
     useEffect(() => {
         if (!point || !inSwitzerland) return;
         let alive = true;
-        void fetchHeight(point.lat, point.lon).then(
+        void fetchHeight(...toLV95(point.lat, point.lon)).then(
             (h) => {
                 if (alive) setHeight(h);
             },

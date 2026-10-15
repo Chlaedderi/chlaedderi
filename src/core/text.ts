@@ -64,6 +64,14 @@ export type InlineToken =
 // characters, a target up to 400, and bold runs up to 300. Only http(s) targets become links --
 // javascript:, data: and anything else stay literal text.
 const LINK = /\[([^\]]{1,160})\]\((https?:\/\/[^\s)]{1,400})\)/g;
+
+/**
+ * A link target out of a pack, kept only if it is http(s) -- the same rule as for links in pack
+ * text. React refuses `javascript:` by itself, but `intent:`, `tel:` or an app's own scheme would
+ * otherwise go through from whatever pack anybody publishes. Anything else gives no target.
+ */
+export const httpHref = (url: string | null | undefined): string | undefined =>
+    url && /^https?:\/\//i.test(url.trim()) ? url : undefined;
 const BOLD = /\*\*([^*]{1,300})\*\*/g;
 
 /**

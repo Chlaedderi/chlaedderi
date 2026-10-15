@@ -19,10 +19,11 @@ export const PackPage = () => {
     const { t } = useTranslation();
     const lang = useLang();
     const region = useRegion();
-    const { regions } = useData();
+    const { regions, booted } = useData();
 
     const page = region?.text.pages?.find((p) => p.id === pageId);
-    if (!page) return <Navigate to="/more" replace />;
+    // An installed region is read back after the first render; a reload on its page waits for it.
+    if (!page) return booted ? <Navigate to="/more" replace /> : null;
 
     // Another loaded region has a page of the same name: this one is about *this* region, and
     // the way to read the other is to switch region.

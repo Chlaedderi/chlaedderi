@@ -51,11 +51,18 @@ export interface TrailGraph {
     readonly adj: Edge[][];
     readonly segs: [a: number, b: number, cat: PathCategory][];
     readonly grid: Map<string, number[]>;
+    /**
+     * For each entry of `segs`, the trail segment it is part of: itself, or the segment it was
+     * cut out of. Optional, for a graph built by hand.
+     */
+    readonly from?: number[];
     readonly G: number;
     n: number;
 }
 
 export interface NearPoint {
+    /** The segment, by its index in `segs`. */
+    readonly seg: number;
     readonly a: number;
     readonly b: number;
     readonly cat: PathCategory;
@@ -64,13 +71,17 @@ export interface NearPoint {
     readonly d: number;
 }
 
-/** The nearest points on trail segments, closest first, no two within 25 m of each other. */
+/**
+ * The nearest points on trail segments, closest first, no two within 25 m of each other.
+ * `skip` leaves out segments by their two ends, before anything is counted.
+ */
 export const nearest = (
     g: TrailGraph,
     x: number,
     y: number,
     maxD: number,
     maxN: number,
+    skip?: (a: number, b: number) => boolean,
 ): NearPoint[] => {
     const r = Math.ceil(maxD / g.G);
     const cx = Math.floor(x / g.G);
@@ -86,6 +97,7 @@ export const nearest = (
                 if (seen.has(i)) continue;
                 seen.add(i);
                 const [p, q, cat] = g.segs[i]!;
+                if (skip?.(p, q)) continue;
                 const dx = g.X[q]! - g.X[p]!;
                 const dy = g.Y[q]! - g.Y[p]!;
                 const l2 = dx * dx + dy * dy;
@@ -95,17 +107,23 @@ export const nearest = (
                 const px = g.X[p]! + u * dx;
                 const py = g.Y[p]! + u * dy;
                 const d = Math.hypot(px - x, py - y);
-                if (d <= maxD) out.push({ a: p, b: q, cat, x: px, y: py, d });
+                if (d <= maxD) out.push({ seg: i, a: p, b: q, cat, x: px, y: py, d });
             }
         }
     }
 
     out.sort((m, n) => m.d - n.d);
     const pick: NearPoint[] = [];
+    const taken = new Set<number>();
     for (const h of out) {
         if (pick.length >= maxN) break;
+        // One point per segment as the trails drew it, the closest -- its pieces are one way, not
+        // several, and must not crowd the other ways out of the few points taken.
+        const whole = g.from?.[h.seg] ?? h.seg;
+        if (taken.has(whole)) continue;
         // Much further than the closest is not an alternative, it is a different place.
         if (pick.length && h.d > pick[0]!.d * 1.5 + 60) break;
+        taken.add(whole);
         if (pick.every((o) => Math.hypot(o.x - h.x, o.y - h.y) > 25)) pick.push(h);
     }
     return pick;
@@ -146,9 +164,11 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         adj[b]!.push({ to: a, d, cat });
     };
 
-    const index = (a: number, b: number, cat: PathCategory): void => {
+    const from: number[] = [];
+    const index = (a: number, b: number, cat: PathCategory, whole?: number): void => {
         const i = segs.length;
         segs.push([a, b, cat]);
+        from.push(whole ?? i);
         const x0 = Math.floor(Math.min(X[a]!, X[b]!) / G);
         const x1 = Math.floor(Math.max(X[a]!, X[b]!) / G);
         const y0 = Math.floor(Math.min(Y[a]!, Y[b]!) / G);
@@ -178,14 +198,36 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         }
     }
 
-    const g: TrailGraph = { X, Y, adj, segs, grid, G, n: X.length };
+    const g: TrailGraph = { X, Y, adj, segs, grid, from, G, n: X.length };
+
+    // Where along each segment the nodes put onto it lie -- a trail ending on it, a trail crossing
+    // it -- so that the segment can be cut at them below.
+    const along = new Map<number, { t: number; p: number }[]>();
+    const at = (seg: number, t: number, p: number): void => {
+        const list = along.get(seg);
+        if (list) list.push({ t, p });
+        else along.set(seg, [{ t, p }]);
+    };
+    /** How far along segment `seg` the point (x,y) lies, from its first end, as 0..1. */
+    const tOn = (seg: number, x: number, y: number): number => {
+        const [s0, s1] = segs[seg]!;
+        const len = Math.hypot(X[s1]! - X[s0]!, Y[s1]! - Y[s0]!);
+        return len ? Math.hypot(x - X[s0]!, y - Y[s0]!) / len : 0;
+    };
 
     // A trail that ends *on* another without a shared vertex: join it to the nearest point there.
     for (let k = 0; k < g.n; k++) {
         if (adj[k]!.length !== 1) continue;
         const onward = adj[k]![0]!.to;
-        const hit = nearest(g, X[k]!, Y[k]!, 6, 1).find(
-            (h) => h.a !== k && h.b !== k && h.a !== onward && h.b !== onward,
+        // Its own segments are left out before the search, not after: the closest segment to an
+        // end is always its own, at no distance at all, and would be the only one returned.
+        const [hit] = nearest(
+            g,
+            X[k]!,
+            Y[k]!,
+            6,
+            1,
+            (a, b) => a === k || b === k || a === onward || b === onward,
         );
         if (!hit) continue;
         const p = X.length;
@@ -195,6 +237,7 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
         link(p, hit.a, hit.cat);
         link(p, hit.b, hit.cat);
         link(k, p, hit.cat);
+        at(hit.seg, tOn(hit.seg, hit.x, hit.y), p);
     }
 
     // Two trails crossing without a shared vertex: put a node where they cross.
@@ -239,8 +282,23 @@ export const buildGraph = (lines: readonly TrailLine[]): TrailGraph => {
                 link(p, u[1], u[2]);
                 link(p, v[0], v[2]);
                 link(p, v[1], v[2]);
+                at(list[i]!, a, p);
+                at(list[j]!, c, p);
             }
         }
+    }
+
+    // Cut every segment at the nodes put onto it. Each was linked only to the segment's two ends,
+    // so going from one to the next meant out to an end and back; and a start snapped onto the
+    // segment would do the same. The pieces are linked in order and replace the segment in the
+    // index, so `nearest` finds the piece a point actually lies on.
+    for (const [seg, list] of along) {
+        const [s0, s1, cat] = segs[seg]!;
+        list.sort((m, n) => m.t - n.t);
+        const chain = [s0, ...list.map((e) => e.p), s1];
+        for (let i = 1; i < chain.length; i++) link(chain[i - 1]!, chain[i]!, cat);
+        segs[seg] = [chain[0]!, chain[1]!, cat];
+        for (let i = 2; i < chain.length; i++) index(chain[i - 1]!, chain[i]!, cat, seg);
     }
 
     g.n = X.length;
@@ -295,6 +353,7 @@ export const findLeg = (
     const straight = Math.hypot(a[0] - b[0], a[1] - b[1]);
     add(start, end, straight, 0, straight * PATH_WEIGHT[0]);
 
+    const snapped: { seg: number; k: number }[] = [];
     for (const [v, p] of [
         [start, a],
         [end, b],
@@ -304,6 +363,11 @@ export const findLeg = (
             add(k, h.a, Math.hypot(h.x - X[h.a]!, h.y - Y[h.a]!), h.cat);
             add(k, h.b, Math.hypot(h.x - X[h.b]!, h.y - Y[h.b]!), h.cat);
             add(v, k, h.d, 0, h.d * PATH_WEIGHT[0]);
+            // Start and end on the same segment: straight along it, not out to an end and back.
+            for (const o of snapped) {
+                if (o.seg === h.seg) add(k, o.k, Math.hypot(h.x - X[o.k]!, h.y - Y[o.k]!), h.cat);
+            }
+            snapped.push({ seg: h.seg, k });
         }
     }
 

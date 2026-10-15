@@ -9,7 +9,7 @@
  * dropped as soon as a real pack is installed, and comes back when the last one is removed.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { mountPacks } from "@core/packs/mount";
@@ -49,32 +49,67 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [busy, setBusy] = useState(false);
     const [booted, setBooted] = useState(false);
 
-    // At start, read every installed pack back out of the Cache Storage, so the app works offline.
+    // Every installed pack read back out of the Cache Storage, so the app works offline. Not only
+    // at start: the list of installed packs may itself arrive late, read back from IndexedDB or
+    // the Cache when localStorage had lost it -- and a region listed then and never read would be
+    // «installed» in the packs dialog while the map showed the showcase.
+    const tried = useRef(new Set<string>());
+    /** Regions being read out of the cache right now: listed, not mounted yet, not given up on. */
+    // A ref for the check, which runs in the same commit as the effect that starts the read, and
+    // state so that the check runs again once the read is over, whichever way it went.
+    const loadingNow = useRef(new Set<string>());
+    const [loading, setLoading] = useState<ReadonlySet<string>>(() => new Set());
+    const started = useRef(false);
+    const latestInstalled = useRef(installed);
+    latestInstalled.current = installed;
+    /** Put in place by install() and not yet in the list a pending effect may still be holding. */
+    const justInstalled = useRef(new Set<string>());
     useEffect(() => {
-        let cancelled = false;
+        for (const note of installed) justInstalled.current.delete(note.id);
+        // A region unloaded elsewhere -- another tab -- goes here too, and may be read anew later.
+        const listed = new Set([...installed.map((note) => note.id), ...justInstalled.current]);
+        for (const id of [...tried.current]) if (!listed.has(id)) tried.current.delete(id);
+        setPacks((current) =>
+            current.every((p) => listed.has(p.id))
+                ? current
+                : current.filter((p) => listed.has(p.id)),
+        );
+        const fresh = installed.filter((note) => !tried.current.has(note.id));
+        for (const note of fresh) tried.current.add(note.id);
+        // Nothing new after the first pass: nothing to do. The first pass always runs, so that
+        // `booted` is said even with nothing installed -- and only it says so the first time.
+        if (!fresh.length && started.current) return;
+        const first = !started.current;
+        started.current = true;
+        const ids = fresh.map((note) => note.id);
+        for (const id of ids) loadingNow.current.add(id);
+        if (ids.length) setLoading(new Set(loadingNow.current));
         void (async () => {
             const loaded: Mappack[] = [];
-            for (const note of installed) {
-                const result = await loadStoredPack(note.id);
-                if (result.ok) loaded.push(result.pack);
+            for (const note of fresh) {
+                // One region that cannot be read must not keep the others -- and the app's start
+                // -- from happening.
+                const result = await loadStoredPack(note.id).catch(() => null);
+                if (result?.ok) loaded.push(result.pack);
             }
-            if (!cancelled) {
-                // Merge, never replace. A pack installed from a link while this was still reading
-                // three big ones out of the cache would otherwise be wiped back out of `packs` --
-                // leaving a region the viewer was just told is loaded, and is not, until a reload.
-                setPacks((current) => [
-                    ...loaded.filter((p) => !current.some((c) => c.id === p.id)),
-                    ...current,
-                ]);
-                setBooted(true);
+            // Merge, never replace. A pack installed from a link while this was still reading
+            // three big ones out of the cache would otherwise be wiped back out of `packs` --
+            // leaving a region the viewer was just told is loaded, and is not, until a reload.
+            // Not cancelled on unmount either: a second run skips what the first already took on,
+            // so the first has to see it through.
+            // And only what is still listed: a region unloaded while it was being read stays gone.
+            const still = new Set(latestInstalled.current.map((note) => note.id));
+            setPacks((current) => [
+                ...loaded.filter((p) => still.has(p.id) && !current.some((c) => c.id === p.id)),
+                ...current,
+            ]);
+            if (ids.length) {
+                for (const id of ids) loadingNow.current.delete(id);
+                setLoading(new Set(loadingNow.current));
             }
+            if (first) setBooted(true);
         })();
-        return () => {
-            cancelled = true;
-        };
-        // Only at start: later changes go through install/uninstall, which set `packs` themselves.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [installed]);
 
     const mounted = useMemo(() => mountPacks(packs.length ? packs : [showcase]), [packs]);
 
@@ -110,11 +145,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 // The answer lands in the store's status either way, which is what the favourites
                 // page reads.
                 void openStore().persist();
+                // Already in hand: the read-back above has nothing to fetch for it.
+                tried.current.add(load.pack.id);
+                justInstalled.current.add(load.pack.id);
                 setPacks((current) => [...current.filter((p) => p.id !== load.pack.id), load.pack]);
                 const note = packNote(load.pack, source, load.bytes);
-                dispatch(
-                    prefsActions.setPacks([...installed.filter((p) => p.id !== note.id), note]),
-                );
+                dispatch(prefsActions.putPack(note));
                 dispatch(prefsActions.setRegion(load.pack.id));
                 // The region is on the device now, which is the best reason there is to put the
                 // app on the home screen as well.
@@ -124,16 +160,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 setBusy(false);
             }
         },
-        [dispatch, installed],
+        [dispatch],
     );
 
     const installFromUrl = useCallback(
-        async (url: string, key?: string) => {
-            const load = await fetchPack(url, undefined, key);
-            // What is remembered is the address that answered, not the one that was pasted: it is
-            // what «fetch again» asks for, and what a link to this region will carry -- with the
-            // key beside it, for a region that arrived locked.
-            return install(load, { type: "url", url: load.url, key });
+        async (url: string, key?: string, expect?: string): Promise<PackLoad> => {
+            // Busy from the first byte, not only once the download is in: «unload» pressed while
+            // «fetch again» was still downloading was undone the moment the download finished.
+            setBusy(true);
+            try {
+                const load = await fetchPack(url, undefined, key);
+                // «Fetch again» is for the region it sits beside. An address that now serves some
+                // other id would overwrite that region unasked -- the warning that says so lives
+                // in the offer dialog, which this path never passes through.
+                if (load.ok && expect !== undefined && load.pack.id !== expect) {
+                    const problem = {
+                        where: "",
+                        message: `the address now serves ${load.pack.id}, not ${expect}`,
+                        code: "otherid",
+                        detail: load.pack.id,
+                    } as const;
+                    return { ok: false, problems: [problem] };
+                }
+                // What is remembered is the address that answered, not the one that was pasted: it
+                // is what «fetch again» asks for, and what a link to this region will carry -- with
+                // the key beside it, for a region that arrived locked.
+                return await install(load, { type: "url", url: load.url, key });
+            } finally {
+                setBusy(false);
+            }
         },
         [install],
     );
@@ -148,8 +203,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const installFromFile = useCallback(
-        async (file: File, key?: string) =>
-            install(await readPackFile(file, key), { type: "file", name: file.name, key }),
+        async (file: File, key?: string) => {
+            setBusy(true);
+            try {
+                return await install(await readPackFile(file, key), {
+                    type: "file",
+                    name: file.name,
+                    key,
+                });
+            } finally {
+                setBusy(false);
+            }
+        },
         [install],
     );
 
@@ -158,13 +223,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setBusy(true);
             try {
                 await forgetPack(id);
+                tried.current.delete(id);
+                justInstalled.current.delete(id);
                 setPacks((current) => current.filter((p) => p.id !== id));
-                dispatch(prefsActions.setPacks(installed.filter((p) => p.id !== id)));
+                dispatch(prefsActions.dropPack(id));
             } finally {
                 setBusy(false);
             }
         },
-        [dispatch, installed],
+        [dispatch],
     );
 
     // Keep the region shown pointing at something that is actually mounted.
@@ -172,12 +239,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!booted) return;
         const keys = mounted.regions.map((r) => r.key);
+        // A region still being read is about to be here: switching away now would lose the
+        // viewer's region -- read back late, or chosen in another tab -- to whichever comes first.
+        if (region && loadingNow.current.has(region)) return;
         if (region && !keys.includes(region)) {
             dispatch(prefsActions.setRegion(keys[0] ?? null));
         } else if (!region && keys.length) {
             dispatch(prefsActions.setRegion(keys[0]!));
         }
-    }, [booted, dispatch, mounted.regions, region]);
+    }, [booted, dispatch, mounted.regions, region, loading]);
 
     // Tell the viewer once when the app is running on the showcase alone.
     useEffect(() => {

@@ -26,6 +26,7 @@ export const DATA_DE: Readonly<Record<string, string>> = {
     "Official destination body": "Offizielle Destinationsorganisation",
     Open: "Offen",
     Rain: "Regen",
+    "Seasonal closure": "Saisonale Sperrung",
     Sport: "Sport",
     "Sport (single-pitch and multi-pitch)": "Sport (Ein- und Mehrseillängen)",
     "Sport, multi-pitch": "Sport, Mehrseillängen",

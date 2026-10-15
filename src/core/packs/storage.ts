@@ -176,11 +176,19 @@ const fromCheck = (check: PackCheck, bytes: number): PackLoad =>
 
 /** Read one back out of the cache and check it again -- it may have been written long ago. */
 export const loadStoredPack = async (id: string): Promise<PackLoad> => {
-    const value = await readStoredPack(id);
-    if (value == null) {
+    // The text is read once and measured as it is: stringifying the parsed value again only to
+    // measure it was slow, and threw on a pack nested deeper than the call stack -- which
+    // JSON.parse accepts -- and that took every installed region down with it at start.
+    const text = await storedPackText(id);
+    let value: unknown = null;
+    try {
+        value = text == null ? null : (JSON.parse(text) as unknown);
+    } catch {
+        value = null;
+    }
+    if (value == null || text == null) {
         return { ok: false, problems: [{ where: "", message: "is not in the cache" }] };
     }
-    const text = JSON.stringify(value);
     return fromCheck(await checkPack(value), text.length);
 };
 

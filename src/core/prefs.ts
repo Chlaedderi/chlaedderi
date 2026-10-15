@@ -143,24 +143,54 @@ export const cleanPrefs = (v: unknown): Prefs => {
     return prefs;
 };
 
+/** Stored regions, with what this tab added, replaced or removed since `start` laid over them. */
+const mergePacks = (
+    stored: readonly InstalledPack[],
+    current: readonly InstalledPack[],
+    start: readonly InstalledPack[],
+): InstalledPack[] => {
+    const was = new Map(start.map((p) => [p.id, JSON.stringify(p)]));
+    const now = new Map(current.map((p) => [p.id, p]));
+    const changed = (p: InstalledPack): boolean => was.get(p.id) !== JSON.stringify(p);
+    const out = stored
+        // Removed here since: stays removed -- unless what is stored is newer than what was removed,
+        // fetched anew or installed again in another tab meanwhile.
+        .filter((p) => !(was.has(p.id) && !now.has(p.id) && was.get(p.id) === JSON.stringify(p)))
+        .map((p) => {
+            const mine = now.get(p.id);
+            return mine && changed(mine) ? mine : p;
+        });
+    for (const p of current) if (changed(p) && !out.some((o) => o.id === p.id)) out.push(p);
+    // The same list kept as the same array: a new one would read as a change downstream.
+    const text = JSON.stringify(out);
+    if (text === JSON.stringify(current)) return current as InstalledPack[];
+    if (text === JSON.stringify(stored)) return stored as InstalledPack[];
+    return out;
+};
+
 /**
  * Settings read back from the store, except for what the viewer has already changed.
  *
  * The slower layers of the store answer a moment after the first paint, and what they say used to
  * replace the whole settings object -- so a switch flipped during that moment was silently undone,
- * and the debounced writer then saved the undone value. Immer hands out a new object on every
- * change, so comparing each key against the state the app started with says exactly which ones the
- * viewer has touched. Those win; the rest come from storage.
+ * and the debounced writer then saved the undone value. Comparing each key, by value, against
+ * what the store was last known to hold (`start`) says which ones the viewer has changed since.
+ * Those win; the rest come from storage.
  */
 export const keepTouched = (stored: Prefs, current: Prefs, start: Prefs): Prefs => {
     const merged = { ...stored } as Record<string, unknown>;
     const now = current as unknown as Record<string, unknown>;
     const then = start as unknown as Record<string, unknown>;
     for (const key of Object.keys(now)) {
-        if (now[key] !== then[key]) merged[key] = now[key];
+        // By value: a restore hands out new arrays and objects, and a new array holding the same
+        // packs is not a change anybody made.
+        if (JSON.stringify(now[key]) !== JSON.stringify(then[key])) merged[key] = now[key];
     }
     // The install hint's history is counted, not chosen: neither side simply wins.
     merged.install = mergeInstallHint(stored.install, current.install);
+    // The installed regions by region, not as one value: a region installed from a link while
+    // the store was still being read must not throw away every region the store holds.
+    merged.packs = mergePacks(stored.packs, current.packs, start.packs);
     return merged as unknown as Prefs;
 };
 

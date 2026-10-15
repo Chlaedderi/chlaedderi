@@ -98,6 +98,28 @@ describe("the grade filter", () => {
         };
         expect(routeOk(unknown, f, ctx)).toBe(false);
     });
+
+    it("reads the slider's ends as «and above» and «and below»", () => {
+        const route = (grade: string) => ({
+            name: grade,
+            grade,
+            pitches: null,
+            gradeIdx: gradeIdx(grade)!,
+            key: grade,
+            stars: null,
+            length: null,
+            ord: 0,
+        });
+        // The «8a+» chip ends at 9a, the top of the slider: 9a+ and 9b are harder, not out.
+        const hard = { ...emptyFilters(), gmin: gradeIdx("8a")!, gmax: GRADE_HI };
+        for (const g of ["8a", "9a", "9a+", "9b"])
+            expect(routeOk(route(g), hard, ctx), g).toBe(true);
+        expect(routeOk(route("7c+"), hard, ctx)).toBe(false);
+        // Likewise below 3a, once the upper end has moved.
+        const easy = { ...emptyFilters(), gmin: GRADE_LO, gmax: gradeIdx("4c+")! };
+        for (const g of ["2c", "3a", "4c+"]) expect(routeOk(route(g), easy, ctx), g).toBe(true);
+        expect(routeOk(route("5a"), easy, ctx)).toBe(false);
+    });
 });
 
 describe("the minimum-matches filter", () => {
@@ -153,6 +175,35 @@ describe("the safety filters", () => {
                 key === "hideClosure" ? "closure" : key === "hideCaution" ? "caution" : "noFamily";
             const shown = applyFilters(crags, { ...emptyFilters(), [key]: true }, "area", 1, ctx);
             expect(shown.every((m) => !m.crag[field as keyof Crag])).toBe(true);
+        }
+    });
+
+    it("drop a crag the warning marks, for each of the three filters", () => {
+        // The testing pack derives a closure but no caution and no «not for families», so the test
+        // above holds for those two even if they did nothing. Here each one has a crag to hide.
+        const pack = testing as unknown as Mappack;
+        const warned = mountPacks([
+            {
+                ...pack,
+                sectors: pack.sectors.map((s, i) =>
+                    i === 0
+                        ? { ...s, warn: "Dangerous: old bolts and loose rock." }
+                        : i === 1
+                          ? { ...s, warn: "Not for children: the base is a cliff edge." }
+                          : s,
+                ),
+            },
+        ]).crags;
+        for (const [key, field] of [
+            ["hideCaution", "caution"],
+            ["hideNoFamily", "noFamily"],
+            ["hideClosure", "closure"],
+        ] as const) {
+            const flagged = warned.filter((c) => c[field]);
+            expect(flagged.length, field).toBeGreaterThan(0);
+            const shown = applyFilters(warned, { ...emptyFilters(), [key]: true }, "area", 1, ctx);
+            const ids = new Set(shown.map((m) => m.crag.id));
+            for (const c of flagged) expect(ids.has(c.id), `${key} ${c.id}`).toBe(false);
         }
     });
 
@@ -364,6 +415,14 @@ describe("routeSummary", () => {
         expect(routeSummary(one, say)).toContain("sum.grade1(6a)");
         const range = { ...emptyFilters(), gmin: gradeIdx("6a")!, gmax: gradeIdx("6c+")! };
         expect(routeSummary(range, say)).toContain("sum.grade(6a|6c+)");
+    });
+
+    it("says an end of the slider is open, as the filter applies it", () => {
+        // The «8a+» preset ends at 9a and lets 9a+ through; «to 9a» would say otherwise.
+        const hard = { ...emptyFilters(), gmin: gradeIdx("8a")!, gmax: GRADE_HI };
+        expect(routeSummary(hard, say)).toContain("sum.grade.up(8a)");
+        const easy = { ...emptyFilters(), gmin: GRADE_LO, gmax: gradeIdx("4c+")! };
+        expect(routeSummary(easy, say)).toContain("sum.grade.down(4c+)");
     });
 
     it("treats five stars as exact and fewer as «or more», as the original did", () => {

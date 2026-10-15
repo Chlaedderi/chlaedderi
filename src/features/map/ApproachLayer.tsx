@@ -27,7 +27,7 @@ import type { Crag } from "@domain/model";
 
 import { GAP_M, ROUTE_ATTRIBUTION, ROUTE_COLOUR, approachLine } from "./approachGeometry";
 import { holdCards } from "./holdCards";
-import { parkIcon } from "./icons";
+import { parkIcon, textTip } from "./icons";
 import { Z_PARK } from "./stacking";
 
 export interface ApproachLayerProps {
@@ -74,7 +74,7 @@ export const ApproachLayer = ({ crag, parks, parkName, onParkClick }: ApproachLa
                     L.DomEvent.stopPropagation(e);
                     onParkClickRef.current(key);
                 })
-                .bindTooltip(parkName(key), {
+                .bindTooltip(textTip(parkName(key)), {
                     permanent,
                     direction: "bottom",
                     offset: [0, 12],

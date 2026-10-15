@@ -20,7 +20,7 @@ body:
     attributes:
       label: Which version
       description: "«More» shows the running version. Without it, «the newest» usually is not."
-      placeholder: 2026-10-12.1
+      placeholder: 2026.10.12-3574a92
   - type: input
     id: region
     attributes:

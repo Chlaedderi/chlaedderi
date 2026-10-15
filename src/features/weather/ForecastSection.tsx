@@ -35,20 +35,10 @@ import { formatMm } from "@core/weather";
 import type { Crag } from "@domain/model";
 import { SectionTitle } from "@features/crag/SectionTitle";
 
+import { dateLabel, dayLabel, zurichDate } from "./dayLabel";
 import { useAutoRefresh } from "./useAutoRefresh";
 import { useForecast, type Place } from "./useForecast";
 import { WxIcon } from "./WxIcon";
-
-/** «Today», «Tomorrow», then the weekday and the date. */
-const dayLabel = (iso: string, index: number, lang: string, t: (k: string) => string): string => {
-    if (index === 0) return t("fc.today");
-    if (index === 1) return t("fc.tomorrow");
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(
-        lang === "de" ? "de-CH" : "en-GB",
-        { weekday: "short", day: "numeric", timeZone: "UTC" },
-    );
-};
 
 const timeOf = (ms: number): string => {
     const d = new Date(ms);
@@ -158,20 +148,24 @@ export const ForecastSection = ({
     const days = forecastDays(data);
     const elevation =
         data.elev != null
-            ? t(data.elevSrc === "swisstopo" ? "fc.elev.ch" : "fc.elev.om", {
-                  0: Math.round(data.elev),
-              })
+            ? t(
+                  data.elevSrc !== "swisstopo"
+                      ? "fc.elev.om"
+                      : // A point somebody tapped has a height, not a wall.
+                        place.id.startsWith("pt:")
+                        ? "fc.elev.pt"
+                        : "fc.elev.ch",
+                  {
+                      0: Math.round(data.elev),
+                  },
+              )
             : "";
     const source =
         data.model === "ch"
             ? t("fc.src.ch", {
                   0: data.chUntil
-                      ? dayLabel(
-                            new Date(data.chUntil * 1000).toISOString().slice(0, 10),
-                            -1,
-                            lang,
-                            t,
-                        )
+                      ? // Mid-sentence, so never «Tomorrow»: always the weekday.
+                        dateLabel(zurichDate(data.chUntil), lang)
                       : "",
               })
             : t(ch ? "fc.src.chfail" : "fc.src.om");
@@ -192,7 +186,7 @@ export const ForecastSection = ({
                             {t("fc.none")}
                         </Typography>
                     )}
-                    {days.map((day, i) => {
+                    {days.map((day) => {
                         const isOpen = open === day.d;
                         const fz = freezingText(day.fz);
                         return (
@@ -238,7 +232,7 @@ export const ForecastSection = ({
                                             whiteSpace: "nowrap",
                                         }}
                                     >
-                                        {dayLabel(day.d, i, lang, t)}
+                                        {dayLabel(day.d, lang, t)}
                                     </Box>
                                     {/* The symbol the original had: it is what makes a week
                                         readable in one look. The day's symbol is the daytime one

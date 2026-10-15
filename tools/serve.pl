@@ -9,8 +9,9 @@
 # Two folders, in this order: the build output in dist/, then the repository itself. The app is no
 # longer committed, so index.html, sw.js and assets/ only exist in dist/ -- while the icons, the
 # manifest, mappack.schema.json and the mappacks in maps/ are tracked files that lie in the
-# repository and are never copied into the build. Serving both, dist/ first, is what the deployed
-# site looks like: tools/make-site.sh puts exactly these two sets of files side by side.
+# repository and are never copied into the build. Serving both, dist/ first, is close to what the
+# deployed site looks like: tools/make-site.sh puts the build and those files side by side -- all
+# but maps/, which is never published and is served here so that a pack can be loaded locally.
 use strict; use warnings;
 use IO::Socket::INET;
 use Cwd qw(abs_path);

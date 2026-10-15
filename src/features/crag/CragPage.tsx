@@ -55,7 +55,7 @@ import { ApproachSection } from "./ApproachSection";
 import { CragLinks } from "./CragLinks";
 import { CragLogbook } from "./CragLogbook";
 import { CragMore } from "./CragMore";
-import { gradesText } from "./cragText";
+import { gradesText, lengthText } from "./cragText";
 import { DryEstimate } from "./DryEstimate";
 import { Gallery } from "./Gallery";
 import { JumpRail } from "./JumpRail";
@@ -145,7 +145,7 @@ export const CragPage = () => {
     const share = useShare();
     const ctx = useFilterContext();
     const { stateOf } = useWeather();
-    const { byId } = useData();
+    const { byId, booted } = useData();
     const crag = id ? byId[id] : undefined;
     const region = useRegionOf(crag);
     const packUrl = usePackUrlOf(crag);
@@ -168,7 +168,9 @@ export const CragPage = () => {
         if (id) dispatch(uiActions.select(id));
     }, [id, dispatch]);
 
-    if (!crag) return <Navigate to="/" replace />;
+    // An installed region is read back out of the cache after the first render; a link to one of
+    // its crags must wait for that instead of giving up on the showcase alone.
+    if (!crag) return booted ? <Navigate to="/" replace /> : null;
 
     // The rail only offers sections this crag actually has.
     const sections = new Set<string>(["routesec", "cragLog", "wxsec", "fcsec", "moresec"]);
@@ -357,7 +359,7 @@ export const CragPage = () => {
                     />
                     <Tile
                         label={
-                            crag.nMulti
+                            crag.nMulti && crag.nSingle != null
                                 ? t("g.single", { 0: crag.nSingle, 1: crag.nMulti })
                                 : t("g.routes")
                         }
@@ -367,13 +369,9 @@ export const CragPage = () => {
                     />
                     <Tile
                         label={t("g.len") + (crag.lenIsTypical ? ` · ${t("len.typ")}` : "")}
-                        value={
-                            crag.len
-                                ? crag.len[0] === crag.len[1]
-                                    ? `${crag.len[0]} m`
-                                    : `${crag.len[0]}–${crag.len[1]} m`
-                                : "–"
-                        }
+                        // The call-out's own text: «up to 35 m» where only a maximum is known, and
+                        // never a «null» for a missing end.
+                        value={lengthText(crag, t as never) ?? "–"}
                         Icon={HeightIcon}
                         color="var(--violet)"
                     />
@@ -398,7 +396,11 @@ export const CragPage = () => {
                                 ? ` · ${t("pop.src", { 0: crag.walkMin })}`
                                 : "")
                         }
-                        value={crag.walkEff != null ? `${crag.walkEff} min` : "–"}
+                        value={
+                            crag.walkEff != null
+                                ? t(crag.walkHow === "calc" ? "min.ca" : "min", { 0: crag.walkEff })
+                                : "–"
+                        }
                         Icon={DirectionsWalkIcon}
                         color="var(--park)"
                     />

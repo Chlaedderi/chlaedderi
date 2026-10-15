@@ -94,12 +94,44 @@ describe("keepTouched", () => {
         expect(merged.theme).toBe("dark");
     });
 
+    it("does not count a new list holding the same packs as a change", () => {
+        // A read-back replaces `packs` with a new array. Counted as the viewer's own change, it
+        // made two tabs keep answering each other's install with their own list, for ever.
+        const start = { ...defaultPrefs(), packs: [{ id: "a" }] };
+        const current = { ...start, packs: [{ id: "a" }] };
+        const stored = { ...defaultPrefs(), packs: [{ id: "a" }, { id: "b" }] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "a" }, { id: "b" }]);
+    });
+
     it("keeps a touched list by reference", () => {
         const start = defaultPrefs();
         const packs = [{ id: "ow" }];
         const current = { ...start, packs };
         const merged = keepTouched(defaultPrefs(), current, start);
         expect(merged.packs).toBe(packs);
+    });
+
+    it("merges the installed regions by region", () => {
+        const start = defaultPrefs();
+        const stored = { ...start, packs: [{ id: "x" }, { id: "z" }] };
+        // Region y installed here from a link while the store was still being read.
+        const current = { ...start, packs: [{ id: "y" }] };
+        expect(keepTouched(stored, current, start).packs.map((p) => p.id)).toEqual(["x", "z", "y"]);
+    });
+
+    it("keeps a region removed here removed, and a newer one stored", () => {
+        const start = { ...defaultPrefs(), packs: [{ id: "x" }, { id: "z", version: "1" }] };
+        const stored = { ...start, packs: [{ id: "x" }, { id: "z", version: "2" }] };
+        const current = { ...start, packs: [{ id: "z", version: "1" }] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "z", version: "2" }]);
+    });
+
+    it("keeps a region stored anew elsewhere although it was removed here", () => {
+        const start = { ...defaultPrefs(), packs: [{ id: "x", version: "1" }] };
+        // Removed in this tab; fetched again in another, which stored the newer one.
+        const stored = { ...start, packs: [{ id: "x", version: "2" }] };
+        const current = { ...start, packs: [] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "x", version: "2" }]);
     });
 });
 

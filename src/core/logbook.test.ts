@@ -176,6 +176,14 @@ describe("csvText", () => {
         expect(csv).toContain('"A;B ""C""\nD"');
     });
 
+    it("keeps a name that looks like a formula as text", () => {
+        const csv = csvText([entry({ n: '=HYPERLINK("http://x","y")', s: "c1" })], columns, lookup);
+        expect(csv).toContain(';"\'=HYPERLINK(""http://x"",""y"")";');
+        expect(csvText([entry({ n: "@SUM(A1)", s: "c1" })], columns, lookup)).toContain(
+            ";'@SUM(A1);",
+        );
+    });
+
     it("leaves the crag columns empty when its pack is not loaded", () => {
         const csv = csvText([entry({ s: "not-loaded" })], columns, lookup);
         expect(csv).toContain("2026-10-01;Route;6a;RP;;;;");
@@ -199,6 +207,18 @@ describe("logStats", () => {
         expect(stats.crags).toBe(2);
         expect(stats.days).toBe(2);
         expect(stats.hardest[0]?.g).toBe("7a");
+    });
+
+    it("lists a route once among the hardest, by its latest send", () => {
+        const stats = logStats(
+            [
+                entry({ id: "a", k: "c1~r1", s: "c1", d: "2026-01-01", g: "7a", st: "tr" }),
+                entry({ id: "b", k: "c1~r1", s: "c1", d: "2026-03-01", g: "7a", st: "rp" }),
+                entry({ id: "c", k: "c1~r2", s: "c1", d: "2026-02-02", g: "6a" }),
+            ],
+            (e) => entryGradeIdx(e),
+        );
+        expect(stats.hardest.map((e) => e.id)).toEqual(["b", "c"]);
     });
 });
 

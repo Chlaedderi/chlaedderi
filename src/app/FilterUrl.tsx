@@ -22,7 +22,7 @@
  * down.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { FILTER_PARAM, encodeFilterCode } from "@core/filterCode";
@@ -37,7 +37,11 @@ const filtersApplyTo = (pathname: string): boolean =>
 
 export const FilterUrl = () => {
     const navigate = useNavigate();
-    const { pathname, search } = useLocation();
+    const { pathname, search, state } = useLocation();
+    // Carried across the rewrite: a link to one route arrives with that route in the state, and a
+    // replace without it would drop the route a moment after the page opened.
+    const stateRef = useRef<unknown>(state);
+    stateRef.current = state;
     const filters = useAppSelector(selectFilters);
     const sort = useAppSelector(selectSort);
     const dir = useAppSelector(selectDir);
@@ -52,7 +56,10 @@ export const FilterUrl = () => {
             if ((params.get(FILTER_PARAM) ?? null) === code) return;
             if (code) params.set(FILTER_PARAM, code);
             else params.delete(FILTER_PARAM);
-            void navigate({ pathname: at, search: params.toString() }, { replace: true });
+            void navigate(
+                { pathname: at, search: params.toString() },
+                { replace: true, state: stateRef.current },
+            );
         },
         [navigate],
     );

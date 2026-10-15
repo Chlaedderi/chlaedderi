@@ -41,7 +41,8 @@ export type PackProblemCode =
     | "nostore"
     | "locked"
     | "badkey"
-    | "badblob";
+    | "badblob"
+    | "otherid";
 
 /** Every code there is, for the test that checks each one has words in both languages. */
 export const PACK_PROBLEM_CODES: readonly PackProblemCode[] = [
@@ -58,6 +59,7 @@ export const PACK_PROBLEM_CODES: readonly PackProblemCode[] = [
     "locked",
     "badkey",
     "badblob",
+    "otherid",
 ];
 
 export interface PackProblem {

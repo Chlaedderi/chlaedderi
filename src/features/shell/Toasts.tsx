@@ -12,6 +12,9 @@ export const Toasts = () => {
 
     return (
         <Snackbar
+            // One per toast: MUI starts the auto-hide timer only when `open` changes, so a toast
+            // that followed another in the queue stayed until somebody tapped it.
+            key={current?.id}
             open={Boolean(current)}
             autoHideDuration={4000}
             onClose={() => current && dispatch(uiActions.dismissToast(current.id))}

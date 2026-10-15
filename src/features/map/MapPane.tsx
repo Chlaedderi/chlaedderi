@@ -28,10 +28,11 @@ import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { useMapCovered } from "@app/layout";
 import { uiActions } from "@app/slices/uiSlice";
-import { useFilterContext, useLang, useRegion, useShownCrags } from "@app/useAppData";
+import { useFilterContext, useLang, useRegion, useRegionOf, useShownCrags } from "@app/useAppData";
 import { useWeather } from "@app/weatherContext";
 import { longText } from "@core/dataText";
 import { bboxOf, formatDistance, haversine } from "@core/geo";
+import { parksOf } from "@core/packs/mount";
 import { radarSource } from "@core/radar";
 import type { Crag } from "@domain/model";
 
@@ -79,6 +80,15 @@ const FitBounds = ({ span }: { span: Span | null }) => {
         fitted.current = key;
         map.fitBounds(toBounds(span), { padding: [40, 40], maxZoom: 16 });
     }, [map, span]);
+    return null;
+};
+
+/** Move the map to a point, when asked: each request is a new object, so one point twice moves twice. */
+const PanTo = ({ to, calm }: { to: { lat: number; lon: number } | null; calm: boolean }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (to) map.panTo([to.lat, to.lon], { animate: !calm });
+    }, [map, to, calm]);
     return null;
 };
 
@@ -184,9 +194,13 @@ export const MapPane = () => {
     const picking = useAppSelector((s) => s.ui.picking);
     const calloutOpen = useAppSelector((s) => s.ui.calloutOpen);
     const [locateState, setLocateState] = useState<LocateState>("off");
+    /** Where «my position» asked the map to go, if anywhere. */
+    const [panTo, setPanTo] = useState<{ lat: number; lon: number } | null>(null);
     // Tiles that will not load: an offline device, a blocked host, a base map that is down.
     const [tileTrouble, setTileTrouble] = useState(false);
     const tileErrors = useRef(0);
+    /** Closed by the viewer: the next failing tile must not put it straight back. */
+    const tileDismissed = useRef(false);
     const tileOk = useRef(false);
     const [openPark, setOpenPark] = useState<string | null>(null);
 
@@ -194,6 +208,13 @@ export const MapPane = () => {
     const base = inSwitzerland
         ? (CH_LAYERS[prefs.baseCH] ?? CH_LAYERS.ch!)
         : (BASE_LAYERS[prefs.base] ?? BASE_LAYERS.topo!);
+    // Counted per base map: one that loaded says nothing about the one the viewer switched to.
+    useEffect(() => {
+        tileErrors.current = 0;
+        tileOk.current = false;
+        tileDismissed.current = false;
+        setTileTrouble(false);
+    }, [base.url]);
 
     const baseName =
         (inSwitzerland
@@ -214,14 +235,44 @@ export const MapPane = () => {
     const planning = useAppSelector((s) => s.ui.planning);
     const via = useAppSelector((s) => s.ui.planVia);
     const planner = usePlanner(lang === "de" ? "de" : "en");
-    const [planStart, setPlanStart] = useState("");
+    // Both belong to the crag they were chosen for: another crag starts from its own car park,
+    // not from the last one's, which `parks` would still happily resolve.
+    const [planStartFor, setPlanStartFor] = useState<{ id: string | null; v: string }>({
+        id: null,
+        v: "",
+    });
+    const planStart = planStartFor.id === selectedId ? planStartFor.v : "";
+    const setPlanStart = useCallback(
+        (v: string) => setPlanStartFor({ id: selectedId, v }),
+        [selectedId],
+    );
     /** Where «point on the map» was tapped, once it has been. */
-    const [planFrom, setPlanFrom] = useState<[number, number] | null>(null);
+    const [planFromFor, setPlanFromFor] = useState<{
+        id: string | null;
+        v: [number, number] | null;
+    }>({ id: null, v: null });
+    const planFrom = planFromFor.id === selectedId ? planFromFor.v : null;
+    const setPlanFrom = useCallback(
+        (v: [number, number] | null) => setPlanFromFor({ id: selectedId, v }),
+        [selectedId],
+    );
+    // Never for an invented region: the planner -- and the GPX it offers -- would walk somebody
+    // to a cliff that is not there. The crag page withholds the button; this withholds the panel,
+    // which stays open across a change of crag or region.
+    //
+    // The crag is taken from all of them, not from the filtered list: «plan the approach» on a crag
+    // the filters hide (opened from the favourites, say) used to open the map and do nothing.
+    const planCrag = selectedId ? (byId[selectedId] ?? null) : null;
+    const planRegion = useRegionOf(planCrag);
+    const plannable =
+        planRegion?.ch === true && planRegion.fictional !== true && planCrag?.coord != null;
 
     const parkName = useCallback(
         (key: string) => longText(parks[key], "name", lang) ?? key,
         [parks, lang],
     );
+    /** Only the region on screen's car parks, as only its crags are drawn. */
+    const regionParks = useMemo(() => parksOf(parks, region?.key), [parks, region?.key]);
 
     /**
      * The chosen crag, whether or not the filters let it through.
@@ -386,10 +437,11 @@ export const MapPane = () => {
 
     /** Where an approach may start: this crag's car parks first, then the viewer's own position. */
     const plannerStarts = useMemo(() => {
-        const crag = selected?.crag;
+        const crag = planCrag;
         if (!crag) return [];
+        // Only car parks that exist: one the pack names but does not list has nowhere to start.
         const keys = [...new Set([crag.pk, ...(crag.ap ?? []).map((a) => a.pk)])].filter(
-            (k): k is string => Boolean(k),
+            (k): k is string => Boolean(k) && parks[k!] !== undefined,
         );
         const out = keys.map((key) => ({
             value: key,
@@ -402,14 +454,19 @@ export const MapPane = () => {
             label: planFrom ? t("pl.point") : t("pl.from.map"),
         });
         return out;
-    }, [selected, me, parkName, planFrom, t]);
+    }, [planCrag, me, parks, parkName, planFrom, t]);
 
     // Plan as soon as the panel is open and there is both a start and a crag to reach.
     useEffect(() => {
-        if (!planning || !selected?.crag.coord) return;
+        if (!planning || !plannable || !planCrag?.coord) return;
         const from = planStart || plannerStarts[0]?.value;
         if (!from) return;
-        if (from !== planStart) setPlanStart(from);
+        if (from !== planStart) {
+            // The change runs this again with the start in place; planning now as well would ask
+            // for the same route twice.
+            setPlanStart(from);
+            return;
+        }
 
         const park = parks[from];
         const origin: [number, number] | null =
@@ -423,6 +480,9 @@ export const MapPane = () => {
                     ? [park.lat, park.lon]
                     : null;
         if (!origin) {
+            // Nothing to plan from yet: the last crag's route must not stay on the map, in the
+            // panel and in the GPX, under this crag's name.
+            planner.clear();
             // Asked to start from «my position» and there is none: say so and switch to a tap.
             if (from === "me" && !me) {
                 dispatch(uiActions.toast({ message: t("pl.nome") }));
@@ -431,12 +491,12 @@ export const MapPane = () => {
             return;
         }
 
-        const wall: [number, number] = [selected.crag.coord.lat, selected.crag.coord.lon];
+        const wall: [number, number] = [planCrag.coord.lat, planCrag.coord.lon];
         planner.plan([origin, ...via, wall]);
         // `planner` changes identity whenever its own state does, so depending on it would loop.
         // What should start a new plan is listed instead.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [planning, selected, planStart, plannerStarts, me, parks, via]);
+    }, [planning, plannable, planCrag, planStart, plannerStarts, me, parks, via]);
 
     /** Ask for a tap on the map, saying why. The original's `pickStart`. */
     const askByHand = (why: string): void => {
@@ -447,6 +507,12 @@ export const MapPane = () => {
     const locate = (): void => {
         if (picking) {
             dispatch(uiActions.setPicking(false));
+            return;
+        }
+        // On already: a second tap switches it off, as the button's own label says.
+        if (locateState === "on") {
+            setLocateState("off");
+            dispatch(uiActions.setMe(null));
             return;
         }
         if (!navigator.geolocation) {
@@ -480,6 +546,9 @@ export const MapPane = () => {
                     dispatch(
                         uiActions.toast({ message: t("loc.far", { 0: formatDistance(far) }) }),
                     );
+                } else {
+                    // Near the crags: centre on the position, which is what the button says.
+                    setPanTo({ lat: pos.coords.latitude, lon: pos.coords.longitude });
                 }
             },
             (err) => {
@@ -520,7 +589,11 @@ export const MapPane = () => {
                             // waits for several failures and gives up the moment one tile arrives.
                             tileerror: () => {
                                 tileErrors.current += 1;
-                                if (tileErrors.current >= 4 && !tileOk.current)
+                                if (
+                                    tileErrors.current >= 4 &&
+                                    !tileOk.current &&
+                                    !tileDismissed.current
+                                )
                                     setTileTrouble(true);
                             },
                             tileload: () => {
@@ -558,7 +631,7 @@ export const MapPane = () => {
                     <AllPathsLayer shown={shown} selectedId={selectedId} enabled={prefs.allPaths} />
                     {region && <MapLabels labels={region.labels} />}
                     <ParkMarkers
-                        parks={parks}
+                        parks={regionParks}
                         parkName={parkName}
                         enabled={prefs.allParks}
                         onParkClick={openParkCard}
@@ -615,11 +688,15 @@ export const MapPane = () => {
                     />
 
                     <PlannedRoute
-                        result={planner.result}
+                        // Only with its panel: a crag that cannot be planned for must not keep the
+                        // last one's route on the map with nothing left to close it.
+                        result={planning && plannable ? planner.result : null}
                         via={via}
                         onViaRemove={() => dispatch(uiActions.clearVia())}
                         viaTitle={t("pl.via.t")}
                     />
+
+                    <PanTo to={panTo} calm={calm} />
 
                     <BackgroundClick
                         onClick={(latlng) => {
@@ -654,7 +731,10 @@ export const MapPane = () => {
                 <Alert
                     severity="warning"
                     data-testid="tile-trouble"
-                    onClose={() => setTileTrouble(false)}
+                    onClose={() => {
+                        tileDismissed.current = true;
+                        setTileTrouble(false);
+                    }}
                     sx={{
                         position: "absolute",
                         top: 8,
@@ -693,9 +773,9 @@ export const MapPane = () => {
                 locateState={locateState}
                 picking={picking}
             />
-            {planning && selected && (
+            {planning && planCrag && plannable && (
                 <PlannerPanel
-                    crag={selected.crag}
+                    crag={planCrag}
                     starts={plannerStarts}
                     start={planStart}
                     onStart={setPlanStart}
@@ -711,7 +791,7 @@ export const MapPane = () => {
                         setPlanFrom(null);
                         planner.clear();
                     }}
-                    onOpenCrag={() => void navigate(`/crag/${selected.crag.id}`)}
+                    onOpenCrag={() => void navigate(`/crag/${planCrag.id}`)}
                 />
             )}
             <MapLegend />

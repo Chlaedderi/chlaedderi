@@ -2,8 +2,8 @@
  * Which version is published, and the reset that fetches the app's files again.
  *
  * Not a constant the build stamps in: the deploy writes `version.json` next to the app. That keeps
- * the build reproducible -- a bundle with a commit hash inside it could never satisfy
- * `build && git diff --exit-code`.
+ * the build reproducible -- a bundle with a commit hash inside it would differ between a preview
+ * and the deploy of the same commit.
  *
  * It is a **store**, not a mutable module object. The first version of this file exported an object
  * and mutated it in place; React never re-renders for that, so the «More» page showed `dev` for
@@ -107,7 +107,25 @@ export const ownShell = (name: string, scope: string): boolean => {
  * the user's data and the downloaded tiles all survive this. Only the app shell is dropped -- and
  * only this deployment's own, see above.
  */
-export const refreshApp = async (): Promise<void> => {
+export const refreshApp = async (): Promise<boolean> => {
+    // First make sure the network answers. Dropping the shell and the worker with no way to fetch
+    // them again -- offline, or a signal that shows bars and carries nothing, under a cliff --
+    // leaves an app that will not open at all until it is online again. `version.json` is kept
+    // out of the precache, so only the network can answer it.
+    try {
+        const probe = new AbortController();
+        const timer = setTimeout(() => probe.abort(), 8000);
+        try {
+            const answer = await fetch("version.json", { cache: "no-store", signal: probe.signal });
+            // A captive portal answers too -- with its own page, by way of a redirect -- and a
+            // server in trouble answers 5xx. Neither would serve the app's files.
+            if (!answer.ok || answer.redirected) return false;
+        } finally {
+            clearTimeout(timer);
+        }
+    } catch {
+        return false;
+    }
     try {
         const scope = here();
         const names = await caches.keys();
@@ -120,6 +138,7 @@ export const refreshApp = async (): Promise<void> => {
         // Even if none of that worked, the reload below still fetches what it can.
     }
     location.reload();
+    return true;
 };
 
 /** Running as an installed app rather than in a browser tab. */

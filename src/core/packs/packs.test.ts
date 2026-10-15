@@ -5,7 +5,7 @@ import type { Mappack } from "@domain/mappack";
 import showcase from "../../../maps/pack.showcase.json";
 import testing from "../../../maps/pack.testing.json";
 
-import { mountPacks, toCrag } from "./mount";
+import { mountPacks, parksOf, toCrag } from "./mount";
 import { checkPack } from "./validate";
 
 /*
@@ -102,6 +102,18 @@ describe("mounting the mappacks", () => {
         expect(mounted.regions.map((r) => r.key)).toEqual(["testing", "other"]);
     });
 
+    it("hands the map one region's car parks, not every mounted one's", () => {
+        const all = Object.keys(mounted.parks);
+        const own = Object.keys(parksOf(mounted.parks, "other"));
+        expect(own.length).toBe(Object.keys(second.parks ?? {}).length);
+        expect(own.length).toBeGreaterThan(0);
+        expect(own.every((k) => k.startsWith("other/"))).toBe(true);
+        expect(all.length).toBeGreaterThan(own.length);
+        expect(Object.keys(parksOf(mounted.parks, undefined))).toEqual([]);
+        // A region whose id begins another's does not take the other's car parks.
+        expect(Object.keys(parksOf(mounted.parks, "oth"))).toEqual([]);
+    });
+
     it("agrees with the counts the packs state", () => {
         const region = mounted.regions.find((r) => r.key === packs.showcase!.id);
         expect(region?.n).toBe(packs.showcase!.counts?.crags);
@@ -146,6 +158,16 @@ describe("mounting the mappacks", () => {
         withRk!.rk!.forEach((kept, i) => {
             if (kept) expect(crag.routes[i]?.key).toBe(`${withRk!.id}~${kept}`);
         });
+    });
+
+    it("reads a warning about children as «not for families» only when it says so", () => {
+        const base = packs.testing!.sectors[0]!;
+        const warned = (warn: string) => toCrag({ ...base, warn }, "testing");
+        expect(warned("Unsuitable for children: the base is a cliff edge.").noFamily).toBe(true);
+        expect(warned("Not for kids, the path is exposed.").noFamily).toBe(true);
+        // «under» and «until» negate nothing.
+        expect(warned("Good for families; children under 6 need a helmet.").noFamily).toBe(false);
+        expect(warned("Kids love the shade at the base until noon.").noFamily).toBe(false);
     });
 
     it("derives the fields prepCrag used to assign in place", () => {
@@ -214,6 +236,29 @@ describe("mounting several packs together", () => {
         }
     });
 
+    it("credits no other pack's source to a pack that names none of its own", () => {
+        // The first pack has sources; the second has none, but its pictures still say index 0.
+        const sourceless = {
+            ...renamed(packs.testing!, "plain"),
+            picSrc: undefined,
+        } as unknown as Mappack;
+        const both = mountPacks([packs.testing!, sourceless]);
+        const plain = both.crags.filter((c) => c.packId === "plain" && c.pics.length);
+        expect(plain.length).toBeGreaterThan(0);
+        for (const crag of plain) {
+            for (const pic of crag.pics) expect(both.picSrc[pic[3]]).toBeUndefined();
+        }
+    });
+
+    it("answers «no such crag» for the names of Object's own properties", () => {
+        // Ids arrive from links (#/__proto__) and pasted backup codes; a plain object would hand
+        // back a function or the prototype, and the page built on it would crash.
+        const one = mountPacks([packs.testing!]);
+        for (const id of ["__proto__", "constructor", "toString", "hasOwnProperty"]) {
+            expect(one.byId[id], id).toBeUndefined();
+        }
+    });
+
     it("leaves the park keys of a single pack resolvable too", () => {
         const one = mountPacks([packs.testing!]);
         for (const crag of one.crags) {
@@ -223,5 +268,35 @@ describe("mounting several packs together", () => {
                 expect(key.startsWith("testing/")).toBe(true);
             }
         }
+    });
+});
+
+describe("mounting an unusual but valid pack", () => {
+    const base = packs.showcase!;
+    const sector = base.sectors[0]!;
+    const odd = (over: Record<string, unknown>): Mappack => ({
+        ...base,
+        sectors: [{ ...sector, ...over } as typeof sector],
+    });
+
+    it("counts the route list when the pack gives no count", () => {
+        const crag = mountPacks([odd({ nRoutes: undefined })]).crags[0]!;
+        expect(crag.nRoutes).toBe(sector.routes.length);
+    });
+
+    it("never gives two routes the same key, whatever `rk` holds", () => {
+        const rk: (string | null)[] = sector.routes.map(() => null);
+        rk[0] = "same";
+        rk[1] = "same";
+        const crag = mountPacks([odd({ rk })]).crags[0]!;
+        const keys = crag.routes.map((r) => r.key);
+        expect(new Set(keys).size).toBe(keys.length);
+        expect(keys[0]).toBe(`${sector.id}~same`);
+    });
+
+    it("drops a car park the pack names but does not list", () => {
+        const crag = mountPacks([odd({ pk: "nowhere", pkOff: "other/park" })]).crags[0]!;
+        expect(crag.pk).toBeNull();
+        expect(crag.pkOff).toBeNull();
     });
 });

@@ -21,6 +21,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { useData } from "@app/dataContext";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -30,6 +31,7 @@ import { useLang } from "@app/useAppData";
 import { downloadFile } from "@core/download";
 import { packFileName, storedPackText } from "@core/packs/storage";
 import type { PackProblem } from "@core/packs/validate";
+import { routeFromShared } from "@core/sharedLink";
 import { i18 } from "@core/text";
 
 import { packLinkTo, useShareLink } from "../shell/useShare";
@@ -45,6 +47,7 @@ export const PacksDialog = () => {
     const open = useAppSelector((s) => s.ui.packsOpen);
     const installed = useAppSelector((s) => s.prefs.packs);
     const { installFromUrl, installFromFile, uninstall, busy, onlyShowcase } = useData();
+    const navigate = useNavigate();
     const shareLink = useShareLink();
     const region = useAppSelector((st) => st.prefs.region);
     // Safari in private mode, and a device under storage pressure, will evict the pack cache.
@@ -235,6 +238,7 @@ export const PacksDialog = () => {
                                                         installFromUrl(
                                                             pack.src!.url!,
                                                             pack.src!.key,
+                                                            pack.id,
                                                         ),
                                                     pack.name ? i18(pack.name, lang) : pack.id,
                                                 )
@@ -292,7 +296,19 @@ export const PacksDialog = () => {
                             // here instead -- in the same tick as the offer opens -- leaves this
                             // one's backdrop above the offer, and the buttons there stop taking
                             // taps.
-                            dispatch(uiActions.offerPack({ url: url.trim(), fetchNow: true }));
+                            // A link to the app itself -- what «share» hands out, with the key
+                            // in its fragment -- goes where a pasted one goes. Fetched as it
+                            // stands it is the app's own page, «not a mappack», key ignored.
+                            const typed = url.trim();
+                            // Only a fragment in the app's own shape: a pack address may carry one of its own.
+                            const hash = typed.slice(typed.indexOf("#") + 1);
+                            const ours = typed.includes("#") && /^\/|^pack\?|[?&]pack=/.test(hash);
+                            const route = ours ? routeFromShared(typed) : null;
+                            if (route !== null && route !== "/") {
+                                void navigate(route);
+                                return;
+                            }
+                            dispatch(uiActions.offerPack({ url: typed, fetchNow: true }));
                         }}
                     >
                         {t("pk.load")}

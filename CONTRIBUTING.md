@@ -21,9 +21,10 @@ That brings Node, the tools and the git hooks. Nothing else to install.
     that folder is ignored, and devenv installs Node and the hooks there as well.
 2. Change things in `src/`.
 3. `dev` – development server at <http://localhost:5173/>.
-4. `test` for the unit tests, `lint` for everything else.
-5. Commit. The hooks run by themselves; one of them builds the app, to prove that it still builds.
-6. Push, and open a pull request.
+4. Commit. The hooks run by themselves – the unit tests, the browser suite and the rest of `lint`'s
+    set among them, and one of them builds the app, to prove that it still builds. Running `test`
+    or `lint` first only repeats them.
+5. Push, and open a pull request.
 
 **The built app is not in the repository.** `build` writes it to `dist/`, which is ignored, and the
 deploy builds it again from your branch. Nothing in `dist/` is ever edited by hand.
@@ -80,8 +81,8 @@ region, or `src/core/packs/chlpack.test.ts` will say they have drifted apart.
 
 The real regions live in the private `Chlaedderi/maps` repository. With access, `packs` links them
 into `maps/` so that `dev` and `serve` show the real thing; without it, that command says so in one
-line and everything else carries on. Nothing in CI depends on them. A new showcase is cut there and
-arrives here as a pull request.
+line and everything else carries on. Nothing in CI depends on them. The showcase is invented and is cut
+here, from `maps/pack.testing.json`, with `make-showcase`.
 
 ## Commits
 

@@ -11,7 +11,7 @@
  * the setup they had.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
@@ -20,7 +20,7 @@ import { FILTER_PARAM, decodeFilterCode } from "@core/filterCode";
 import { FILTER_KEY, type StoredFilters, fromStored, toStored } from "@core/filters";
 import { activeCount } from "@core/filters";
 import { cleanLog } from "@core/logbook";
-import { cleanPrefs, keepTouched } from "@core/prefs";
+import { type Prefs, cleanPrefs, keepTouched } from "@core/prefs";
 import { openStore } from "@core/store";
 
 import { useData } from "./dataContext";
@@ -35,16 +35,28 @@ import { useDebouncedWrite } from "./useDebouncedWrite";
 
 const store = openStore();
 
+/** How long a read-back that found nothing gives the slower layers before asking again. */
+const LATE_LAYER_MS = 3000;
+
 export const Persistence = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-    const favourites = useAppSelector((s) => s.favourites);
+    // The lists only, not the slice: the slice also holds `saved`, which every write below sets
+    // anew -- watching it would make each write schedule the next one, forever.
+    const favCrags = useAppSelector((s) => s.favourites.crags);
+    const favRoutes = useAppSelector((s) => s.favourites.routes);
+    const favourites = useMemo(
+        () => ({ crags: favCrags, routes: favRoutes }),
+        [favCrags, favRoutes],
+    );
     const entries = useAppSelector((s) => s.logbook.entries);
     const prefs = useAppSelector((s) => s.prefs);
     const filters = useAppSelector(selectFilters);
     const sort = useAppSelector((s) => s.filters.sort);
     const dir = useAppSelector((s) => s.filters.dir);
-    const { crags, regions } = useData();
+    const hydrated = useAppSelector((s) => s.filters.hydrated);
+    const offerPending = useAppSelector((s) => s.ui.packOffer !== null);
+    const { crags, regions, booted } = useData();
     const { search } = useLocation();
 
     // The settings as they are *now*, for the asynchronous read-back below: a closure over `prefs`
@@ -52,37 +64,113 @@ export const Persistence = () => {
     // against in the first place.
     const latestPrefs = useRef(prefs);
     latestPrefs.current = prefs;
+    // The settings as the store holds them, as far as this tab knows: what was read at the first
+    // paint, then whatever was read back, arrived from another tab, or written from here. A key is
+    // the viewer's own change only while it differs from this -- measured against the first paint
+    // instead, every key a read-back had replaced stayed «touched» for the whole session, and two
+    // tabs answered each other's settings with their own, for ever.
+    const storedPrefs = useRef<Prefs>(initialPrefsState);
+
+    // The favourites and the logbook as they are now, for the read-back below to merge into.
+    const latestFav = useRef({ crags: favCrags, routes: favRoutes });
+    latestFav.current = { crags: favCrags, routes: favRoutes };
+    const latestEntries = useRef(entries);
+    latestEntries.current = entries;
+
+    // What the store holds for each key, as JSON, as far as this tab knows: read back at start,
+    // arrived from another tab, or written from here. A value equal to it is not written again --
+    // otherwise two open tabs answer each other's every write with one of their own, for ever,
+    // and a change made in between is overwritten by the echo of the one before it.
+    const known = useRef<Partial<Record<"fav" | "log" | "prefs", string>>>({});
+    // Nothing is written for a key before it has been read back: favourites and the logbook start
+    // empty, and a write of one new favourite in that window would be newer than everything stored
+    // and replace it, on every layer.
+    const loaded = useRef(false);
+    // The same, as state, for the settings: their write waits on it and has to run once it flips.
+    const [ready, setReady] = useState(false);
+
+    // The words as they are now, for the read-back below, which runs once and must not run again
+    // because the language changed.
+    const latestT = useRef(t);
+    latestT.current = t;
 
     // ---- read back once
     useEffect(() => {
         void (async () => {
-            await store.ready;
-            const [fav, log, saved] = await Promise.all([
-                store.get("fav"),
-                store.get("log"),
-                store.get("prefs"),
-            ]);
-            if (fav) {
-                const clean = cleanFavourites(fav);
-                dispatch(
-                    favouritesActions.restore({
-                        crags: [...clean.c],
-                        routes: [...clean.r],
-                    }),
+            try {
+                await store.ready;
+                const readAll = () =>
+                    Promise.all([store.get("fav"), store.get("log"), store.get("prefs")]);
+                let [fav, log, saved] = await readAll();
+                // Nothing anywhere, and neither layer that outlives localStorage answering: that is
+                // a first visit -- or IndexedDB and the Cache too slow to answer in time, as on a
+                // cold start, with everything still in them. Opened now, the writes would put
+                // this tab's defaults over all of it. A layer that answers late counts again, so
+                // ask once more before taking «nothing» for an answer.
+                if (!fav && !log && !saved && !store.status().durable) {
+                    await new Promise((resolve) => setTimeout(resolve, LATE_LAYER_MS));
+                    [fav, log, saved] = await readAll();
+                }
+                if (fav) known.current.fav = JSON.stringify(fav);
+                if (log) known.current.log = JSON.stringify(log);
+                if (saved) known.current.prefs = JSON.stringify(saved);
+
+                // Merged with whatever was added here while the store was still being read.
+                const clean = fav
+                    ? cleanFavourites(fav)
+                    : { c: new Set<string>(), r: new Set<string>() };
+                const now = latestFav.current;
+                if (fav || now.crags.length || now.routes.length) {
+                    dispatch(
+                        favouritesActions.restore({
+                            crags: [...new Set([...clean.c, ...now.crags])],
+                            routes: [...new Set([...clean.r, ...now.routes])],
+                        }),
+                    );
+                }
+                const stored = log ? cleanLog(log) : [];
+                const added = latestEntries.current.filter(
+                    (e) => !stored.some((s) => s.id === e.id),
                 );
-            }
-            if (log) dispatch(logbookActions.restore(cleanLog(log)));
-            if (saved) {
+                if (log || added.length) dispatch(logbookActions.restore([...stored, ...added]));
+                if (saved) {
+                    const clean = cleanPrefs(saved);
+                    const now = latestPrefs.current;
+                    const merged = keepTouched(clean, now, storedPrefs.current);
+                    // A region picked while nothing of the viewer's was mounted yet -- the showcase,
+                    // chosen because the settings had come up empty -- is the app's doing, not theirs.
+                    // The region they left stays, when it is one of the regions coming back.
+                    const ownRegion = merged.packs.some((p) => p.id === clean.region);
+                    const pickedForThem = !now.packs.some((p) => p.id === now.region);
+                    dispatch(
+                        prefsActions.restore(
+                            ownRegion && pickedForThem
+                                ? { ...merged, region: clean.region }
+                                : merged,
+                        ),
+                    );
+                    storedPrefs.current = clean;
+                }
+                // Writes open only now, with everything stored merged in: before, a write of what
+                // this tab holds would be the newest record on every layer and replace it.
+                loaded.current = true;
+                setReady(true);
+            } catch {
+                // Said, not hidden: nothing changed from here on will be kept this session.
                 dispatch(
-                    prefsActions.restore(
-                        keepTouched(cleanPrefs(saved), latestPrefs.current, initialPrefsState),
-                    ),
+                    uiActions.toast({ message: latestT.current("save.fail"), severity: "warning" }),
                 );
+                // Not merged, so not written -- a lost change is the lesser harm than lost
+                // regions, favourites or ascents. (The store itself never rejects; this is for a
+                // failure in the merging above.)
             }
         })();
 
         // Another tab or window wrote something.
         store.subscribe((key, value) => {
+            if (key === "fav" || key === "log" || key === "prefs") {
+                known.current[key] = JSON.stringify(value);
+            }
             if (key === "fav") {
                 const clean = cleanFavourites(value);
                 dispatch(favouritesActions.restore({ crags: [...clean.c], routes: [...clean.r] }));
@@ -90,14 +178,25 @@ export const Persistence = () => {
             if (key === "log") dispatch(logbookActions.restore(cleanLog(value)));
             // Another tab's settings must not undo a switch flipped here a moment ago either.
             if (key === "prefs") {
+                const clean = cleanPrefs(value);
                 dispatch(
                     prefsActions.restore(
-                        keepTouched(cleanPrefs(value), latestPrefs.current, initialPrefsState),
+                        keepTouched(clean, latestPrefs.current, storedPrefs.current),
                     ),
                 );
+                storedPrefs.current = clean;
             }
         });
     }, [dispatch]);
+
+    /** Whether `value` is news to the store under `key`; remembers it if so. */
+    const isNew = (key: "fav" | "log" | "prefs", value: unknown): boolean => {
+        if (!loaded.current) return false;
+        const text = JSON.stringify(value);
+        if (known.current[key] === text) return false;
+        known.current[key] = text;
+        return true;
+    };
 
     // ---- the filters, out of the link or out of plain localStorage, once the data is there to
     // check them against
@@ -106,7 +205,11 @@ export const Persistence = () => {
     // to the device below.
     const fromLink = useRef<string | null>(null);
     useEffect(() => {
-        if (restoredFilters.current || !crags.length) return;
+        // Not before the installed packs are read back: until then only the showcase is mounted,
+        // and an area or municipality of an installed region would be thrown away as unknown.
+        // Nor while a region is on offer: a view link offers its region and carries its filters
+        // to the map, and an area of that region read before it is installed is thrown away.
+        if (restoredFilters.current || !booted || !crags.length || offerPending) return;
         restoredFilters.current = true;
         try {
             const where = {
@@ -148,29 +251,32 @@ export const Persistence = () => {
             // the URL mirror stays silent until it knows this state is the viewer's own.
             dispatch(filtersActions.hydrated());
         }
-    }, [crags, regions, prefs.region, search, dispatch, t]);
+    }, [booted, crags, regions, search, offerPending, dispatch, t]);
 
     // ---- write on change
     useDebouncedWrite(favourites, (value) => {
-        void store
-            .set("fav", toStoredFavourites({ c: new Set(value.crags), r: new Set(value.routes) }))
-            .then((result) => {
+        const stored = toStoredFavourites({ c: new Set(value.crags), r: new Set(value.routes) });
+        if (!isNew("fav", stored)) return;
+        void store.set("fav", stored).then((result) => {
+            dispatch(
+                favouritesActions.saveResult({
+                    ok: result.ok,
+                    verified: result.verified,
+                    at: result.t,
+                }),
+            );
+            // A silent failure here loses somebody's favourites. Say so, and name the page
+            // that explains what this browser can and cannot keep.
+            if (!result.ok) {
                 dispatch(
-                    favouritesActions.saveResult({
-                        ok: result.ok,
-                        verified: result.verified,
-                        at: result.t,
-                    }),
+                    uiActions.toast({ message: latestT.current("save.fail"), severity: "warning" }),
                 );
-                // A silent failure here loses somebody's favourites. Say so, and name the page
-                // that explains what this browser can and cannot keep.
-                if (!result.ok) {
-                    dispatch(uiActions.toast({ message: t("save.fail"), severity: "warning" }));
-                }
-            });
+            }
+        });
     });
 
     useDebouncedWrite(entries, (value) => {
+        if (!isNew("log", value)) return;
         void store.set("log", value).then((result) => {
             dispatch(
                 logbookActions.saveResult({
@@ -185,11 +291,23 @@ export const Persistence = () => {
         });
     });
 
-    useDebouncedWrite(prefs, (value) => {
+    // The settings too wait for the read-back. Read synchronously at start they come from
+    // localStorage alone; where that copy was lost they are the defaults -- no installed regions,
+    // no keys -- and a write of them before the read-back would be the newest record on every
+    // layer, and the read-back would hand those defaults back. Once it is in, whatever was
+    // changed meanwhile is written (keepTouched kept it).
+    const prefsToWrite = useMemo(() => (ready ? prefs : null), [ready, prefs]);
+    useDebouncedWrite(prefsToWrite, (value) => {
+        if (value === null || !isNew("prefs", value)) return;
+        storedPrefs.current = value;
         void store.set("prefs", value);
     });
 
-    useDebouncedWrite({ filters, sort, dir }, ({ filters: f, sort: s, dir: d }) => {
+    // Memoised, so that only a change of the filters writes them, not every render of this component.
+    const filterState = useMemo(() => ({ filters, sort, dir }), [filters, sort, dir]);
+    useDebouncedWrite(filterState, ({ filters: f, sort: s, dir: d }) => {
+        // Not before the stored filters were read back: this would overwrite them with the defaults.
+        if (!hydrated) return;
         try {
             const text = JSON.stringify(toStored(f, s, d));
             // Still exactly what the link asked for: the viewer has looked at somebody else's view

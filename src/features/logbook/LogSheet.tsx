@@ -78,7 +78,10 @@ export const LogSheet = ({
             setStars(entry.r);
         } else {
             setName(route?.name ?? "");
-            setGrade(route?.grade ?? "6a");
+            // A route of the atlas keeps its own grade, none included: «6a» is the starting point
+            // of the picker for a route the atlas does not have, not a grade to give one that
+            // has none -- it would then count as a 6a send in the pyramid and the records.
+            setGrade(route ? (route.grade ?? "") : "6a");
             setDate(todayIso());
             setStyle(lastStyle);
             setStars(0);
@@ -98,7 +101,8 @@ export const LogSheet = ({
             s: entry?.s ?? crag?.id ?? "",
             n: name.trim(),
             g: grade,
-            d: date,
+            // A cleared date field gives "", which would be stored and shown as year «0».
+            d: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : todayIso(),
             st: style,
             r: stars,
             t: entry?.t ?? Date.now(),
@@ -106,7 +110,9 @@ export const LogSheet = ({
         };
         dispatch(logbookActions.upsert(record));
         dispatch(prefsActions.setLogStyle(style));
-        dispatch(uiActions.toast({ message: t("lb.saved"), severity: "success" }));
+        dispatch(
+            uiActions.toast({ message: t(entry ? "lb.updated" : "lb.saved"), severity: "success" }),
+        );
         onClose();
     };
 
@@ -131,7 +137,7 @@ export const LogSheet = ({
                     {crag ? ` · ${crag.name}` : ""}
                 </Typography>
                 <Typography variant="h3" gutterBottom>
-                    {custom ? t("lb.custom.t") : `${name} ${grade}`}
+                    {custom ? t("lb.custom.t") : `${name} ${grade}`.trim()}
                 </Typography>
 
                 <Stack spacing={2} sx={{ mt: 1 }}>
@@ -220,7 +226,7 @@ export const LogSheet = ({
                             </Typography>
                             {previous.map((e: LogEntry) => (
                                 <Typography key={e.id} variant="body2">
-                                    {e.d} · {t(`st.${e.st}`)} · {e.g}
+                                    {[e.d, t(`st.${e.st}`), e.g].filter(Boolean).join(" · ")}
                                 </Typography>
                             ))}
                         </Box>
