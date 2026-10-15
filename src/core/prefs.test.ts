@@ -125,6 +125,14 @@ describe("keepTouched", () => {
         const current = { ...start, packs: [{ id: "z", version: "1" }] };
         expect(keepTouched(stored, current, start).packs).toEqual([{ id: "z", version: "2" }]);
     });
+
+    it("keeps a region stored anew elsewhere although it was removed here", () => {
+        const start = { ...defaultPrefs(), packs: [{ id: "x", version: "1" }] };
+        // Removed in this tab; fetched again in another, which stored the newer one.
+        const stored = { ...start, packs: [{ id: "x", version: "2" }] };
+        const current = { ...start, packs: [] };
+        expect(keepTouched(stored, current, start).packs).toEqual([{ id: "x", version: "2" }]);
+    });
 });
 
 describe("readPrefsSync", () => {

@@ -98,7 +98,6 @@ export const Persistence = () => {
                 if (fav) known.current.fav = JSON.stringify(fav);
                 if (log) known.current.log = JSON.stringify(log);
                 if (saved) known.current.prefs = JSON.stringify(saved);
-                loaded.current = true;
 
                 // Merged with whatever was added here while the store was still being read.
                 const clean = fav
@@ -136,11 +135,14 @@ export const Persistence = () => {
                     );
                     storedPrefs.current = clean;
                 }
+                // Writes open only now, with everything stored merged in: before, a write of what
+                // this tab holds would be the newest record on every layer and replace it.
+                loaded.current = true;
                 setReady(true);
             } catch {
-                // Nothing read, so nothing written: what this tab holds may be the defaults, and
-                // a write of them would be the newest record on every layer. A lost change to a
-                // setting is the lesser harm than lost regions, favourites or ascents.
+                // Not merged, so not written -- a lost change is the lesser harm than lost
+                // regions, favourites or ascents. (The store itself never rejects; this is for a
+                // failure in the merging above.)
             }
         })();
 

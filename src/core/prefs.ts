@@ -143,15 +143,6 @@ export const cleanPrefs = (v: unknown): Prefs => {
     return prefs;
 };
 
-/**
- * Settings read back from the store, except for what the viewer has already changed.
- *
- * The slower layers of the store answer a moment after the first paint, and what they say used to
- * replace the whole settings object -- so a switch flipped during that moment was silently undone,
- * and the debounced writer then saved the undone value. Comparing each key, by value, against
- * what the store was last known to hold (`start`) says which ones the viewer has changed since.
- * Those win; the rest come from storage.
- */
 /** Stored regions, with what this tab added, replaced or removed since `start` laid over them. */
 const mergePacks = (
     stored: readonly InstalledPack[],
@@ -162,8 +153,9 @@ const mergePacks = (
     const now = new Map(current.map((p) => [p.id, p]));
     const changed = (p: InstalledPack): boolean => was.get(p.id) !== JSON.stringify(p);
     const out = stored
-        // Removed here since: stays removed.
-        .filter((p) => !(was.has(p.id) && !now.has(p.id)))
+        // Removed here since: stays removed -- unless what is stored is newer than what was removed,
+        // fetched anew or installed again in another tab meanwhile.
+        .filter((p) => !(was.has(p.id) && !now.has(p.id) && was.get(p.id) === JSON.stringify(p)))
         .map((p) => {
             const mine = now.get(p.id);
             return mine && changed(mine) ? mine : p;
@@ -176,6 +168,15 @@ const mergePacks = (
     return out;
 };
 
+/**
+ * Settings read back from the store, except for what the viewer has already changed.
+ *
+ * The slower layers of the store answer a moment after the first paint, and what they say used to
+ * replace the whole settings object -- so a switch flipped during that moment was silently undone,
+ * and the debounced writer then saved the undone value. Comparing each key, by value, against
+ * what the store was last known to hold (`start`) says which ones the viewer has changed since.
+ * Those win; the rest come from storage.
+ */
 export const keepTouched = (stored: Prefs, current: Prefs, start: Prefs): Prefs => {
     const merged = { ...stored } as Record<string, unknown>;
     const now = current as unknown as Record<string, unknown>;

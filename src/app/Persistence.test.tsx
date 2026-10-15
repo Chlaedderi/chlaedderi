@@ -1,5 +1,5 @@
 import { act } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { makeStore, renderApp } from "../test/harness";
 
@@ -78,6 +78,9 @@ describe("Persistence", () => {
     it("writes nothing when what is stored could not be read at all", async () => {
         fake.release();
         fake.broken.now = true;
+        onTestFinished(() => {
+            fake.broken.now = false;
+        });
         fake.set.mockClear();
         const store = makeStore();
         renderApp(<Persistence />, { store });
@@ -92,6 +95,5 @@ describe("Persistence", () => {
             await new Promise((resolve) => setTimeout(resolve, 600));
         });
         expect(fake.set).not.toHaveBeenCalled();
-        fake.broken.now = false;
     });
 });
