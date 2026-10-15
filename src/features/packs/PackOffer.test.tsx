@@ -1,6 +1,7 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { uiActions } from "@app/slices/uiSlice";
 import { APP_NAME } from "@core/name";
 
 import { makeStore, mountedShowcase, renderApp, showcase } from "../../test/harness";
@@ -267,5 +268,35 @@ describe("PackOffer", () => {
         renderApp(<PackOffer />, { store, data: mountedShowcase() });
 
         await waitFor(() => expect(fetched).toHaveBeenCalledOnce());
+    });
+
+    it("drops an answer whose region arrived by itself, so the next offer does not open on it", async () => {
+        globalThis.fetch = vi.fn(() => Promise.resolve(answer(pack()))) as unknown as typeof fetch;
+        const base = makeStore().getState();
+        const url = "https://example.org/pack.ow.json";
+        const store = makeStore({
+            ui: { ...base.ui, packOffer: { url } },
+            prefs: { ...base.prefs, packs: [{ id: "ow", src: { type: "url", url } }] },
+        });
+        // Listed, not mounted yet: the read-back is still under way.
+        const data = { ...mountedShowcase() };
+        const { rerender } = renderApp(<PackOffer />, { store, data });
+        fireEvent.click(await screen.findByRole("button", { name: /check this region/i }));
+        expect(await screen.findByText("Obwalden")).toBeInTheDocument();
+
+        // Then it arrives by itself, and the offer goes.
+        data.onlyShowcase = false;
+        data.regions = [...data.regions, { ...data.regions[0]!, key: "ow" }];
+        rerender(<PackOffer />);
+        await waitFor(() => expect(store.getState().ui.packOffer).toBeNull());
+
+        // A different region offered next opens on its own question, not on the old answer.
+        act(() => {
+            store.dispatch(uiActions.offerPack({ url: "https://example.org/other.json" }));
+        });
+        expect(
+            await screen.findByRole("button", { name: /check this region/i }),
+        ).toBeInTheDocument();
+        expect(screen.queryByText("Obwalden")).not.toBeInTheDocument();
     });
 });

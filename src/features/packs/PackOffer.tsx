@@ -143,7 +143,10 @@ export const PackOffer = () => {
         if (here) {
             // Nothing to download and nothing to decide: it is this region, and it is already here.
             dispatch(prefsActions.setRegion(here.id));
-            dispatch(uiActions.clearOffer());
+            // All of it, not only the offer: a region checked here that then arrived by itself --
+            // read back late, or installed in another tab -- would otherwise leave its answer
+            // standing, and the next offer would open on it.
+            close();
             if (offer.then) setPending(offer.then);
             return;
         }
@@ -159,6 +162,7 @@ export const PackOffer = () => {
         installed,
         regions,
         onlyShowcase,
+        close,
         dispatch,
         t,
     ]);

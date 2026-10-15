@@ -1,10 +1,14 @@
-import { act } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 
-import { makeStore, renderApp } from "../test/harness";
+import { encodeFilterCode } from "@core/filterCode";
+import { emptyFilters } from "@core/filters";
+
+import { makeStore, mountedShowcase, renderApp } from "../test/harness";
 
 import { favouritesActions } from "./slices/favouritesSlice";
 import { prefsActions } from "./slices/prefsSlice";
+import { uiActions } from "./slices/uiSlice";
 
 /** A store whose read-back is held until the test lets it go. */
 const fake = vi.hoisted(() => {
@@ -95,5 +99,29 @@ describe("Persistence", () => {
             await new Promise((resolve) => setTimeout(resolve, 600));
         });
         expect(fake.set).not.toHaveBeenCalled();
+    });
+
+    it("reads a view link's filters only once the region it offers is here", async () => {
+        fake.release();
+        const code = encodeFilterCode({ ...emptyFilters(), area: "Neuland" }, "area", 1)!;
+        const base = makeStore().getState();
+        const store = makeStore({
+            ui: { ...base.ui, packOffer: { url: "https://example.org/pack.ow.json" } },
+        });
+        // While the offer stands, only the showcase is mounted, and it has no area «Neuland».
+        const data = { ...mountedShowcase() };
+        const { rerender } = renderApp(<Persistence />, { store, data, route: `/?f=${code}` });
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        });
+
+        // The region arrives with that area, and the offer closes.
+        data.regions = [{ ...data.regions[0]!, key: "ow", areas: [{ name: "Neuland", n: 1 }] }];
+        act(() => {
+            store.dispatch(uiActions.clearOffer());
+        });
+        rerender(<Persistence />);
+        await waitFor(() => expect(store.getState().filters.hydrated).toBe(true));
+        expect(store.getState().filters.area).toBe("Neuland");
     });
 });

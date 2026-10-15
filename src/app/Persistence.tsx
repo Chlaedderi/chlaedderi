@@ -52,6 +52,7 @@ export const Persistence = () => {
     const sort = useAppSelector((s) => s.filters.sort);
     const dir = useAppSelector((s) => s.filters.dir);
     const hydrated = useAppSelector((s) => s.filters.hydrated);
+    const offerPending = useAppSelector((s) => s.ui.packOffer !== null);
     const { crags, regions, booted } = useData();
     const { search } = useLocation();
 
@@ -187,7 +188,9 @@ export const Persistence = () => {
     useEffect(() => {
         // Not before the installed packs are read back: until then only the showcase is mounted,
         // and an area or municipality of an installed region would be thrown away as unknown.
-        if (restoredFilters.current || !booted || !crags.length) return;
+        // Nor while a region is on offer: a view link offers its region and carries its filters
+        // to the map, and an area of that region read before it is installed is thrown away.
+        if (restoredFilters.current || !booted || !crags.length || offerPending) return;
         restoredFilters.current = true;
         try {
             const where = {
@@ -229,7 +232,7 @@ export const Persistence = () => {
             // the URL mirror stays silent until it knows this state is the viewer's own.
             dispatch(filtersActions.hydrated());
         }
-    }, [booted, crags, regions, search, dispatch, t]);
+    }, [booted, crags, regions, search, offerPending, dispatch, t]);
 
     // ---- write on change
     useDebouncedWrite(favourites, (value) => {
