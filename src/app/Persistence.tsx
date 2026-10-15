@@ -35,6 +35,9 @@ import { useDebouncedWrite } from "./useDebouncedWrite";
 
 const store = openStore();
 
+/** How long a read-back that found nothing gives the slower layers before asking again. */
+const LATE_LAYER_MS = 3000;
+
 export const Persistence = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -91,11 +94,18 @@ export const Persistence = () => {
         void (async () => {
             try {
                 await store.ready;
-                const [fav, log, saved] = await Promise.all([
-                    store.get("fav"),
-                    store.get("log"),
-                    store.get("prefs"),
-                ]);
+                const readAll = () =>
+                    Promise.all([store.get("fav"), store.get("log"), store.get("prefs")]);
+                let [fav, log, saved] = await readAll();
+                // Nothing anywhere, and neither layer that outlives localStorage answering: that is
+                // a first visit -- or IndexedDB and the Cache too slow to answer in time, as on a
+                // cold start, with everything still in them. Opened now, the writes would put
+                // this tab's defaults over all of it. A layer that answers late counts again, so
+                // ask once more before taking «nothing» for an answer.
+                if (!fav && !log && !saved && !store.status().durable) {
+                    await new Promise((resolve) => setTimeout(resolve, LATE_LAYER_MS));
+                    [fav, log, saved] = await readAll();
+                }
                 if (fav) known.current.fav = JSON.stringify(fav);
                 if (log) known.current.log = JSON.stringify(log);
                 if (saved) known.current.prefs = JSON.stringify(saved);

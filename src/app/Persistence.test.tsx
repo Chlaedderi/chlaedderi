@@ -18,6 +18,8 @@ const fake = vi.hoisted(() => {
     });
     const saved: Record<string, unknown> = {};
     const broken = { now: false };
+    /** Whether a layer that outlives localStorage answered, and what the slow ones hold. */
+    const layers = { durable: true, late: null as Record<string, unknown> | null };
     const set = vi.fn<
         (key: string, value: unknown) => Promise<{ ok: boolean; verified: boolean; t: number }>
     >(() => Promise.resolve({ ok: true, verified: true, t: Date.now() }));
@@ -25,6 +27,7 @@ const fake = vi.hoisted(() => {
         release: () => release(),
         saved,
         broken,
+        layers,
         set,
         store: {
             ready,
@@ -34,6 +37,15 @@ const fake = vi.hoisted(() => {
                     : Promise.resolve(saved[key] ?? null),
             set,
             subscribe: () => {},
+            status: () => {
+                const durable = layers.durable;
+                // The slow layers answer after all, a moment later.
+                if (!durable && layers.late) {
+                    Object.assign(saved, layers.late);
+                    layers.durable = true;
+                }
+                return { durable };
+            },
         },
     };
 });
@@ -124,4 +136,31 @@ describe("Persistence", () => {
         await waitFor(() => expect(store.getState().filters.hydrated).toBe(true));
         expect(store.getState().filters.area).toBe("Neuland");
     });
+
+    it("asks again before taking an empty answer from slow layers for «nothing stored»", async () => {
+        fake.release();
+        delete fake.saved.prefs;
+        delete fake.saved.fav;
+        delete fake.saved.log;
+        fake.set.mockClear();
+        const note = { id: "ow", src: { type: "url", url: "https://example.org/pack.ow.json" } };
+        // IndexedDB and the Cache timed out on the first read; they hold the region all along.
+        fake.layers.durable = false;
+        fake.layers.late = { prefs: { ...makeStore().getState().prefs, packs: [note] } };
+        onTestFinished(() => {
+            fake.layers.durable = true;
+            fake.layers.late = null;
+        });
+
+        const store = makeStore();
+        renderApp(<Persistence />, { store });
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        });
+        // Nothing written over it in the meantime.
+        expect(fake.set).not.toHaveBeenCalled();
+        await waitFor(() => expect(store.getState().prefs.packs.map((p) => p.id)).toEqual(["ow"]), {
+            timeout: 5000,
+        });
+    }, 10_000);
 });
