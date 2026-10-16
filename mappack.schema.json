@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xn--chldderi-2za.ch/mappack.schema.json",
+  "title": "Chlädderi mappack",
+  "description": "One climbing region for the Chlädderi app: crags («Gebiete»), their routes, the car parks, the area groups and the little bit of metadata the app needs to show the region. A mappack can be loaded into the app and unloaded again. Unknown properties are allowed on purpose: an older app ignores fields it does not know.",
+  "type": "object",
+  "required": ["format", "formatVersion", "id", "name", "version", "sectors"],
+  "additionalProperties": true,
+  "properties": {
+    "format": { "const": "chlaedderi-mappack" },
+    "formatVersion": { "const": 1 },
+    "id": {
+      "description": "Identity of the pack and the region key the app stores on every crag (s.reg). Installing a pack replaces an installed pack with the same id.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+    },
+    "name": { "$ref": "#/$defs/i18nText", "description": "Short label for the region switcher, two or three words at most." },
+    "fullName": { "$ref": "#/$defs/i18nText", "description": "Long name for headings, where the short label would be too terse." },
+    "version": { "type": "string", "minLength": 1, "description": "Version of the pack data, e.g. a date «2026-10-10». Shown in the pack list and compared when a pack is re-installed." },
+    "accessed": { "$ref": "#/$defs/date", "description": "When the sources were read." },
+    "updated": { "$ref": "#/$defs/date", "description": "When the data last changed." },
+    "partial": { "type": "boolean", "default": false, "description": "true for a sample or showcase pack that only holds a few crags. The app then keeps asking for a full pack." },
+    "ch": { "type": "boolean", "default": false, "description": "Region in Switzerland: swisstopo base map and trails, MeteoSchweiz forecast, approach planner on swisstopo paths." },
+    "fictional": { "type": "boolean", "default": false, "description": "The crags in this pack are invented. The app says so on every screen and withholds everything that would send somebody to a coordinate: no route to a cliff that does not exist." },
+    "text": { "$ref": "#/$defs/text", "description": "The words that belong to this region: the app itself knows none of them." },
+    "view": {
+      "type": "object",
+      "description": "Where the map opens for this region.",
+      "required": ["center"],
+      "additionalProperties": true,
+      "properties": {
+        "center": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" }, "description": "[lat, lon]" },
+        "zoom": { "type": "number", "minimum": 1, "maximum": 18 }
+      }
+    },
+    "bbox": {
+      "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" },
+      "description": "[minLon, minLat, maxLon, maxLat] over all located crags and car parks."
+    },
+    "counts": {
+      "type": "object",
+      "description": "What the pack holds, so the pack list can say it without parsing everything.",
+      "additionalProperties": { "type": "integer", "minimum": 0 },
+      "properties": {
+        "crags": { "type": "integer", "minimum": 0 },
+        "routes": { "type": "integer", "minimum": 0 },
+        "areas": { "type": "integer", "minimum": 0 },
+        "parks": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "areas": {
+      "type": "array",
+      "description": "Area groups («Zonen») that the crags of this pack belong to. Every sector.area must appear here.",
+      "items": { "$ref": "#/$defs/area" }
+    },
+    "parks": {
+      "type": "object",
+      "description": "Car parks, keyed by the id used in sector.pk, sector.pkOff and sector.ap[].pk.",
+      "propertyNames": { "pattern": "^[A-Za-z0-9_-]+$" },
+      "additionalProperties": { "$ref": "#/$defs/park" }
+    },
+    "sectors": {
+      "type": "array",
+      "description": "The crags. One entry is one «Gebiet» of the atlas.",
+      "items": { "$ref": "#/$defs/sector" }
+    },
+    "picSrc": {
+      "type": "array",
+      "description": "Names of the picture sources. A picture refers to its source by index into this list; the app renumbers the indices when it loads the pack.",
+      "items": { "type": "string" }
+    },
+    "labels": {
+      "type": "array",
+      "description": "Place names drawn on the map where the base map has none.",
+      "items": {
+        "type": "object",
+        "required": ["name", "lat", "lon"],
+        "additionalProperties": true,
+        "properties": { "name": { "type": "string" }, "lat": { "$ref": "#/$defs/lat" }, "lon": { "$ref": "#/$defs/lon" } }
+      }
+    },
+    "outline": {
+      "type": "object",
+      "description": "GeoJSON FeatureCollection drawn under the tiles (municipality shapes with a «name» property are labelled).",
+      "required": ["type", "features"],
+      "properties": {
+        "type": { "const": "FeatureCollection" },
+        "features": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "description": "Coverage numbers of the region, free-form. The app computes what it shows on the coverage page itself; these travel with the pack as its own record.",
+      "additionalProperties": true
+    },
+    "de": {
+      "type": "object",
+      "description": "German for short English strings in the data (rock names, source notes) that have no «…De» twin.",
+      "additionalProperties": { "type": "string" }
+    },
+    "notes": { "$ref": "#/$defs/i18nText", "description": "A sentence about the pack, shown while it is being installed." }
+  },
+
+  "$defs": {
+    "i18nText": {
+      "type": "object",
+      "required": ["en", "de"],
+      "additionalProperties": { "type": "string" },
+      "properties": { "en": { "type": "string", "minLength": 1 }, "de": { "type": "string", "minLength": 1 } }
+    },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+
+    "text": {
+      "type": "object",
+      "description": "Everything the app would otherwise have to know about a region: how its rock is called, which guidebook covers it, the pages it adds under «More», its fun facts and its glossary. All of it is optional; what a pack leaves out, the app leaves out.",
+      "additionalProperties": true,
+      "properties": {
+        "rock": { "$ref": "#/$defs/i18nText", "description": "How the rock is named on every crag page of this region. Without it each crag's own «rock» field is used." },
+        "guide": { "$ref": "#/$defs/i18nText", "description": "One line under the links of a crag page, e.g. which guidebook holds the complete topos. When the pack also brings a page with the id «topos», the line links to it." },
+        "noPics": { "$ref": "#/$defs/i18nText", "description": "Shown instead of the gallery when the pack carries no pictures at all." },
+        "guideRef": { "$ref": "#/$defs/i18nText", "description": "Sentence around a crag's «guide» field (its place in a printed guidebook). {0} is replaced by that field." },
+        "licence": { "$ref": "#/$defs/i18nText", "description": "Where the data of this region comes from and under which licence. Shown under «About» next to the app's own notice." },
+        "links": {
+          "type": "object",
+          "description": "What the links of a crag are called, keyed like sector.links (plus «tc» for the area link). Without an entry the app falls back to a neutral label.",
+          "propertyNames": { "pattern": "^[a-z]{1,3}$" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "label": { "$ref": "#/$defs/i18nText", "description": "What the link offers, e.g. «Photo topo»." },
+              "note": { "$ref": "#/$defs/i18nText", "description": "The quiet line under it, usually the source and whether it is free." }
+            }
+          }
+        },
+        "pages": {
+          "type": "array",
+          "description": "Pages this region adds under «More → About the data».",
+          "items": { "$ref": "#/$defs/page" }
+        },
+        "facts": {
+          "type": "object",
+          "description": "Fun facts, shown on the «Worth knowing» page in the order given here.",
+          "additionalProperties": true,
+          "properties": {
+            "groups": {
+              "type": "array",
+              "description": "Headings for the facts. A fact without a group, or with one that is not listed, comes last without a heading.",
+              "items": { "type": "object", "required": ["key"], "additionalProperties": true,
+                "properties": { "key": { "type": "string" }, "en": { "type": "string" }, "de": { "type": "string" } } }
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["en", "de"],
+                "additionalProperties": true,
+                "properties": {
+                  "group": { "type": "string" },
+                  "en": { "type": "string" }, "de": { "type": "string" },
+                  "src": { "type": "string", "description": "Where the fact comes from." },
+                  "url": { "type": "string" },
+                  "go": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string" },
+                          "description": "[crag name, route name]: the app offers a link into the atlas when it finds that route." }
+                }
+              }
+            }
+          }
+        },
+        "glossary": {
+          "type": "object",
+          "description": "Words a climber meets in the topos and on the signs of this region.",
+          "additionalProperties": true,
+          "properties": {
+            "title": { "$ref": "#/$defs/i18nText" },
+            "hint": { "$ref": "#/$defs/i18nText" },
+            "lang": { "type": "string", "description": "Language tag of the terms, e.g. «it», so that screen readers pronounce them." },
+            "items": {
+              "type": "array",
+              "items": { "type": "object", "required": ["term", "en", "de"], "additionalProperties": true,
+                "properties": { "term": { "type": "string" }, "en": { "type": "string" }, "de": { "type": "string" } } }
+            }
+          }
+        }
+      }
+    },
+
+    "page": {
+      "type": "object",
+      "description": "One page of running text. Blocks are shown in the order given.",
+      "required": ["id", "title", "blocks"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "description": "«topos» is linked from the crag pages; any other id only appears under «More»." },
+        "title": { "$ref": "#/$defs/i18nText" },
+        "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } }
+      }
+    },
+
+    "block": {
+      "type": "object",
+      "description": "Exactly one of h (heading), p (paragraph), hint (quiet paragraph) or ul (list). In the text, **bold** and [label](https://…) are understood; everything else is shown as written.",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "h": { "$ref": "#/$defs/i18nText" },
+        "p": { "$ref": "#/$defs/i18nText" },
+        "hint": { "$ref": "#/$defs/i18nText" },
+        "ul": { "type": "array", "items": { "$ref": "#/$defs/i18nText" } }
+      }
+    },
+    "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+    "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+    "nullableString": { "type": ["string", "null"] },
+    "nullableNumber": { "type": ["number", "null"] },
+
+    "area": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "n": { "type": "integer", "minimum": 0, "description": "Number of crags in this area group." },
+        "tcUrl": { "type": "string" },
+        "reg": { "type": "string", "description": "Ignored on load: the app stamps the pack id." }
+      }
+    },
+
+    "park": {
+      "type": "object",
+      "required": ["name", "lat", "lon"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "nameDe": { "$ref": "#/$defs/nullableString" },
+        "lat": { "$ref": "#/$defs/lat" },
+        "lon": { "$ref": "#/$defs/lon" },
+        "est": { "type": ["boolean", "null"], "description": "true: the position is estimated, not taken from a source." },
+        "note": { "$ref": "#/$defs/nullableString" },
+        "noteDe": { "$ref": "#/$defs/nullableString" },
+        "n": { "type": ["integer", "null"], "minimum": 0, "description": "Number of crags served by this car park." }
+      }
+    },
+
+    "route": {
+      "type": "array",
+      "description": "[name, grade, pitches, grade index into the app's grade list]. The app adds further entries at runtime (key, stars, length, place in the list).",
+      "minItems": 4,
+      "prefixItems": [
+        { "type": "string" },
+        { "type": ["string", "null"] },
+        { "type": ["integer", "null"], "minimum": 0, "description": "Pitches. 0 (or null) where no source says how many; the app then says nothing about pitches." },
+        { "type": ["integer", "null"], "minimum": 0, "description": "Place in the app's grade list, or null for a grade it does not know." }
+      ]
+    },
+
+    "coord": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "additionalProperties": true,
+      "properties": {
+        "lat": { "$ref": "#/$defs/lat" },
+        "lon": { "$ref": "#/$defs/lon" },
+        "precision": { "enum": ["pin", "approx", "anchor"], "description": "pin: from a source · approx: roughly placed · anchor: the wall is not located, the marker stands by the car park." },
+        "added": { "type": "boolean" }
+      }
+    },
+
+    "approach": {
+      "type": "object",
+      "description": "A walk from a car park to the wall, as computed by the data tooling.",
+      "required": ["pk", "line"],
+      "additionalProperties": true,
+      "properties": {
+        "pk": { "type": "string", "description": "Key into parks." },
+        "d": { "type": "number", "minimum": 0, "description": "Length in m." },
+        "up": { "type": "number", "description": "Ascent in m." },
+        "down": { "type": "number", "description": "Descent in m." },
+        "t": { "type": "number", "minimum": 0, "description": "Walking time in minutes." },
+        "gap": { "type": "number", "minimum": 0, "description": "Metres without a path at the end." },
+        "straight": { "type": "number", "minimum": 0, "description": "Straight-line distance in m." },
+        "line": { "type": "string", "description": "Encoded polyline (Google algorithm, precision 5)." },
+        "q": { "enum": ["ok", "gap", "detour"] },
+        "alt": { "type": "boolean", "description": "true: an alternative, not the main approach." }
+      }
+    },
+
+    "pic": {
+      "type": "array",
+      "description": "[url, altUrl (0 = none), page url, picSrc index, kind, whole-crag flag, caption (0 = none), author (0 = none), licence (0 = none), content]",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        { "type": "string" },
+        { "type": ["string", "integer"] },
+        { "type": "string" },
+        { "type": "integer", "minimum": 0 },
+        { "enum": ["photo", "topo", "sketch", "approach"] },
+        { "type": ["integer", "boolean"] },
+        { "type": ["string", "integer"] },
+        { "type": ["string", "integer"] },
+        { "type": ["string", "integer"] },
+        { "enum": ["named", "people", "plain"] }
+      ]
+    },
+
+    "sector": {
+      "type": "object",
+      "description": "One crag. Only the keys the app really needs are required; everything else is optional and may be null.",
+      "required": ["id", "name", "area", "routes"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Stable id; part of the route keys in the logbook and of the link in the address bar. Never change it." },
+        "name": { "type": "string", "minLength": 1 },
+        "area": { "type": "string", "minLength": 1, "description": "Area group; must be one of the pack's areas." },
+        "locality": { "type": "string" },
+        "full": { "type": "string", "description": "Area and name in one line." },
+        "nr": { "type": ["integer", "null"], "description": "Number in the official guide." },
+        "nrInferred": { "type": ["boolean", "null"] },
+        "status": { "$ref": "#/$defs/nullableString" },
+        "reg": { "type": "string", "description": "Ignored on load: the app stamps the pack id." },
+        "region": { "type": "string", "description": "Ignored on load." },
+        "municipality": { "$ref": "#/$defs/nullableString" },
+        "province": { "$ref": "#/$defs/nullableString" },
+        "coord": { "oneOf": [{ "$ref": "#/$defs/coord" }, { "type": "null" }] },
+        "coordDropped": { "type": ["boolean", "null"] },
+        "alt": { "$ref": "#/$defs/nullableNumber", "description": "Height of the wall in m, where a source gives it." },
+
+        "gmin": { "$ref": "#/$defs/nullableString" },
+        "gmax": { "$ref": "#/$defs/nullableString" },
+        "gminI": { "$ref": "#/$defs/nullableNumber" },
+        "gmaxI": { "$ref": "#/$defs/nullableNumber" },
+        "nRoutes": { "$ref": "#/$defs/nullableNumber", "description": "Routes the sources count, which can be more than the list holds." },
+        "nSingle": { "$ref": "#/$defs/nullableNumber" },
+        "nMulti": { "$ref": "#/$defs/nullableNumber" },
+        "bands": { "type": ["array", "null"], "minItems": 5, "maxItems": 5, "items": { "type": "integer", "minimum": 0 }, "description": "Routes per grade band, same bands as the app's bar chart." },
+        "routes": { "type": "array", "items": { "$ref": "#/$defs/route" } },
+        "rk": { "type": ["array", "null"], "items": { "type": ["string", "null"] }, "description": "Route keys a route had before the list was reordered, so favourites and logbook stay attached." },
+        "rl": { "type": ["array", "null"], "items": { "$ref": "#/$defs/nullableNumber" }, "description": "Length per route in m, parallel to routes." },
+        "st": { "type": ["array", "null"], "items": { "oneOf": [{ "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }, { "type": "null" }] }, "description": "Community stars per route: [stars, number of ratings]." },
+        "ord": { "enum": ["tc", "tcp", "vl"], "description": "Where the order of the route list comes from. Absent: the order at the wall is unknown." },
+        "secs": {
+          "type": ["array", "null"],
+          "description": "Walls inside the crag: name and the index of its first route.",
+          "items": { "type": "object", "required": ["n", "i"], "properties": { "n": { "type": "string" }, "i": { "type": "integer", "minimum": 0 } }, "additionalProperties": true }
+        },
+        "rate": {
+          "type": ["object", "null"],
+          "description": "Community ratings for the crag.",
+          "additionalProperties": true,
+          "properties": { "avg": { "type": "number" }, "n": { "type": "integer" }, "top": { "type": "number" }, "asc": { "type": "number" } }
+        },
+
+        "style": { "type": "string" },
+        "styleKey": { "enum": ["sport", "mixed"] },
+        "rock": { "$ref": "#/$defs/nullableString" },
+        "rockDe": { "$ref": "#/$defs/nullableString" },
+        "orient": { "type": "array", "items": { "enum": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] } },
+        "len": { "type": ["array", "null"], "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/nullableNumber" }, "description": "Route lengths of the crag in m: [shortest, longest]." },
+        "lenIsMax": { "type": ["boolean", "null"] },
+        "lenIsTypical": { "type": ["boolean", "null"] },
+        "season": { "$ref": "#/$defs/nullableString" },
+        "seasonDe": { "$ref": "#/$defs/nullableString" },
+        "sun": { "oneOf": [{ "enum": ["all", "am", "pm", "noon", "none"] }, { "type": "null" }] },
+        "sunWhole": { "type": ["boolean", "null"] },
+        "rain": { "oneOf": [{ "enum": ["yes", "no"] }, { "type": "null" }], "description": "yes: a source calls the crag rainproof." },
+        "dry": { "oneOf": [{ "enum": ["fast", "mid", "slow"] }, { "type": "null" }] },
+        "dryHow": { "enum": ["est", "src"], "description": "est: estimated from sun and aspect · src: a source says so." },
+        "dryWhy": { "type": "array", "items": { "type": "string" }, "description": "Reasons behind the estimate, e.g. «sun.all», «ori.S»." },
+        "dryNote": { "$ref": "#/$defs/nullableString" },
+        "dryNoteDe": { "$ref": "#/$defs/nullableString" },
+        "bolt": {
+          "type": ["object", "null"],
+          "description": "Bolting, only where a source says it outright.",
+          "additionalProperties": true,
+          "properties": {
+            "sp": { "enum": ["close", "good", "part", "spaced"] },
+            "c": { "enum": ["new", "old", "part"] },
+            "q": { "type": "array", "items": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "string" } }, "description": "The wording: [route or empty, English, German]." }
+          }
+        },
+
+        "pk": { "$ref": "#/$defs/nullableString", "description": "Car park key into parks." },
+        "pkAssumed": { "type": ["boolean", "null"] },
+        "pkOff": { "$ref": "#/$defs/nullableString", "description": "Car park the official source names, when it differs." },
+        "park": { "$ref": "#/$defs/nullableString", "description": "Car park in the words of the source." },
+        "parkDe": { "$ref": "#/$defs/nullableString" },
+        "walk": { "$ref": "#/$defs/nullableString", "description": "Approach in the words of the source." },
+        "walkDe": { "$ref": "#/$defs/nullableString" },
+        "walkMin": { "$ref": "#/$defs/nullableNumber", "description": "Walking time in minutes from the source." },
+        "walkEff": { "$ref": "#/$defs/nullableNumber", "description": "Walking time the app sorts and filters by." },
+        "walkHow": { "oneOf": [{ "enum": ["src", "calc"] }, { "type": "null" }] },
+        "ap": { "type": ["array", "null"], "items": { "$ref": "#/$defs/approach" } },
+
+        "desc": { "$ref": "#/$defs/nullableString" },
+        "descDe": { "$ref": "#/$defs/nullableString" },
+        "warn": { "$ref": "#/$defs/nullableString", "description": "Closures and cautions in the words of the source; the app reads it for the closure and caution marks." },
+        "warnDe": { "$ref": "#/$defs/nullableString" },
+        "rnote": { "$ref": "#/$defs/nullableString", "description": "Note about the route list, e.g. that only part of it is known." },
+        "rnoteDe": { "$ref": "#/$defs/nullableString" },
+        "family": { "$ref": "#/$defs/nullableString" },
+        "pt": { "$ref": "#/$defs/nullableString", "description": "Public transport." },
+        "guide": { "$ref": "#/$defs/nullableString", "description": "Place in the printed guide, e.g. «Nr. 12, S. 64»." },
+        "confidence": { "enum": ["High", "Medium", "Low", "Unverified"] },
+        "tcOnly": { "type": ["boolean", "null"] },
+        "tc": {
+          "type": ["object", "null"],
+          "description": "What an outside route database holds for this crag: its name there, the number of routes and the height.",
+          "additionalProperties": true,
+          "properties": { "name": { "type": "string" }, "routes": { "type": ["integer", "null"] }, "height": { "$ref": "#/$defs/nullableNumber" } }
+        },
+        "links": {
+          "type": ["object", "null"],
+          "description": "Links: t/c topo and crag pages, o official, f photos, g gallery, l list, p pdf, r route list, w further web pages.",
+          "additionalProperties": true,
+          "properties": {
+            "w": { "type": "array", "items": { "type": "object", "required": ["name", "url"], "properties": { "name": { "type": "string" }, "url": { "type": "string" } }, "additionalProperties": true } }
+          }
+        },
+        "pics": { "type": ["array", "null"], "items": { "$ref": "#/$defs/pic" } }
+      }
+    }
+  }
+}

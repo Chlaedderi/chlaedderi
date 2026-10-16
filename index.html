@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+        />
+        <title>Chlädderi</title>
+        <meta
+            name="description"
+            content="Karte und Liste von Sportklettergebieten – mit Parkplätzen, Zustiegen, Navigation, Wetter, Regen-Info, Logbuch und Favoriten. Die Gebiete kommen als Mappack dazu."
+        />
+        <meta name="theme-color" content="#28157a" />
+
+        <!--
+            What a chat window shows when somebody shares the app. Without these a link is a bare
+            blue line: WhatsApp, Signal, Telegram, Discord, Slack, LinkedIn and iMessage all read
+            Open Graph, and X falls back to it, so `twitter:card` is the only tag of that namespace
+            worth carrying -- a second copy of the description is a second thing to drift.
+
+            The addresses are absolute and in punycode, because a crawler is a machine: a relative
+            `og:image` is ignored outright by several of them, and `chlädderi.ch` is
+            `xn--chldderi-2za.ch` wherever DNS, a certificate or a URI does the reading -- the same
+            reason mappack.schema.json spells its `$id` that way. chlaedderi.ch and
+            www.chlaedderi.ch answer 301 to this host, and every one of these crawlers follows a
+            301, so the ASCII domain shows the same card without naming it here.
+
+            They stay canonical on a pull request preview too, which advertises the deployed card
+            rather than its own. That is deliberate: `rel=canonical` and an `og:url` pointing home
+            are what keep /pr-12/ out of a search index. The price is that a change to the picture
+            is not visible in its own preview -- look at og.png itself, and at the card once it is
+            deployed.
+
+            A crag link cannot be made to say more than this one. Everything that names the crag --
+            the token, the region's address, the key of a sealed region -- rides after the `#`
+            (src/features/shell/useShare.ts), and a fragment is never sent to any server, so every
+            crag link in the world arrives here as a request for this page and nothing else. What
+            names the crag is the message around the link instead; `useShareLink` writes it.
+        -->
+        <link rel="canonical" href="https://xn--chldderi-2za.ch/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Chlädderi" />
+        <meta property="og:locale" content="de_CH" />
+        <meta property="og:title" content="Chlädderi" />
+        <!--
+            Shorter than the description above, and a sentence that ends. A search result shows
+            about 160 characters and the description above is written to fill them; a chat window
+            shows far fewer and simply stops mid-word, which is how this one first went out reading
+            «… Logbuch und Favoriten. Die Gebiete kommen». src/share-card.test.ts holds the limit.
+        -->
+        <meta
+            property="og:description"
+            content="Karte und Liste von Sportklettergebieten – mit Zustiegen, Wetter, Regen-Info, Logbuch und Favoriten."
+        />
+        <meta property="og:url" content="https://xn--chldderi-2za.ch/" />
+        <meta property="og:image" content="https://xn--chldderi-2za.ch/og.png" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+            property="og:image:alt"
+            content="Das Symbol von Chlädderi: Sonnenuntergang über dem Meer, ein Felsturm mit Kletterroute und ein Karten-Pin."
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Chlädderi" />
+        <link rel="manifest" href="manifest.webmanifest" />
+        <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
+        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+      <script type="module" crossorigin src="./assets/index-CYx-IBKs.js"></script>
+      <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-B0Z9INg1.js">
+      <link rel="modulepreload" crossorigin href="./assets/useAppData-CPiq9iT0.js">
+      <link rel="modulepreload" crossorigin href="./assets/CircularProgress-DZps1IA3.js">
+      <link rel="modulepreload" crossorigin href="./assets/RtlProvider-BmdHOqTf.js">
+      <link rel="modulepreload" crossorigin href="./assets/Modal-GT4fhboF.js">
+      <link rel="modulepreload" crossorigin href="./assets/Link-vfUbH7fc.js">
+      <link rel="modulepreload" crossorigin href="./assets/TextField-BEOLAYN9.js">
+      <link rel="modulepreload" crossorigin href="./assets/i18n-D7fEWudF.js">
+      <link rel="stylesheet" crossorigin href="./assets/index-fFIaX8Cx.css">
+    </head>
+    <body>
+        <div id="root"></div>
+    </body>
+</html>
